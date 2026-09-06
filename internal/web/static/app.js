@@ -97,6 +97,10 @@
       document.getElementById("upload-heading").textContent = job ? "Upload more files" : "Upload files";
     }
     if (!job) {
+      if (!uploadSection && previous && focus) {
+        location.replace(document.body.dataset.homeUrl);
+        return;
+      }
       if (uploadSection && location.pathname !== document.body.dataset.homeUrl) {
         history.replaceState(null, "", document.body.dataset.homeUrl);
       }
@@ -336,6 +340,12 @@
     }
   });
 
+  cancelUpload.addEventListener("click", function () {
+    if (currentRequest && !cancelUpload.hidden) {
+      currentRequest.abort();
+    }
+  });
+
   form.addEventListener("submit", function (event) {
     event.preventDefault();
     if (uploading || submit.disabled || !input.files || input.files.length === 0) {
@@ -371,6 +381,7 @@
     });
 
     request.upload.addEventListener("load", function () {
+      cancelUpload.hidden = true;
       progressText.textContent = "Upload sent. Checking file types...";
     });
 
@@ -415,12 +426,6 @@
       progressText.textContent = "Upload canceled. Your selected files are ready to try again.";
       describeFiles();
       focusElement(submit);
-    });
-
-    cancelUpload.addEventListener("click", function () {
-      if (currentRequest) {
-        currentRequest.abort();
-      }
     });
 
     request.send(data);

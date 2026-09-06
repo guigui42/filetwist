@@ -6,8 +6,10 @@ Download successful results individually or as a streamed ZIP.
 
 The upload form identifies this as a shared workspace before you send any files.
 It checks file-count and total-size limits before sending, while the server
-remains authoritative. **Cancel upload** stops the browser request and keeps
-the selected files available to retry.
+remains authoritative. **Cancel upload** is available while bytes are being sent
+and keeps the selected files available to retry. Once the upload is sent, the
+control disappears while the server finishes inspecting the files. Inspection
+continues even if the browser disconnects after the uploaded bytes are stored.
 The built-in **Help & file handling** page (`/help`, under `WEBROOT` when set)
 explains access, retention, conversion tradeoffs, and recovery without requiring
 an external documentation service.

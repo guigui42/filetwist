@@ -220,3 +220,93 @@ test("mobile results prioritize downloads and keep technical details optional", 
   await page.goto("/");
   await expect(page.locator(".recent-jobs h3")).toContainText(name);
 });
+
+for (const action of ["remove last file", "delete job"]) {
+  test(`direct job page returns home after ${action}`, async ({ page, jobs }) => {
+    const id = await upload(page, jobs);
+    await page.goto(`/jobs/${id}`);
+    await expect(page.locator("#upload-section")).toHaveCount(0);
+    page.once("dialog", dialog => dialog.accept());
+    if (action === "remove last file") {
+      await page.locator("[data-remove-file]").click();
+    } else {
+      await page.getByRole("button", { name: "Delete job", exact: true }).click();
+    }
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator("#upload-section")).toHaveAttribute("open");
+    expect((await page.reload()).status()).toBe(200);
+    await expect(page.getByRole("button", { name: "Upload", exact: true })).toBeVisible();
+    expect((await page.request.get(`/jobs/${id}`)).status()).toBe(404);
+    jobs.delete(id);
+  });
+}
+
+test("total-byte upload limit recovers when the extra file is removed", async ({ page }) => {
+  await page.goto("/");
+  const bytes = (await readFile(photo)).length;
+  await page.locator("#upload-form").evaluate((form, limit) => {
+    form.dataset.maxBytes = String(limit);
+  }, bytes);
+  await page.getByLabel("Files to convert", { exact: true }).setInputFiles([photo, photo]);
+  await expect(page.getByRole("button", { name: "Upload", exact: true })).toBeDisabled();
+  await expect(page.locator("#upload-notice")).toContainText(`totaling no more than ${bytes} B`);
+  await page.locator("#selected-files button").first().click();
+  await expect(page.getByRole("button", { name: "Upload", exact: true })).toBeEnabled();
+  await expect(page.locator("#upload-notice")).toBeEmpty();
+});
+
+test("upload cancellation is transfer-only and its listener is registered once", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.uploadTransport = { requests: [], cancelListeners: 0 };
+    const addListener = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function (type, listener, options) {
+      if (this.id === "upload-cancel" && type === "click") {
+        window.uploadTransport.cancelListeners++;
+      }
+      return addListener.call(this, type, listener, options);
+    };
+    // Control the transfer/inspection boundary without relying on network timing.
+    window.XMLHttpRequest = class extends EventTarget {
+      constructor() {
+        super();
+        this.upload = new EventTarget();
+        this.aborts = 0;
+        this.status = 0;
+        this.responseText = '<p role="status">Upload finished.</p>';
+      }
+      open() {}
+      setRequestHeader() {}
+      getResponseHeader() { return "text/html"; }
+      send() { window.uploadTransport.requests.push(this); }
+      abort() {
+        this.aborts++;
+        this.dispatchEvent(new Event("abort"));
+      }
+    };
+  });
+  await page.goto("/");
+  for (let index = 0; index < 2; index++) {
+    await page.getByLabel("Files to convert", { exact: true }).setInputFiles(photo);
+    await page.getByRole("button", { name: "Upload", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Cancel upload", exact: true })).toBeVisible();
+    await page.evaluate(() => window.uploadTransport.requests.at(-1).upload.dispatchEvent(new Event("load")));
+    await expect(page.locator("#upload-cancel")).toBeHidden();
+    await expect(page.locator("#upload-progress-text")).toHaveText("Upload sent. Checking file types...");
+    await page.locator("#upload-cancel").evaluate(button => button.click());
+    expect(await page.evaluate(() => window.uploadTransport.requests.at(-1).aborts)).toBe(0);
+    await page.evaluate(() => {
+      const request = window.uploadTransport.requests.at(-1);
+      request.status = 200;
+      request.dispatchEvent(new Event("load"));
+    });
+    await expect(page.locator("#file-list")).toHaveText("No files selected.");
+  }
+  expect(await page.evaluate(() => window.uploadTransport.cancelListeners)).toBe(1);
+  await page.getByLabel("Files to convert", { exact: true }).setInputFiles(photo);
+  await page.getByRole("button", { name: "Upload", exact: true }).click();
+  await page.getByRole("button", { name: "Cancel upload", exact: true }).click();
+  await expect(page.locator("#upload-progress-text")).toContainText("Upload canceled.");
+  await expect(page.getByRole("button", { name: "Upload", exact: true })).toBeEnabled();
+  await expect(page.locator("#file-list")).toHaveText(/1 file selected/);
+  expect(await page.evaluate(() => window.uploadTransport.requests.at(-1).aborts)).toBe(1);
+});

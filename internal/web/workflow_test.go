@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/guigui42/filetwist/internal/config"
 	"github.com/guigui42/filetwist/internal/jobs"
@@ -133,5 +134,33 @@ func TestRemoveFileHTTPRejectsStartedJob(t *testing.T) {
 	response := server.do(t, httptest.NewRequest(http.MethodPost, path, nil))
 	if response.Code != http.StatusConflict || !strings.Contains(response.Body.String(), "before conversion starts") {
 		t.Fatalf("started removal response = %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestWorkflowRunningStatusPluralization(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		files []string
+		want  string
+	}{
+		{"one file", []string{"first.jpg"}, "0 of 1 file finished."},
+		{"two files", []string{"first.jpg", "second.jpg"}, "0 of 2 files finished."},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newServer(t, nil, nil)
+			manifest := server.upload(t, tt.files)
+			_, err := server.manager.Store().Update(manifest.ID, time.Now(), func(current *storage.Manifest) error {
+				current.State = storage.JobRunning
+				current.Files[0].State = storage.FileRunning
+				return nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			response := server.do(t, httptest.NewRequest(http.MethodGet, "/jobs/"+manifest.ID, nil))
+			if !strings.Contains(response.Body.String(), tt.want) {
+				t.Errorf("running status missing %q", tt.want)
+			}
+		})
 	}
 }

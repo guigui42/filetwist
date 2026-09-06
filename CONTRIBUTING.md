@@ -93,8 +93,10 @@ libraries are missing. The tests cover upload, operation selection, polling,
 individual and ZIP downloads, failed-action retry, cancellation, and deletion.
 They also cover shared-workspace help, preset explanations, eligible batch
 selection, individual file removal, focus transitions, and mobile touch targets.
-Conversion and storage use the real image; the queue-full response alone is
-injected to exercise deterministic error handling.
+Conversion and storage use the real image. A queue-full response exercises
+deterministic error recovery, and a controlled upload transport covers
+cancellation before and after the transfer/inspection boundary without timing
+races.
 
 The test server uses loopback port 18765 and refuses to reuse an existing
 service. Set `FILETWIST_TEST_PORT` to another unused port if needed. Job data is

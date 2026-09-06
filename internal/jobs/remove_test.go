@@ -490,11 +490,30 @@ func TestRemoveFileReportsFinalJobDeletionFailure(t *testing.T) {
 		t.Fatalf("input was not removed before directory deletion: %v", err)
 	}
 	current, err := manager.Get(manifest.ID)
-	if err != nil && !errors.Is(err, jobs.ErrNotFound) {
+	if err != nil {
+		t.Fatalf("empty manifest must remain readable after failed deletion: %v", err)
+	}
+	if len(current.Files) != 0 || current.TotalBytes != 0 || current.ID != manifest.ID {
+		t.Fatalf("failed directory deletion lost the empty manifest: %+v", current)
+	}
+	expired := manifest.ExpiresAt.Add(time.Second)
+	removed, err := manager.CleanupExpired(expired)
+	if err != nil || len(removed) != 0 {
+		t.Fatalf("cleanup with blocked directory = %v, %v", removed, err)
+	}
+	current, err = manager.Get(manifest.ID)
+	if err != nil || len(current.Files) != 0 {
+		t.Fatalf("failed cleanup must preserve the empty manifest: %+v, %v", current, err)
+	}
+	if err := os.Chmod(stagingDir, 0o750); err != nil {
 		t.Fatal(err)
 	}
-	if len(current.Files) != 0 {
-		t.Fatalf("failed directory deletion restored a removed input reference: %+v", current)
+	removed, err = manager.CleanupExpired(expired)
+	if err != nil || len(removed) != 1 || removed[0] != manifest.ID {
+		t.Fatalf("cleanup after restoring access = %v, %v", removed, err)
+	}
+	if _, err := manager.Get(manifest.ID); !errors.Is(err, jobs.ErrNotFound) {
+		t.Fatalf("empty job still exists after successful cleanup: %v", err)
 	}
 }
 

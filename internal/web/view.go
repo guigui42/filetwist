@@ -195,7 +195,7 @@ func (app *App) buildJobView(manifest storage.Manifest, now time.Time) *jobView 
 		view.StatusMessage = "Choose your outputs, then convert. You can remove files before starting."
 	case view.Poll:
 		view.Heading = "Converting your files"
-		view.StatusMessage = fmt.Sprintf("%d of %d files finished. %s. You can return to this job while it runs.", view.FinishedCount, view.FileCount, view.StateLabel)
+		view.StatusMessage = fmt.Sprintf("%d of %d file%s finished. %s. You can return to this job while it runs.", view.FinishedCount, view.FileCount, plural(view.FileCount), view.StateLabel)
 	case view.HasOutputs:
 		view.Heading = "Your downloads are ready"
 		if view.CompletedCount < view.FileCount {

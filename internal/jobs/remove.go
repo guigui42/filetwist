@@ -79,8 +79,8 @@ func (manager *Manager) RemoveFile(id, fileID string) (storage.Manifest, error) 
 		return rollback(fmt.Errorf("jobs: remove uploaded file: %w", err))
 	}
 	if len(updated.Files) == 0 {
-		// Do not restore the original manifest if directory deletion fails:
-		// its input is already gone. Report the failure for whole-job cleanup.
+		// Delete preserves the empty manifest on failure for later cleanup.
+		// Never restore the original manifest: its input is already gone.
 		if err := manager.store.Delete(id); err != nil {
 			return storage.Manifest{}, err
 		}
