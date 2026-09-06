@@ -18,10 +18,10 @@
       "resolution": "The exact candidate's 146 Debian/custom FFmpeg source identities and libvips were resolved. All 231 selected mirror files were downloaded and SHA-256 verified, complete descriptors checked, and 1586 embedded/supplemental notices retained, including Intel LICENSE.md and third-party-programs.txt. The same helpers enforce this delivery before every image publication. The bundled third-party notice supplies the IJG acknowledgement."
     }
   ],
-  "dockerfile_sha256": "2da948d5003097029359496c7d2a6430899b568731365b676e0546bd451dc0be",
+  "dockerfile_sha256": "a5c80b2436a4899f7da88804c7244018b21f2717c2feaa6cdb5855400363e155",
   "media_runtime": {
-    "image": "ghcr.io/guigui42/filetwist@sha256:1313a23528b3c66d5e5167365f1b0aa7be4f70c78a1e8f1a935e178dc75a17fa",
-    "dockerfile_sha256": "ce74f27968897117552047e444e9a0a053c201ef2e8468d63561301c5a7afb3c"
+    "image": "ghcr.io/guigui42/filetwist@sha256:30c372bcde7fb58586db98657a393136743c93065084c22c44760e6af5d1d044",
+    "dockerfile_sha256": "3cf1c9bb57e801c98b76af0c636d57a075d204b4f5e8064ad280439afa2694da"
   },
   "first_party_assets": [
     "internal/web/static/app.js",

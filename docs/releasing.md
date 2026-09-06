@@ -235,11 +235,11 @@ another workflow through that event.
 
 ## Updating the media runtime
 
-The initial application pin is the published
-[v0.0.2 source manifest](https://github.com/guigui42/filetwist/releases/download/v0.0.2/filetwist_0.0.2_sources.json)
-index `sha256:1313a23528b3c66d5e5167365f1b0aa7be4f70c78a1e8f1a935e178dc75a17fa`.
-It is a fixed bootstrap seed, not a moving application tag. `v0.0.1` remains
-binary-only. Neither historical tag nor its assets should be changed.
+The application pin is the dedicated
+[media-v1.0.0 runtime](https://github.com/guigui42/filetwist/releases/tag/media-v1.0.0)
+index `sha256:30c372bcde7fb58586db98657a393136743c93065084c22c44760e6af5d1d044`.
+The initial v0.0.2 application image was used only to bootstrap this separation.
+`v0.0.1` remains binary-only. Historical tags and assets must not be changed.
 
 1. Change native dependencies only in `deploy/Dockerfile.runtime` and its
    existing build helper. Keep immutable base/source pins and bounded compiler

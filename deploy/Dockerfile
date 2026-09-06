@@ -2,9 +2,8 @@
 # check=skip=InvalidBaseImagePlatform
 
 ARG GO_IMAGE=golang:1.27.0-trixie@sha256:df98008ecd2b0ecc9f0a94d1b07e3564a9c92b555369b33d9b5f60d0765b2db7
-# Bootstrap: the immutable v0.0.2 index. Future pins come from media-v* releases,
-# never from the preceding application release.
-ARG MEDIA_RUNTIME_IMAGE=ghcr.io/guigui42/filetwist@sha256:1313a23528b3c66d5e5167365f1b0aa7be4f70c78a1e8f1a935e178dc75a17fa
+# Immutable media-v1.0.0 runtime; application releases never compile native libraries.
+ARG MEDIA_RUNTIME_IMAGE=ghcr.io/guigui42/filetwist@sha256:30c372bcde7fb58586db98657a393136743c93065084c22c44760e6af5d1d044
 
 FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS go-build
 ARG TARGETOS
@@ -28,7 +27,7 @@ RUN test "${TARGETOS}" = linux \
 
 FROM ${MEDIA_RUNTIME_IMAGE}
 USER 0:0
-# Preserve the bootstrap's original native recipe before replacing the app recipe.
+# Preserve a legacy bootstrap's native recipe before replacing the app recipe.
 # Versioned media seeds already carry Dockerfile.runtime.
 RUN if [ ! -f /usr/local/share/licenses/filetwist/Dockerfile.runtime ]; then \
       cp /usr/local/share/licenses/filetwist/Dockerfile \
