@@ -1,0 +1,3769 @@
+{
+  "schema_version": 1,
+  "status": "approved",
+  "blockers": [
+    {
+      "id": "ffmpeg-licence-combination",
+      "status": "resolved",
+      "resolution": "Both libcdio and libzvbi are excluded from the custom FFmpeg configuration. The corrected executable and all shared-library closures were inspected; no stock FFmpeg family or offending libraries remain."
+    },
+    {
+      "id": "embedded-source-closure",
+      "status": "resolved",
+      "resolution": "The policy covers 80 installed Debian source identities plus all 65 exact sqv embedded-source identities, with custom FFmpeg and libvips tracked separately. The collector resolves authenticated descriptors, validates complete source sets and mirrors the embedded contributions with their accompanying notices."
+    },
+    {
+      "id": "source-and-notice-delivery",
+      "status": "resolved",
+      "resolution": "The exact candidate's 146 Debian/custom FFmpeg source identities and libvips were resolved. All 231 selected mirror files were downloaded and SHA-256 verified, complete descriptors checked, and 1586 embedded/supplemental notices retained, including Intel LICENSE.md and third-party-programs.txt. The same helpers enforce this delivery before every image publication. The bundled third-party notice supplies the IJG acknowledgement."
+    }
+  ],
+  "dockerfile_sha256": "ce74f27968897117552047e444e9a0a053c201ef2e8468d63561301c5a7afb3c",
+  "first_party_assets": [
+    "internal/web/static/app.js",
+    "internal/web/static/app.css"
+  ],
+  "additional_dependency_paths": [],
+  "dependency_inputs_sha256": {
+    ".gitmodules": null,
+    "go.mod": "bb9946e7060974dbb4bf386de9c4817f95eec0fc488293f4ceab2906afaf7b92",
+    "go.sum": null,
+    "go.work": null,
+    "go.work.sum": null,
+    "internal/web/static/htmx.LICENSE": "d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38",
+    "internal/web/static/htmx.min.js": "e209dda5c8235479f3166defc7750e1dbcd5a5c1808b7792fc2e6733768fb447"
+  },
+  "notice_sha256": {
+    "opt/vips/share/licenses/libvips/LICENSE": "dc626520dcd53a22f727af3ee42c770e56c97a64fe3adb063799d8ab032fe551",
+    "usr/local/share/licenses/filetwist/go.LICENSE": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+    "usr/local/share/licenses/filetwist/htmx.LICENSE": "d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38",
+    "usr/share/common-licenses/Apache-2.0": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "usr/share/common-licenses/Artistic": "b7fd9b73ea99602016a326e0b62e6646060d18febdd065ceca8bb482208c3d88",
+    "usr/share/common-licenses/BSD": "5d588eb3b157d52112afea935c88a7ff9efddc1e2d95a42c25d3b96ad9055008",
+    "usr/share/common-licenses/CC0-1.0": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+    "usr/share/common-licenses/GFDL": "110535522396708cea37c72a802c5e7e81391139f5f7985631c93ef242b206a4",
+    "usr/share/common-licenses/GFDL-1.2": "2652c22ba086f92e55ae4a9f9c890ad4766ffd7814a73d318e22a597edf857a4",
+    "usr/share/common-licenses/GFDL-1.3": "110535522396708cea37c72a802c5e7e81391139f5f7985631c93ef242b206a4",
+    "usr/share/common-licenses/GPL": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "usr/share/common-licenses/GPL-1": "49c007bafb5ad6dd9f9d4dae4d3ac0461975498150c05d684c551f0914ab486c",
+    "usr/share/common-licenses/GPL-2": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+    "usr/share/common-licenses/GPL-3": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "usr/share/common-licenses/LGPL": "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118",
+    "usr/share/common-licenses/LGPL-2": "cc535c21133c895b56b374c8a1dc1eb948d99003ed2b47372069456b62f42b24",
+    "usr/share/common-licenses/LGPL-2.1": "20e50fe7aae3e56378ebf0417d9de904f55a0e61e4df315333e632a4d3555d95",
+    "usr/share/common-licenses/LGPL-3": "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118",
+    "usr/share/common-licenses/MPL-1.1": "f849fc26a7a99981611a3a370e83078deb617d12a45776d6c4cada4d338be469",
+    "usr/share/common-licenses/MPL-2.0": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+  },
+  "libvips": {
+    "version": "8.18.6",
+    "url": "https://github.com/libvips/libvips/releases/download/v8.18.6/vips-8.18.6.tar.xz",
+    "sha256": "3c41e1d5458081bfa4a5bc54e116c46259c75c6760a18027764555632b9dda3e",
+    "notice_sha256": "dc626520dcd53a22f727af3ee42c770e56c97a64fe3adb063799d8ab032fe551",
+    "source_route": "mirror",
+    "reason": "Mirror unmodified libvips 8.18.6 source and retain LGPL text, exact checksum and Dockerfile/Meson build options. Do not infer a blanket LGPL3 election from a licence text alone."
+  },
+  "custom_builds": {
+    "ffmpeg": {
+      "name": "ffmpeg",
+      "version": "7:7.1.5-0+deb13u1",
+      "binary_packages": [],
+      "custom_build": "ffmpeg",
+      "build_material_sha256": {
+        "opt/ffmpeg/share/licenses/ffmpeg/COPYING.GPLv2": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+        "opt/ffmpeg/share/licenses/ffmpeg/COPYING.GPLv3": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+        "opt/ffmpeg/share/licenses/ffmpeg/COPYING.LGPLv2.1": "246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30",
+        "opt/ffmpeg/share/licenses/ffmpeg/COPYING.LGPLv3": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+        "opt/ffmpeg/share/licenses/ffmpeg/LICENSE.md": "cb48bf09a11f5fb576cddb0431c8f5ed0a60157a9ec942adffc13907cbe083f2",
+        "opt/ffmpeg/share/licenses/ffmpeg/SHA256SUMS": "db15dbd0cdf1499bf874a9a169ddac720e14e3c4a311cc727712f13a0a7f7a85",
+        "opt/ffmpeg/share/licenses/ffmpeg/SOURCE": "4913223b49c9523df31c40f95e9aec4985924416455f420b95ecd5d0504e8ccc",
+        "opt/ffmpeg/share/licenses/ffmpeg/build-ffmpeg.sh": "d7c398f9c988c62e399398a60c02836c4341fdb30f4d3b2961b0747e4b45cb92",
+        "opt/ffmpeg/share/licenses/ffmpeg/configure-flags.txt": "3436b906f8ef868097841dcd8f0e61b8e052bdea6a6615a34d4915a38b973a9c",
+        "opt/ffmpeg/share/licenses/ffmpeg/copyright": "28700587b4c278cd4e24adf4174a6fbe2510f27af962966d9ff15144b0b9ddbb",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/README.Debian": "7b9af6668ac912a38e0f0bf21f39a8ac61a06e7363db87e5d0d170a956ed78c7",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/README.source": "dcce4dc17b48ce38cbfbba583652163440d8b6e0cd8f0ef8676b9d05a6fc00a9",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/TODO": "35c71f76e3e9699d045eedad2294a7d9f004aa9e67465133cb71be71ada73595",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/changelog": "a98c8a420d835c50d8e6d31ea33a891252be64ae6112435327e753264bfd3e5a",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/clean": "4c91d45b819b88c52b98e3ee4701e652fd06f000df4bbc7f92d4daed1ba63932",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/control": "358f85cde1e5885318d32ca698cb4e4b1b82c744371fdc50f05ec718769ece57",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/copyright": "28700587b4c278cd4e24adf4174a6fbe2510f27af962966d9ff15144b0b9ddbb",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/ffmpeg-doc.doc-base.api": "6b8700e0e02ed6a970871dc84d0b721e9daa1a808dba80d49f21d35f566b526a",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/ffmpeg-doc.doc-base.manual": "4cd524364e4dcc2fbba6fa1be5840c35c8e9a7d63eb164adbc8da88f3dc2b121",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/ffmpeg-doc.examples": "de74585ed1de46fedaf2f900225d567ecbd1f15a321db62edbd0956565d5cd99",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/ffmpeg-doc.install": "d652316a0014d6048754fc8a7d172e06a96b3090697ceeeecba01b18785fe093",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/ffmpeg-doc.links": "e19d005932ab2c829f898a86926283fec885c67165638131a7a6a716354079f3",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/ffmpeg.install": "5a037145602617ebbe40d36ae2480b6b71f058451f04ba858869c64d7a31764c",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/ffmpeg.lintian-overrides": "fa0b958b04d8fb3182bcea70773d03ded623c8f103d8218738294922508e618d",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/ffmpeg.manpages": "98ea972abbabe22858819410863f62ac7a81751c448a697a43c149cb7e7aba80",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/gbp.conf": "e021aa9d592619acade2b9a4346fd78fd98900bca9554d44daa02104b89165b3",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavcodec-dev.install": "68a0aedef16cb1f38e3e39bc3f5431a456cc23fdbbf1d04a00d049f42cc4edf0",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavcodec-extra61.install": "d603bef4b7d2727ff9a7d3195d3f9b5e1aeb58ad065c3f3f346052df352c34d9",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavcodec-extra61.lintian-overrides": "ecf8405871a9dd7aa87753aacf33ea8825afcd209bb0b25a183fe657ffe33105",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavcodec61.install": "d603bef4b7d2727ff9a7d3195d3f9b5e1aeb58ad065c3f3f346052df352c34d9",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavcodec61.lintian-overrides": "da5d5e12de6557fd3919e767486fb5231b23b6ba19f1d0cdb213509ae325abca",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavcodec61.symbols.in": "ba9d240091f919c643a069f6122a9d94fb84628aba9ee5180c2728bb463eb385",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavdevice-dev.install": "c872fb30ce0afcb44f98128d507b7201c1fb4d0345a4c611af746697b4e23c28",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavdevice61.install": "4b616daacd0dec894047bb2fdc611aeff084815e563503a1fb50ae661b550b37",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavdevice61.symbols.in": "373ea88a5d72aeff856f13fafdb08caef262cda0337bb8ca53a27c7370b774c8",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavfilter-dev.install": "33a9698f38560d522f2750751c79a3e0583d676d8834a3b18c226b44eeda92d7",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavfilter-extra10.install": "1d42e9d25d87a7ea6e37b1b77f5b7e7b39628dd5e407e0fb13a5fd705685a2a3",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavfilter-extra10.lintian-overrides": "53438ce9bdc8d6cb179deb3faea6add2d6749a5414e299b550c527e9d1a8b0dc",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavfilter10.install": "1d42e9d25d87a7ea6e37b1b77f5b7e7b39628dd5e407e0fb13a5fd705685a2a3",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavfilter10.lintian-overrides": "76d7d31653b528210085d67325606b787f76b03d163f6161c888ca8c4389d37a",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavfilter10.symbols.in": "4d32d77b50c95c9acd16574c26094fadce8bcb9c29e66642780b7cb4a23f88a5",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavformat-dev.install": "1e090475a8fd3be5f17ecbe8987b9642bc6cc8ac9a734375ab6b714aaa59ce34",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavformat-extra61.install": "23514d75dbef842da8093dde5c813994cc0e54dc57bfdf35ee8fb407c3154224",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavformat-extra61.lintian-overrides": "5297b78cf4b79cbf8fe03bef90c1c90c53ea1931f675980800af813f312bef33",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavformat61.install": "23514d75dbef842da8093dde5c813994cc0e54dc57bfdf35ee8fb407c3154224",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavformat61.symbols.in": "ad65caf98596eabd871af2c1b334692cff85d645175cad10f7f946426c3964e6",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavutil-dev.install": "3b8b663a2ca687e923539db4ccd2ad79aef74431913653215dfacf2f6b3caa39",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavutil59.install": "57e93c08d0fbee2ea9904fa961362aa2c0c2fef38d5ef12ee7358ec2de935b31",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavutil59.lintian-overrides": "7438a9f3984dac4f95fb7100b21a04098f00ef9e30c732c3b4e63efc1c7b711b",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libavutil59.symbols.in": "e9063ef0badf2e56a85b3383fb779a1016910287f11939078a01b3ef4740b953",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libpostproc-dev.install": "2a073af14e7fc2c0988c352c14bce20cec405f821a22adbb0d0ffce553549735",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libpostproc58.install": "06462d0db55cd62c66627247e984f9e2d6b1a2be973de3bdf427e1c7ede3bf9d",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libpostproc58.lintian-overrides": "2c4a8c5ad30ea0f5957ce113501511f9f0d522260f2f6df3ffac1e07857a4856",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libpostproc58.symbols.in": "8d2de52197069727202d3eab54d1a6f6c714f449121201075e449824dd1d4a59",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libswresample-dev.install": "12acd99abb5571f53dd8e9b251317289354d3d59b98d73638dcd323e869d7e4e",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libswresample5.install": "9babafd1ba31bcf5508681082478f279133ab822a083d551a7dba5eda0c2e734",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libswresample5.lintian-overrides": "3233a3167f4bf149466b12fc4d595c30fe90166d708b5a6858938d4f5cc1bcc5",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libswresample5.symbols.in": "2d2dd88d53573827658c5574b7fefc3e19b01bb50f3e165d98d505d9563d35b8",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libswscale-dev.install": "b3b454192ea54d07bdd2b7d6209c75cf1bf9da0e657dc92ffad562c0ea65bb9d",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libswscale8.install": "f0620ba206a9ce02029e011132f125185ee0887ce7e394d6cc5446961cfb3d9f",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libswscale8.lintian-overrides": "f56b741c0d6f0641a2d7abe598d74dcbbd7df10880a890538b65ad814608945e",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/libswscale8.symbols.in": "6b44ec4d6dec5099077732b418e306148a21159361dd61309d36d3702fed4de0",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/missing-sources/ffmpeg-web/src/less/style.less": "f7463f8b67d9bc609c720e81eda1140ca635d9d64af362c924b739af268d0b89",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/not-installed": "23ebf0ad9ab250e35e4b24eb032bafc7d9f7d0fe5866eb4d19174bb90f648a55",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/qt-faststart.1": "30705ec04eff9e77701349428ddafe700fd0dff3af9d3a658ca02a9f3e9d990d",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/rules": "43bd5c1cc1c5e7021af79f6137656a164ab88bb3e4f4e06da3dd673b8465f35b",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/salsa-ci.yml": "125aa9b45425f5bf4da3cc24f757c907b2f2394912eeca38cdd1aa7c0c6b422c",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/source/format": "1be7080d72e6b566df3e236ce2c55efdfbbb8fa1c972d825e5b672ff8773be1a",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/tests/control": "eddd9b4b4d871d5e209af8c5244d58f4fd1b86233329feac3806c1c85d076f2b",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/tests/encdec": "ed9ceab4b3b9fabec1fc02bffcf28830b6b8cf226de9d808b4752665650daf7c",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/tests/encdec-extra": "ba5ebbf6bf8b0f57778b64ac828e6b727d9e50fe435868b148189429f8ae55f8",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/tests/encdec-extra_list.txt": "288adc0f215a37b37f6357897f5d44c16267100d5421b5fb78501bc69634e7e5",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/tests/encdec_list.txt": "29e9d6af54a27e8167217ab51d4656d7f7df872678b16070ce256c8c1872809c",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/tests/examples": "5d72c3b152662ed7f2c22f1dcc7f7a3a9b54ece85da5e87fb501a5f469871963",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/upstream/metadata": "10a7a146d2c093eab23b4aef046f9627b86a1ac121b9d8f8772b1db3e80854c4",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/upstream/signing-key.asc": "397b3becedcd5a98769967ff1ff8501ddc89f8368b8f766e4701377d7dbaabe5",
+        "opt/ffmpeg/share/licenses/ffmpeg/debian/watch": "1aa2b05ff3f813c304c5f03624be768645cac10ba526db74ffe66b9b239fad42",
+        "opt/ffmpeg/share/licenses/ffmpeg/ffmpeg_7.1.5-0+deb13u1.dsc": "9ed2ed34cbe7f056eeebbe9045c5e2d15e41b5b053fe7c8ba6979a0b6fb081ce"
+      },
+      "source_route": "mirror",
+      "reason": "Mirror the complete authenticated Debian FFmpeg source set and custom build materials. The scoped build reports GPL2-or-later and excludes both libcdio and libzvbi, with no stock FFmpeg family or nonfree configuration. Preserve all COPYING texts and source patches.",
+      "references": []
+    }
+  },
+  "debian_sources": [
+    {
+      "name": "acl",
+      "version": "2.3.2-2",
+      "binary_packages": [
+        {
+          "name": "libacl1:amd64",
+          "version": "2.3.2-2+b1",
+          "notice_sha256": "9a2dfb4a5abc7e84be2cc41f1089be665519c9409549296f6c19de57ab1d37c2"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/acl/2.3.2-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-2.0-or-later"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "aom",
+      "version": "3.12.1-1+deb13u1",
+      "binary_packages": [
+        {
+          "name": "libaom3:amd64",
+          "version": "3.12.1-1+deb13u1",
+          "notice_sha256": "4bb7b0d9f568bb6fd91b6505f7d6c81edab21e12707b7fd28bc2bcbb01af9d4d"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/aom/3.12.1-1%2Bdeb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-2-Clause",
+        "BSD-3-Clause",
+        "ISC",
+        "MIT",
+        "AOM patent licence"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "apt",
+      "version": "3.0.3",
+      "binary_packages": [
+        {
+          "name": "apt",
+          "version": "3.0.3",
+          "notice_sha256": "77ab918ade9bce20b07524572fc8eab3f8c0cab4d246f282043892aaa9538803"
+        },
+        {
+          "name": "libapt-pkg7.0:amd64",
+          "version": "3.0.3",
+          "notice_sha256": "77ab918ade9bce20b07524572fc8eab3f8c0cab4d246f282043892aaa9538803"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/apt/3.0.3/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-2.0-or-later",
+        "curl"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "attr",
+      "version": "1:2.5.2-3",
+      "binary_packages": [
+        {
+          "name": "libattr1:amd64",
+          "version": "1:2.5.2-3",
+          "notice_sha256": "0cbec745d85ea775450b2d54fac55277197f429e52d611f72852ed420450620e"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/attr/1%3A2.5.2-3/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-2.0-or-later"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "audit",
+      "version": "1:4.0.2-2",
+      "binary_packages": [
+        {
+          "name": "libaudit-common",
+          "version": "1:4.0.2-2",
+          "notice_sha256": "6c7011e93f643b112c4cc3622131e28a30477afad6c4f5efe466b13aa7f603cc"
+        },
+        {
+          "name": "libaudit1:amd64",
+          "version": "1:4.0.2-2+b2",
+          "notice_sha256": "6c7011e93f643b112c4cc3622131e28a30477afad6c4f5efe466b13aa7f603cc"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/audit/1%3A4.0.2-2/debian/copyright/"
+      ],
+      "licences": [
+        "LGPL-2.1",
+        "GPL-2.0-only"
+      ]
+    },
+    {
+      "name": "base-files",
+      "version": "13.8+deb13u6",
+      "binary_packages": [
+        {
+          "name": "base-files",
+          "version": "13.8+deb13u6",
+          "notice_sha256": "576859a65409c99cb1632c8b3de4b3deb26910800832beda76aca33d00720134"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/base-files/13.8%2Bdeb13u6/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-2.0-or-later",
+        "verbatim licence-document terms"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "base-passwd",
+      "version": "3.6.7",
+      "binary_packages": [
+        {
+          "name": "base-passwd",
+          "version": "3.6.7",
+          "notice_sha256": "0f1cde79bd80a75f9029ae9a8c252b642223027ef36f6989c63a8230aae576a7"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/base-passwd/3.6.7/debian/copyright/"
+      ],
+      "licences": [
+        "GPL-2.0-only",
+        "public-domain data"
+      ]
+    },
+    {
+      "name": "bash",
+      "version": "5.2.37-2",
+      "binary_packages": [
+        {
+          "name": "bash",
+          "version": "5.2.37-2+b9",
+          "notice_sha256": "06319d84c3e5ed096036f6a9310a030c7e84e50dff2b8a6792285c83ec0ada73"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/bash/5.2.37-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-3.0-or-later",
+        "GPL-2.0-or-later",
+        "Bison exception",
+        "GFDL"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "bzip2",
+      "version": "1.0.8-6",
+      "binary_packages": [
+        {
+          "name": "libbz2-1.0:amd64",
+          "version": "1.0.8-6",
+          "notice_sha256": "832ed535ff3c3d025a8d2348eb1b697b89addcf2eaadbc17650262040b9145e2"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/bzip2/1.0.8-6/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "bzip2 BSD-variant"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "ca-certificates",
+      "version": "20250419",
+      "binary_packages": [
+        {
+          "name": "ca-certificates",
+          "version": "20250419",
+          "notice_sha256": "e85e1bcad3a915dc7e6f41412bc5bdeba275cadd817896ea0451f2140a93967c"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "GPL-or-later scripts may use GPL3 section 6(d); MPL2 covered certificate material must remain available in source form with the required source-access and licence information.",
+      "references": [
+        "https://sources.debian.org/src/ca-certificates/20250419/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-2.0-or-later",
+        "MPL-2.0"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "M2",
+        "CS"
+      ]
+    },
+    {
+      "name": "cdebconf",
+      "version": "0.280",
+      "binary_packages": [
+        {
+          "name": "libdebconfclient0:amd64",
+          "version": "0.280",
+          "notice_sha256": "cf63099896d1c0f6529c41b8d95738e6fea342ffba609187d339c4f38ce36ecc"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/cdebconf/0.280/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-2-Clause"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "coreutils",
+      "version": "9.7-3",
+      "binary_packages": [
+        {
+          "name": "coreutils",
+          "version": "9.7-3",
+          "notice_sha256": "3a63d4b11a7ba4c1c17175072ea28e07b0f80c7bc1ca042b27431fe65a14755b"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/coreutils/9.7-3/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-3.0-or-later",
+        "ISC",
+        "BSD"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "dash",
+      "version": "0.5.12-12",
+      "binary_packages": [
+        {
+          "name": "dash",
+          "version": "0.5.12-12",
+          "notice_sha256": "d98c53f281321baad38164aa9ae6e368a9253be6ec51bd26a759b5e72b326f4a"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/dash/0.5.12-12/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-3-Clause",
+        "public-domain"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "dav1d",
+      "version": "1.5.1-1",
+      "binary_packages": [
+        {
+          "name": "libdav1d7:amd64",
+          "version": "1.5.1-1",
+          "notice_sha256": "38aaebbbf5ab0c19a5d4029acb5ce6566f8bd95e07eff6f6472753f5bea83d97"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/dav1d/1.5.1-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-2-Clause",
+        "ISC"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "db5.3",
+      "version": "5.3.28+dfsg2-9",
+      "binary_packages": [
+        {
+          "name": "libdb5.3t64:amd64",
+          "version": "5.3.28+dfsg2-9",
+          "notice_sha256": "8b53da37d73289d9df7317b3a2dbe16491f1fa9fec8b77b86d69704b40ce2c26"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Sleepycat clause 3 permits availability rather than necessarily bundling source, but requires information for complete DB source and accompanying software using DB. The candidate identifies jackd2 as an installed DB-dependent source pair. Do not supply only a DB homepage.",
+      "references": [
+        "https://sources.debian.org/src/db5.3/5.3.28%2Bdfsg2-9/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "Sleepycat",
+        "BSD-3-Clause"
+      ],
+      "distribution_conditions": [
+        "N",
+        "DB",
+        "CS"
+      ]
+    },
+    {
+      "name": "debconf",
+      "version": "1.5.91",
+      "binary_packages": [
+        {
+          "name": "debconf",
+          "version": "1.5.91",
+          "notice_sha256": "57163c71bd8a5289660892827dd0dfaa7fef47f89deedc9dc6711ced7d0a28d7"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/debconf/1.5.91/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-2-Clause"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "debian-archive-keyring",
+      "version": "2025.1",
+      "binary_packages": [
+        {
+          "name": "debian-archive-keyring",
+          "version": "2025.1",
+          "notice_sha256": "8f918c0bebd1454a084698a95c09d9a03cec8453dad1fc6eab9e6427da9d33a9"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/debian-archive-keyring/2025.1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "uncopyrighted key data",
+        "GPL-2.0-or-later support files"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "debianutils",
+      "version": "5.23.2",
+      "binary_packages": [
+        {
+          "name": "debianutils",
+          "version": "5.23.2",
+          "notice_sha256": "aeb68ea374f488431b8963df24f05482692edfa70d7556d7e528dd06d255461c"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/debianutils/5.23.2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-2.0-or-later",
+        "SMAIL-GPL",
+        "public-domain"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "diffutils",
+      "version": "1:3.10-4",
+      "binary_packages": [
+        {
+          "name": "diffutils",
+          "version": "1:3.10-4",
+          "notice_sha256": "ac6fcf18142bab7569188ae75b204a9e1c73c050c0f9467adaf080759e516123"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/diffutils/1%3A3.10-4/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-3.0-or-later",
+        "LGPL-or-later",
+        "GFDL"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "dpkg",
+      "version": "1.22.22",
+      "binary_packages": [
+        {
+          "name": "dpkg",
+          "version": "1.22.22",
+          "notice_sha256": "3376ec6f7bebf6b1e55da9d5dc591c73e752b45dccb0488e8365d2cf216a1746"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/dpkg/1.22.22/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-2.0-or-later",
+        "public-domain-s-s-d"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "expat",
+      "version": "2.8.3-1~deb13u1",
+      "binary_packages": [
+        {
+          "name": "libexpat1:amd64",
+          "version": "2.8.3-1~deb13u1",
+          "notice_sha256": "60919fe1a156395ff14511bb6ff79756c50ade2fff59ac60c9bae1d8a7fe6292"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/expat/2.8.3-1~deb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "MIT"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "findutils",
+      "version": "4.10.0-3",
+      "binary_packages": [
+        {
+          "name": "findutils",
+          "version": "4.10.0-3",
+          "notice_sha256": "f51541fbdfe15c01cd3fd3a06ad3b74478902d36a958d95b1756434979d97ed5"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/findutils/4.10.0-3/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-3.0-or-later",
+        "LGPL-or-later",
+        "GFDL"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "gcc-14",
+      "version": "14.2.0-19",
+      "binary_packages": [
+        {
+          "name": "gcc-14-base:amd64",
+          "version": "14.2.0-19",
+          "notice_sha256": "20390f8a6f3b1e4d7cb45dd8652dabb259bbef688cbad839bcdb0b9ba7252f79"
+        },
+        {
+          "name": "libatomic1:amd64",
+          "version": "14.2.0-19",
+          "notice_sha256": "20390f8a6f3b1e4d7cb45dd8652dabb259bbef688cbad839bcdb0b9ba7252f79"
+        },
+        {
+          "name": "libgcc-s1:amd64",
+          "version": "14.2.0-19",
+          "notice_sha256": "20390f8a6f3b1e4d7cb45dd8652dabb259bbef688cbad839bcdb0b9ba7252f79"
+        },
+        {
+          "name": "libstdc++6:amd64",
+          "version": "14.2.0-19",
+          "notice_sha256": "20390f8a6f3b1e4d7cb45dd8652dabb259bbef688cbad839bcdb0b9ba7252f79"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/gcc-14/14.2.0-19/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-3.0-or-later WITH GCC-exception-3.1"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "glib2.0",
+      "version": "2.84.4-3~deb13u3",
+      "binary_packages": [
+        {
+          "name": "libglib2.0-0t64:amd64",
+          "version": "2.84.4-3~deb13u3",
+          "notice_sha256": "b9fe78c8a0720c051c9ac8e8c6f25663b54f228e501d24fc0ba89c66cec7f7c1"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/glib2.0/2.84.4-3~deb13u3/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-2.1-or-later",
+        "LGPL-2.0-or-later",
+        "permissive incorporated code"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "glibc",
+      "version": "2.41-12+deb13u3",
+      "binary_packages": [
+        {
+          "name": "libc-bin",
+          "version": "2.41-12+deb13u3",
+          "notice_sha256": "f5788886720a2605a946e81d571e6c8162b09f58d2e2ceb8d36e5768fccd850d"
+        },
+        {
+          "name": "libc6:amd64",
+          "version": "2.41-12+deb13u3",
+          "notice_sha256": "f5788886720a2605a946e81d571e6c8162b09f58d2e2ceb8d36e5768fccd850d"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "The source pair supplies distinct GPL and LGPL works or a mixed covered combination. Elect GPL3 for GPL-or-later code and LGPL3 for eligible LGPL-or-later code. Do not represent the whole source pair as LGPL-only.",
+      "references": [
+        "https://sources.debian.org/src/glibc/2.41-12%2Bdeb13u3/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-2.1-or-later",
+        "GPL-2.0-or-later utilities",
+        "BSD/ISC variants"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "L3",
+        "CS"
+      ]
+    },
+    {
+      "name": "gmp",
+      "version": "2:6.3.0+dfsg-3",
+      "binary_packages": [
+        {
+          "name": "libgmp10:amd64",
+          "version": "2:6.3.0+dfsg-3",
+          "notice_sha256": "7d366aef5ba325150246de1d7820c4c9926cd27ca61a69948492b26cd3b61601"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/gmp/2%3A6.3.0%2Bdfsg-3/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-3.0-or-later OR GPL-2.0-or-later"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "grep",
+      "version": "3.11-4",
+      "binary_packages": [
+        {
+          "name": "grep",
+          "version": "3.11-4",
+          "notice_sha256": "42d9b4d610396b1e8d1303dcb9487af3f5a2d2709623cf03a04cf76acdf6c5e3"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/grep/3.11-4/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-3.0-or-later"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "gzip",
+      "version": "1.13-1",
+      "binary_packages": [
+        {
+          "name": "gzip",
+          "version": "1.13-1",
+          "notice_sha256": "02c197fa26ad056ed2382bb8c3e6323d47edfda4539f727b4ab3f4dbf64ac413"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/gzip/1.13-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-3.0-or-later",
+        "GFDL"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "hostname",
+      "version": "3.25",
+      "binary_packages": [
+        {
+          "name": "hostname",
+          "version": "3.25",
+          "notice_sha256": "94189fc5a9a7b7224d96e1a0cfdfe9be0df2018b04bf21d591627ab96b30cad1"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/hostname/3.25/debian/copyright/"
+      ],
+      "licences": [
+        "GPL-2.0-only"
+      ]
+    },
+    {
+      "name": "init-system-helpers",
+      "version": "1.69~deb13u1",
+      "binary_packages": [
+        {
+          "name": "init-system-helpers",
+          "version": "1.69~deb13u1",
+          "notice_sha256": "7534601cc4fa513804d16490359f5831e7b6a1212da3bbf948bebdd4c8799783"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/init-system-helpers/1.69~deb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-3-Clause",
+        "GPL-2.0-or-later scripts"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "intel-gmmlib",
+      "version": "22.7.2+ds1-1",
+      "binary_packages": [
+        {
+          "name": "libigdgmm12:amd64",
+          "version": "22.7.2+ds1-1",
+          "notice_sha256": "7097daf34c4531bc3dfd359e5d05e8310d573902d5fc9454475f2d7f91aaf0e4"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/intel-gmmlib/22.7.2%2Bds1-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "MIT",
+        "BSD-3-Clause"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "intel-media-driver-non-free",
+      "version": "25.2.3+ds1-1",
+      "binary_packages": [
+        {
+          "name": "intel-media-va-driver-non-free:amd64",
+          "version": "25.2.3+ds1-1",
+          "notice_sha256": "095a5a57ed9cf987cc55d3612c0221fd8823e6c91249b9cd9768f0d51b0d9264"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Reviewed Intel generated kernels and remaining components carry permissive redistribution grants. Non-free classification reflects unavailable preferred kernel source, not a prohibition on the reviewed distribution. Retain the installed notice plus the pinned upstream LICENSE.md and third-party-programs.txt as accompanying supplemental notices. Do not describe the whole driver as OSI-licensed.",
+      "references": [
+        "https://sources.debian.org/src/intel-media-driver-non-free/25.2.3%2Bds1-1/debian/copyright/"
+      ],
+      "licences": [
+        "MIT/Expat",
+        "BSD-3-Clause",
+        "additional MIT/ISC/BSD notices in exact source"
+      ]
+    },
+    {
+      "name": "jbigkit",
+      "version": "2.1-6.1",
+      "binary_packages": [
+        {
+          "name": "libjbig0:amd64",
+          "version": "2.1-6.1+b2",
+          "notice_sha256": "89ab20c324a191652e94598f2144a65442faed4f14f77bbd10516130ee20f05a"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/jbigkit/2.1-6.1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-2.0-or-later"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "lame",
+      "version": "3.100-6",
+      "binary_packages": [
+        {
+          "name": "libmp3lame0:amd64",
+          "version": "3.100-6+b3",
+          "notice_sha256": "f0e4c5098ffedad31473eec38810c26409223858fb8d63dd7685bf225f96bc5d"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/lame/3.100-6/debian/copyright/"
+      ],
+      "licences": [
+        "LGPL-2.0-or-later",
+        "LGPL-2.1-or-later",
+        "GPL-1.0-or-later fft.c",
+        "BSD"
+      ]
+    },
+    {
+      "name": "lcms2",
+      "version": "2.16-2+deb13u2",
+      "binary_packages": [
+        {
+          "name": "liblcms2-2:amd64",
+          "version": "2.16-2+deb13u2",
+          "notice_sha256": "420fd2c72204652c08a48548a0d1002edab3d9b180d3c416578c61f74092f460"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/lcms2/2.16-2%2Bdeb13u2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "MIT"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "lerc",
+      "version": "4.0.0+ds-5",
+      "binary_packages": [
+        {
+          "name": "liblerc4:amd64",
+          "version": "4.0.0+ds-5",
+          "notice_sha256": "6e694f6e6063e7b1ffb5f723ce4e696aa015944cf1b4d15e8f3ea7e90417a71d"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/lerc/4.0.0%2Bds-5/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "Apache-2.0"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libbsd",
+      "version": "0.12.2-2",
+      "binary_packages": [
+        {
+          "name": "libbsd0:amd64",
+          "version": "0.12.2-2",
+          "notice_sha256": "47eaa031b1741a33a93e7cc8909bfe153acaec7ddff12e4dc7377d0e2ec10e91"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libbsd/0.12.2-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD variants",
+        "ISC",
+        "MIT",
+        "public-domain",
+        "Beerware"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libcap-ng",
+      "version": "0.8.5-4",
+      "binary_packages": [
+        {
+          "name": "libcap-ng0:amd64",
+          "version": "0.8.5-4+b1",
+          "notice_sha256": "567997de097e3738564c90e6fe13343b2daae21a7926d6fb161df41322c1840b"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/libcap-ng/0.8.5-4/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-2.1-or-later"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "libcap2",
+      "version": "1:2.75-10+deb13u1",
+      "binary_packages": [
+        {
+          "name": "libcap2:amd64",
+          "version": "1:2.75-10+deb13u1+b1",
+          "notice_sha256": "04f9fb974e10f6ca0cd226811f72b3855f8383daad0e5de7adac8d5b0b7796c3"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libcap2/1%3A2.75-10%2Bdeb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-3-Clause OR GPL-2.0"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libde265",
+      "version": "1.0.15-1+deb13u1",
+      "binary_packages": [
+        {
+          "name": "libde265-0:amd64",
+          "version": "1.0.15-1+deb13u1",
+          "notice_sha256": "2dd8bb1cac96311447eeb3b66570ef262437fa7f47b1be667a4f82f3f22ab8be"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/libde265/1.0.15-1%2Bdeb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-3.0-or-later",
+        "public-domain code"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "libdeflate",
+      "version": "1.23-2",
+      "binary_packages": [
+        {
+          "name": "libdeflate0:amd64",
+          "version": "1.23-2",
+          "notice_sha256": "b08d3438a0eadaee3103fba087a3e0f639506388ed71e7e2dfbb3e3484e9742c"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libdeflate/1.23-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "MIT"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libdrm",
+      "version": "2.4.124-2",
+      "binary_packages": [
+        {
+          "name": "libdrm-common",
+          "version": "2.4.124-2",
+          "notice_sha256": "512c9a57fd8b449aa157351da9df07bf8e19f767e496a72205a4020268ddb2e0"
+        },
+        {
+          "name": "libdrm2:amd64",
+          "version": "2.4.124-2",
+          "notice_sha256": "512c9a57fd8b449aa157351da9df07bf8e19f767e496a72205a4020268ddb2e0"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libdrm/2.4.124-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "MIT variants"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libffi",
+      "version": "3.4.8-2",
+      "binary_packages": [
+        {
+          "name": "libffi8:amd64",
+          "version": "3.4.8-2",
+          "notice_sha256": "25ee86cfccc2b7eb9a156a127f1e1b38c46c231f516ff201912223eaf62ee186"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libffi/3.4.8-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "MIT",
+        "X11"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libheif",
+      "version": "1.19.8-1+deb13u1",
+      "binary_packages": [
+        {
+          "name": "libheif-plugin-aomenc:amd64",
+          "version": "1.19.8-1+deb13u1",
+          "notice_sha256": "c98ad382697d5b6a6b3166b593d3ca4028361f5df0ccffdc2638b87aedb606ad"
+        },
+        {
+          "name": "libheif-plugin-dav1d:amd64",
+          "version": "1.19.8-1+deb13u1",
+          "notice_sha256": "c98ad382697d5b6a6b3166b593d3ca4028361f5df0ccffdc2638b87aedb606ad"
+        },
+        {
+          "name": "libheif-plugin-libde265:amd64",
+          "version": "1.19.8-1+deb13u1",
+          "notice_sha256": "c98ad382697d5b6a6b3166b593d3ca4028361f5df0ccffdc2638b87aedb606ad"
+        },
+        {
+          "name": "libheif-plugin-x265:amd64",
+          "version": "1.19.8-1+deb13u1",
+          "notice_sha256": "c98ad382697d5b6a6b3166b593d3ca4028361f5df0ccffdc2638b87aedb606ad"
+        },
+        {
+          "name": "libheif1:amd64",
+          "version": "1.19.8-1+deb13u1",
+          "notice_sha256": "c98ad382697d5b6a6b3166b593d3ca4028361f5df0ccffdc2638b87aedb606ad"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/libheif/1.19.8-1%2Bdeb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-3.0-or-later",
+        "permissive portions",
+        "separate GPL x265 dependency"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "libjpeg-turbo",
+      "version": "1:2.1.5-4",
+      "binary_packages": [
+        {
+          "name": "libjpeg62-turbo:amd64",
+          "version": "1:2.1.5-4",
+          "notice_sha256": "3821184e23385bf2cdc01f56bd999b34036fc3aa03d5135d41680374eb81bf8a"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libjpeg-turbo/1%3A2.1.5-4/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "IJG/BSD-BY-LC-NE",
+        "BSD-3-Clause",
+        "zlib",
+        "MIT"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libmd",
+      "version": "1.1.0-2",
+      "binary_packages": [
+        {
+          "name": "libmd0:amd64",
+          "version": "1.1.0-2+b1",
+          "notice_sha256": "4365ef6255ad553fce69dd4bc0e093472c5d0e41b8ea493a545cc926ce171aa6"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libmd/1.1.0-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD variants",
+        "ISC",
+        "Beerware",
+        "public-domain"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libpng1.6",
+      "version": "1.6.48-1+deb13u5",
+      "binary_packages": [
+        {
+          "name": "libpng16-16t64:amd64",
+          "version": "1.6.48-1+deb13u5",
+          "notice_sha256": "7e729164c60950b2b57f1712d82a051c9ba54f421c9b69815d9e4686ddc5709b"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libpng1.6/1.6.48-1%2Bdeb13u5/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "libpng",
+        "MIT",
+        "Apache-2.0/BSD alternatives"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libseccomp",
+      "version": "2.6.0-2",
+      "binary_packages": [
+        {
+          "name": "libseccomp2:amd64",
+          "version": "2.6.0-2",
+          "notice_sha256": "6da0653a365b80ab31478dbfe9e7c358e80d58b6d2b52b4e16b4dbb42d7d9f5c"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/libseccomp/2.6.0-2/debian/copyright/"
+      ],
+      "licences": [
+        "LGPL-2.1-only"
+      ]
+    },
+    {
+      "name": "libselinux",
+      "version": "3.8.1-1",
+      "binary_packages": [
+        {
+          "name": "libselinux1:amd64",
+          "version": "3.8.1-1",
+          "notice_sha256": "864f1bb189f609075d580b8c4aada16d85a44546884f1687989e1cacc8c56751"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libselinux/3.8.1-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "public-domain runtime"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libsemanage",
+      "version": "3.8.1-1",
+      "binary_packages": [
+        {
+          "name": "libsemanage-common",
+          "version": "3.8.1-1",
+          "notice_sha256": "fe5876a94047cafbeb8b164fd98304912d94b6028e19415f08b7a8a2f90645fe"
+        },
+        {
+          "name": "libsemanage2:amd64",
+          "version": "3.8.1-1",
+          "notice_sha256": "fe5876a94047cafbeb8b164fd98304912d94b6028e19415f08b7a8a2f90645fe"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/libsemanage/3.8.1-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-2.1-or-later",
+        "GPL-2.0-only Debian packaging"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "libsepol",
+      "version": "3.8.1-1",
+      "binary_packages": [
+        {
+          "name": "libsepol2:amd64",
+          "version": "3.8.1-1",
+          "notice_sha256": "78d2a34606a0302057ec499a3b3c07bcbc43ca334064ce4c80891a0f69c8f6c6"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/libsepol/3.8.1-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-2.1-or-later",
+        "zlib",
+        "GPL-2.0-only Debian packaging"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "libva",
+      "version": "2.22.0-3",
+      "binary_packages": [
+        {
+          "name": "libva-drm2:amd64",
+          "version": "2.22.0-3",
+          "notice_sha256": "8d234a9a0e094a1c13a4e21e2a28856763a1890306e17679502c894606f8638c"
+        },
+        {
+          "name": "libva2:amd64",
+          "version": "2.22.0-3",
+          "notice_sha256": "8d234a9a0e094a1c13a4e21e2a28856763a1890306e17679502c894606f8638c"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libva/2.22.0-3/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "MIT",
+        "MIT-advertising/custom"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libwebp",
+      "version": "1.5.0-0.1",
+      "binary_packages": [
+        {
+          "name": "libsharpyuv0:amd64",
+          "version": "1.5.0-0.1",
+          "notice_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d"
+        },
+        {
+          "name": "libwebp7:amd64",
+          "version": "1.5.0-0.1",
+          "notice_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d"
+        },
+        {
+          "name": "libwebpdemux2:amd64",
+          "version": "1.5.0-0.1",
+          "notice_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d"
+        },
+        {
+          "name": "libwebpmux3:amd64",
+          "version": "1.5.0-0.1",
+          "notice_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libwebp/1.5.0-0.1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-3-Clause",
+        "Apache-2.0 portions"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "libxcrypt",
+      "version": "1:4.4.38-1",
+      "binary_packages": [
+        {
+          "name": "libcrypt1:amd64",
+          "version": "1:4.4.38-1",
+          "notice_sha256": "5a5e7ca0e9f3f9679977e3a3e9ede45ad92885a3297ea78e766979f9866c5a16"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/libxcrypt/1%3A4.4.38-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-2.1-or-later",
+        "BSD",
+        "public-domain"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "libzstd",
+      "version": "1.5.7+dfsg-1",
+      "binary_packages": [
+        {
+          "name": "libzstd1:amd64",
+          "version": "1.5.7+dfsg-1",
+          "notice_sha256": "5cec9fef4d3fa7e0371fbef4ec3fc416e0105dc2a9922117f84e825cb11f50f8"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/libzstd/1.5.7%2Bdfsg-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-3-Clause OR GPL-2.0",
+        "zlib",
+        "MIT"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "lz4",
+      "version": "1.10.0-4",
+      "binary_packages": [
+        {
+          "name": "liblz4-1:amd64",
+          "version": "1.10.0-4",
+          "notice_sha256": "8dce0cb8c5a4486e4aac00466e4dd4b0b5b28d70efe3b3256ea4594099a8509c"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/lz4/1.10.0-4/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-2-Clause runtime"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "mawk",
+      "version": "1.3.4.20250131-1",
+      "binary_packages": [
+        {
+          "name": "mawk",
+          "version": "1.3.4.20250131-1",
+          "notice_sha256": "f6b94f461b09398ef192207356d89d7bf59833fe03082a14b910b3c740f2a318"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/mawk/1.3.4.20250131-1/debian/copyright/"
+      ],
+      "licences": [
+        "GPL-2.0-only"
+      ]
+    },
+    {
+      "name": "ncurses",
+      "version": "6.5+20250216-2",
+      "binary_packages": [
+        {
+          "name": "libtinfo6:amd64",
+          "version": "6.5+20250216-2",
+          "notice_sha256": "f838d6048fbc59356b7e56c207a7cb32dc6bf4adea95514a002596bde8f6e1e7"
+        },
+        {
+          "name": "ncurses-base",
+          "version": "6.5+20250216-2",
+          "notice_sha256": "f838d6048fbc59356b7e56c207a7cb32dc6bf4adea95514a002596bde8f6e1e7"
+        },
+        {
+          "name": "ncurses-bin",
+          "version": "6.5+20250216-2",
+          "notice_sha256": "f838d6048fbc59356b7e56c207a7cb32dc6bf4adea95514a002596bde8f6e1e7"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/ncurses/6.5%2B20250216-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "MIT/X11",
+        "BSD-3-Clause"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "nettle",
+      "version": "3.10.1-1",
+      "binary_packages": [
+        {
+          "name": "libhogweed6t64:amd64",
+          "version": "3.10.1-1",
+          "notice_sha256": "344396197142cd506468b20029ea5722d507c980129bb3db4af02424ed6f39c6"
+        },
+        {
+          "name": "libnettle8t64:amd64",
+          "version": "3.10.1-1",
+          "notice_sha256": "344396197142cd506468b20029ea5722d507c980129bb3db4af02424ed6f39c6"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/nettle/3.10.1-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-3.0-or-later OR GPL-2.0-or-later",
+        "LGPL-2.0-or-later portions"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "numactl",
+      "version": "2.0.19-1",
+      "binary_packages": [
+        {
+          "name": "libnuma1:amd64",
+          "version": "2.0.19-1",
+          "notice_sha256": "179c34f5e56cd0b6b73dd7970a97357ee784e2236e8293826656c7ebb3bface7"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/numactl/2.0.19-1/debian/copyright/"
+      ],
+      "licences": [
+        "LGPL-2.1; later-version scope not established"
+      ]
+    },
+    {
+      "name": "openssl",
+      "version": "3.5.7-1~deb13u2",
+      "binary_packages": [
+        {
+          "name": "libssl3t64:amd64",
+          "version": "3.5.7-1~deb13u2",
+          "notice_sha256": "6a7da622fe0637a334d2a8fc470852d2ffb77d9a2b2f930f854e32a41ad6ef35"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.7-1~deb13u2",
+          "notice_sha256": "6a7da622fe0637a334d2a8fc470852d2ffb77d9a2b2f930f854e32a41ad6ef35"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.7-1~deb13u2",
+          "notice_sha256": "6a7da622fe0637a334d2a8fc470852d2ffb77d9a2b2f930f854e32a41ad6ef35"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/openssl/3.5.7-1~deb13u2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "Apache-2.0"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "pam",
+      "version": "1.7.0-5",
+      "binary_packages": [
+        {
+          "name": "libpam-modules-bin",
+          "version": "1.7.0-5",
+          "notice_sha256": "6b11ef9ab5429d9618cc72e8dfd4efefde363165ef174be0549918e0c44f5dcb"
+        },
+        {
+          "name": "libpam-modules:amd64",
+          "version": "1.7.0-5",
+          "notice_sha256": "6b11ef9ab5429d9618cc72e8dfd4efefde363165ef174be0549918e0c44f5dcb"
+        },
+        {
+          "name": "libpam-runtime",
+          "version": "1.7.0-5",
+          "notice_sha256": "6b11ef9ab5429d9618cc72e8dfd4efefde363165ef174be0549918e0c44f5dcb"
+        },
+        {
+          "name": "libpam0g:amd64",
+          "version": "1.7.0-5",
+          "notice_sha256": "6b11ef9ab5429d9618cc72e8dfd4efefde363165ef174be0549918e0c44f5dcb"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "The source pair supplies distinct GPL and LGPL works or a mixed covered combination. Elect GPL3 for GPL-or-later code and LGPL3 for eligible LGPL-or-later code. Do not represent the whole source pair as LGPL-only.",
+      "references": [
+        "https://sources.debian.org/src/pam/1.7.0-5/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-3-Clause OR GPL",
+        "GPL-2.0-or-later modules",
+        "GPL-3.0 utility",
+        "LGPL-2.0-or-later"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "L3",
+        "CS"
+      ]
+    },
+    {
+      "name": "pcre2",
+      "version": "10.46-1~deb13u1",
+      "binary_packages": [
+        {
+          "name": "libpcre2-8-0:amd64",
+          "version": "10.46-1~deb13u1",
+          "notice_sha256": "e915cde4251f96ec6af107ecd2e194440a4e69440893b0c982802f8a1e4ae40a"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/pcre2/10.46-1~deb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-3-Clause-Cambridge with binary-library exception",
+        "BSD",
+        "X11"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "perl",
+      "version": "5.40.1-6",
+      "binary_packages": [
+        {
+          "name": "perl-base",
+          "version": "5.40.1-6",
+          "notice_sha256": "8adf04cb72ca0719dee8fdb8d711768548d10373905eac21e8a640881c230257"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/perl/5.40.1-6/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-1.0-or-later OR Artistic",
+        "permissive embedded portions"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "rust-aho-corasick",
+      "version": "1.1.3-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-aho-corasick/1.1.3-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-anstream",
+      "version": "0.6.15-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-anstream/0.6.15-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-anstyle",
+      "version": "1.0.8-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-anstyle/1.0.8-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-anstyle-parse",
+      "version": "0.2.1-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-anstyle-parse/0.2.1-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-anstyle-query",
+      "version": "1.0.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-anstyle-query/1.0.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-anyhow",
+      "version": "1.0.95-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-anyhow/1.0.95-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-argon2",
+      "version": "0.5.3-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-argon2/0.5.3-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-base64",
+      "version": "0.22.1-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-base64/0.22.1-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-base64ct",
+      "version": "1.6.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-base64ct/1.6.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-bitflags",
+      "version": "2.8.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-bitflags/2.8.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-blake2",
+      "version": "0.10.6-3",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-blake2/0.10.6-3/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-block-buffer",
+      "version": "0.10.4-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-block-buffer/0.10.4-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-buffered-reader",
+      "version": "1.3.1-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        },
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-buffered-reader/1.3.1-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-cfg-if",
+      "version": "1.0.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-cfg-if/1.0.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-chrono",
+      "version": "0.4.39-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-chrono/0.4.39-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-clap",
+      "version": "4.5.23-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-clap/4.5.23-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-clap-builder",
+      "version": "4.5.23-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-clap-builder/4.5.23-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-clap-lex",
+      "version": "0.7.4-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-clap-lex/0.7.4-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-colorchoice",
+      "version": "1.0.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-colorchoice/1.0.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-cpufeatures",
+      "version": "0.2.16-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-cpufeatures/0.2.16-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-crypto-common",
+      "version": "0.1.6-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-crypto-common/0.1.6-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-digest",
+      "version": "0.10.7-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-digest/0.10.7-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-dyn-clone",
+      "version": "1.0.16-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-dyn-clone/1.0.16-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-generic-array",
+      "version": "0.14.7-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-generic-array/0.14.7-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-getrandom",
+      "version": "0.2.15-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-getrandom/0.2.15-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-iana-time-zone",
+      "version": "0.1.63-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-iana-time-zone/0.1.63-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-idna",
+      "version": "1.0.3-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-idna/1.0.3-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-idna-adapter",
+      "version": "1.1.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-idna-adapter/1.1.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-idna-mapping",
+      "version": "1.0.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-idna-mapping/1.0.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-lalrpop-util",
+      "version": "0.20.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-lalrpop-util/0.20.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-lazy-static",
+      "version": "1.5.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-lazy-static/1.5.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-libc",
+      "version": "0.2.169-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-libc/0.2.169-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-linux-raw-sys",
+      "version": "0.4.14-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-linux-raw-sys/0.4.14-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-memchr",
+      "version": "2.7.4-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-memchr/2.7.4-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-memsec",
+      "version": "0.7.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-memsec/0.7.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-nettle",
+      "version": "7.3.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        },
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-nettle/7.3.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-nettle-sys",
+      "version": "2.3.1-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        },
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-nettle-sys/2.3.1-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-num-traits",
+      "version": "0.2.19-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-num-traits/0.2.19-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-password-hash",
+      "version": "0.5.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-password-hash/0.5.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-rand-core",
+      "version": "0.6.4-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-rand-core/0.6.4-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-regex",
+      "version": "1.11.1-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-regex/1.11.1-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-regex-automata",
+      "version": "0.4.9-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-regex-automata/0.4.9-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-regex-syntax",
+      "version": "0.8.5-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-regex-syntax/0.8.5-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-rustix",
+      "version": "0.38.37-4",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-rustix/0.38.37-4/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-sequoia-openpgp",
+      "version": "2.0.0-2+deb13u1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        },
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-sequoia-openpgp/2.0.0-2%2Bdeb13u1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-sequoia-policy-config",
+      "version": "0.8.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        },
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-sequoia-policy-config/0.8.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-sequoia-sqv",
+      "version": "1.3.0-3",
+      "binary_packages": [
+        {
+          "name": "sqv",
+          "version": "1.3.0-3+b2",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/rust-sequoia-sqv/1.3.0-3/debian/copyright/"
+      ],
+      "licences": [
+        "LGPL-2.0-or-later",
+        "unreviewed statically incorporated dependency licences"
+      ]
+    },
+    {
+      "name": "rust-serde",
+      "version": "1.0.217-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-serde/1.0.217-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-sha1collisiondetection",
+      "version": "0.3.2-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-sha1collisiondetection/0.3.2-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-smallvec",
+      "version": "1.13.2-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-smallvec/1.13.2-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-strsim-0.10",
+      "version": "0.10.0-4",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-strsim-0.10/0.10.0-4/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-subtle",
+      "version": "2.6.1-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-subtle/2.6.1-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-terminal-size",
+      "version": "0.4.1-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-terminal-size/0.4.1-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-thiserror",
+      "version": "2.0.11-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-thiserror/2.0.11-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-thiserror-1",
+      "version": "1.0.69-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-thiserror-1/1.0.69-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-tinyvec",
+      "version": "1.6.0-2",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-tinyvec/1.6.0-2/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-tinyvec-macros",
+      "version": "0.1.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-tinyvec-macros/0.1.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-toml-0.5",
+      "version": "0.5.11-4",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-toml-0.5/0.5.11-4/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-typenum",
+      "version": "1.17.0-3",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-typenum/1.17.0-3/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-unicode-bidi",
+      "version": "0.3.17-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-unicode-bidi/0.3.17-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-unicode-joining-type",
+      "version": "1.0.0-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-unicode-joining-type/1.0.0-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-unicode-normalization",
+      "version": "0.1.24-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-unicode-normalization/0.1.24-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-utf8-iter",
+      "version": "1.0.4-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-utf8-iter/1.0.4-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-utf8parse",
+      "version": "0.2.1-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-utf8parse/0.2.1-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rust-xxhash-rust",
+      "version": "0.8.15-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rust-xxhash-rust/0.8.15-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "rustc",
+      "version": "1.85.0+dfsg3-1",
+      "binary_packages": [],
+      "built_using": [
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        },
+        {
+          "binary_package": "sqv",
+          "binary_version": "1.3.0-3+b2",
+          "field": "Static-Built-Using",
+          "notice_sha256": "b7ae2cde83ad585eae83cded853d125b034fcef480f6c4cee6d9ddd63327181a"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Exact embedded source declared by the pinned sqv binary's Built-Using or Static-Built-Using metadata. Mirror the full authenticated Debian source set and retain its licence/NOTICE files as accompanying documentation. This avoids relying on an unreviewed later-version election for incorporated code.",
+      "references": [
+        "https://sources.debian.org/src/rustc/1.85.0%2Bdfsg3-1/debian/copyright/"
+      ]
+    },
+    {
+      "name": "sed",
+      "version": "4.9-2+deb13u1",
+      "binary_packages": [
+        {
+          "name": "sed",
+          "version": "4.9-2+deb13u1",
+          "notice_sha256": "719320e425e8e6da53a55e0fcfa2f2ed9b1332cea16abd65321bd651b2a88568"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/sed/4.9-2%2Bdeb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-3.0-or-later",
+        "permissive portions",
+        "GFDL"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "shadow",
+      "version": "1:4.17.4-2",
+      "binary_packages": [
+        {
+          "name": "login.defs",
+          "version": "1:4.17.4-2",
+          "notice_sha256": "305494b6f5f6bb65ead9160077d4fdf45ccdf06de7c958ff96f27a632b8729a3"
+        },
+        {
+          "name": "passwd",
+          "version": "1:4.17.4-2",
+          "notice_sha256": "305494b6f5f6bb65ead9160077d4fdf45ccdf06de7c958ff96f27a632b8729a3"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/shadow/1%3A4.17.4-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-3-Clause",
+        "GPL-2.0-or-later utilities",
+        "GPL-1.0-only manual files"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "sqlite3",
+      "version": "3.46.1-7+deb13u1",
+      "binary_packages": [
+        {
+          "name": "libsqlite3-0:amd64",
+          "version": "3.46.1-7+deb13u1",
+          "notice_sha256": "7b1679aaa97e6e49ec12460eefa85a82b432053bc468dd89dbdb50f2326589f3"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/sqlite3/3.46.1-7%2Bdeb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "public-domain runtime"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "systemd",
+      "version": "257.13-1~deb13u1",
+      "binary_packages": [
+        {
+          "name": "libsystemd0:amd64",
+          "version": "257.13-1~deb13u1",
+          "notice_sha256": "a79e4b379cabbd960bb44f6cc1a069081a3778c59a25ee529b68df5a2cb7d27d"
+        },
+        {
+          "name": "libudev1:amd64",
+          "version": "257.13-1~deb13u1",
+          "notice_sha256": "a79e4b379cabbd960bb44f6cc1a069081a3778c59a25ee529b68df5a2cb7d27d"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use an existing LGPLv3 grant, or elect LGPLv3 under section 13 of LGPLv2 or LGPLv2.1 where an explicit or-later grant applies. Preserve permissive exceptions and independent source-file notices. Verify combined-work relinking and notice conditions.",
+      "references": [
+        "https://sources.debian.org/src/systemd/257.13-1~deb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "LGPL-2.1-or-later",
+        "GPL-2.0 WITH Linux-syscall-note",
+        "permissive portions"
+      ],
+      "distribution_conditions": [
+        "N",
+        "L3",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "sysvinit",
+      "version": "3.14-4",
+      "binary_packages": [
+        {
+          "name": "sysvinit-utils",
+          "version": "3.14-4",
+          "notice_sha256": "53c7ef3839f64b24cc25a0937d11ce228517a48be0cc794f0d67b7e209b2a9ba"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/sysvinit/3.14-4/debian/copyright/"
+      ],
+      "licences": [
+        "GPL-2.0-or-later",
+        "GPL-2.0-only fstab-decode and other files"
+      ]
+    },
+    {
+      "name": "tar",
+      "version": "1.35+dfsg-3.1",
+      "binary_packages": [
+        {
+          "name": "tar",
+          "version": "1.35+dfsg-3.1",
+          "notice_sha256": "a0a44d41b2a045eb5946a8952487151cfa6ff0cd080bbf4b2eec220751d23024"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/tar/1.35%2Bdfsg-3.1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-3.0-or-later",
+        "LGPL-2.1-or-later",
+        "Bison exception"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "tiff",
+      "version": "4.7.0-3+deb13u3",
+      "binary_packages": [
+        {
+          "name": "libtiff6:amd64",
+          "version": "4.7.0-3+deb13u3",
+          "notice_sha256": "d73e31b03a0d7a515851601c19fee5792c7db03a312efacae146ddf9c91f86f1"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/tiff/4.7.0-3%2Bdeb13u3/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "Hylafax/libtiff permissive"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "tzdata",
+      "version": "2026b-0+deb13u1",
+      "binary_packages": [
+        {
+          "name": "tzdata",
+          "version": "2026b-0+deb13u1",
+          "notice_sha256": "cb61132bc0fc7b26ef5a82ee18b2fb644a1362f4f286ed980ff22e408471f59a"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/tzdata/2026b-0%2Bdeb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "public-domain"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "util-linux",
+      "version": "2.41.5-0+deb13u1",
+      "binary_packages": [
+        {
+          "name": "bsdutils",
+          "version": "1:2.41.5-0+deb13u1",
+          "notice_sha256": "56b67e2eb8bac5a15d91e261d558d73f1f029113cced229753138194997366b6"
+        },
+        {
+          "name": "libblkid1:amd64",
+          "version": "2.41.5-0+deb13u1",
+          "notice_sha256": "56b67e2eb8bac5a15d91e261d558d73f1f029113cced229753138194997366b6"
+        },
+        {
+          "name": "liblastlog2-2:amd64",
+          "version": "2.41.5-0+deb13u1",
+          "notice_sha256": "56b67e2eb8bac5a15d91e261d558d73f1f029113cced229753138194997366b6"
+        },
+        {
+          "name": "libmount1:amd64",
+          "version": "2.41.5-0+deb13u1",
+          "notice_sha256": "56b67e2eb8bac5a15d91e261d558d73f1f029113cced229753138194997366b6"
+        },
+        {
+          "name": "libsmartcols1:amd64",
+          "version": "2.41.5-0+deb13u1",
+          "notice_sha256": "56b67e2eb8bac5a15d91e261d558d73f1f029113cced229753138194997366b6"
+        },
+        {
+          "name": "libuuid1:amd64",
+          "version": "2.41.5-0+deb13u1",
+          "notice_sha256": "56b67e2eb8bac5a15d91e261d558d73f1f029113cced229753138194997366b6"
+        },
+        {
+          "name": "login",
+          "version": "1:4.16.0-2+really2.41.5-0+deb13u1",
+          "notice_sha256": "56b67e2eb8bac5a15d91e261d558d73f1f029113cced229753138194997366b6"
+        },
+        {
+          "name": "mount",
+          "version": "2.41.5-0+deb13u1",
+          "notice_sha256": "56b67e2eb8bac5a15d91e261d558d73f1f029113cced229753138194997366b6"
+        },
+        {
+          "name": "util-linux",
+          "version": "2.41.5-0+deb13u1",
+          "notice_sha256": "56b67e2eb8bac5a15d91e261d558d73f1f029113cced229753138194997366b6"
+        }
+      ],
+      "source_route": "mirror",
+      "reason": "Conservative matching-source mirror for the reviewed installed component. Preserve the original licence grants, exceptions and source/build materials; do not silently elect a later licence version.",
+      "references": [
+        "https://sources.debian.org/src/util-linux/2.41.5-0%2Bdeb13u1/debian/copyright/"
+      ],
+      "licences": [
+        "GPL-2.0-only utilities",
+        "GPL-2.0-or-later",
+        "LGPL-2.1-or-later",
+        "BSD/public-domain"
+      ]
+    },
+    {
+      "name": "x264",
+      "version": "2:0.164.3108+git31e19f9-2",
+      "binary_packages": [
+        {
+          "name": "libx264-164:amd64",
+          "version": "2:0.164.3108+git31e19f9-2+b1",
+          "notice_sha256": "b8b4d68a602bf580d47237c3119e52ac7a70121de39fb365ca28a63b3a200655"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/x264/2%3A0.164.3108%2Bgit31e19f9-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-2.0-or-later",
+        "ISC",
+        "permissive portions"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "x265",
+      "version": "4.1-2",
+      "binary_packages": [
+        {
+          "name": "libx265-215:amd64",
+          "version": "4.1-2",
+          "notice_sha256": "ac2859168010138bce5a5a16a1c2442570ed236121352c34c1a710005b727eb5"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Use GPLv3 where already applicable or elect version 3 under an explicit GPL-or-later grant. Preserve separate licences on ancillary files. Do not silently upgrade GPLv2-only files.",
+      "references": [
+        "https://sources.debian.org/src/x265/4.1-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "GPL-2.0-or-later",
+        "MIT",
+        "ISC"
+      ],
+      "distribution_conditions": [
+        "N",
+        "G3",
+        "CS"
+      ]
+    },
+    {
+      "name": "xxhash",
+      "version": "0.8.3-2",
+      "binary_packages": [
+        {
+          "name": "libxxhash0:amd64",
+          "version": "0.8.3-2",
+          "notice_sha256": "81affefe3047c8a88a9e4c94c8c698f51a7e0787e75b58e901bf1f8fcd433f58"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/xxhash/0.8.3-2/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "BSD-2-Clause runtime"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "xz-utils",
+      "version": "5.8.1-1+deb13u1",
+      "binary_packages": [
+        {
+          "name": "liblzma5:amd64",
+          "version": "5.8.1-1+deb13u1",
+          "notice_sha256": "d755588e2d89d7845d0d4e718ac45d49ae9fc53cec4540af105963c20598f9d7"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/xz-utils/5.8.1-1%2Bdeb13u1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "0BSD runtime"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "zimg",
+      "version": "3.0.5+ds1-1",
+      "binary_packages": [
+        {
+          "name": "libzimg2:amd64",
+          "version": "3.0.5+ds1-1+b2",
+          "notice_sha256": "b302dc2568943b3326d3be15d03fe968888d1673962891ea93050a2f41e6e609"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/zimg/3.0.5%2Bds1-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "WTFPL-2.0"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    },
+    {
+      "name": "zlib",
+      "version": "1:1.3.dfsg+really1.3.1-1",
+      "binary_packages": [
+        {
+          "name": "zlib1g:amd64",
+          "version": "1:1.3.dfsg+really1.3.1-1+b1",
+          "notice_sha256": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6"
+        }
+      ],
+      "source_route": "upstream",
+      "reason": "Applicable runtime terms are permissive or public-domain-like. They do not impose a general standalone corresponding-source delivery obligation. Preserve all applicable copyright, permission, disclaimer, attribution and patent notices. Additional source may still be needed as part of another covered work's corresponding-source closure.",
+      "references": [
+        "https://sources.debian.org/src/zlib/1%3A1.3.dfsg%2Breally1.3.1-1/debian/copyright/",
+        "https://www.gnu.org/licenses/gpl-3.0.html#section6"
+      ],
+      "licences": [
+        "zlib"
+      ],
+      "distribution_conditions": [
+        "N",
+        "P",
+        "CS"
+      ]
+    }
+  ],
+  "supplemental_notices": [
+    {
+      "source": "intel-media-driver-non-free",
+      "version": "25.2.3+ds1-1",
+      "archive": "intel-media-driver-non-free_25.2.3+ds1.orig.tar.xz",
+      "member": "media-driver-intel-media-25.2.3/LICENSE.md",
+      "sha256": "74979d5aaee78b8da82e3aafd415a216b6131dfff6d95d6930927c8a4e3bded3"
+    },
+    {
+      "source": "intel-media-driver-non-free",
+      "version": "25.2.3+ds1-1",
+      "archive": "intel-media-driver-non-free_25.2.3+ds1.orig.tar.xz",
+      "member": "media-driver-intel-media-25.2.3/third-party-programs.txt",
+      "sha256": "275ff206744adad85986504c581201c4e6558a36c863668eb5ae8758664e8c08"
+    }
+  ],
+  "review_method": "Candidate-bound technical licence/source review, not a legal opinion. The maintainer requested autonomous completion of the public release. Publication remains gated until source and notice delivery are complete.",
+  "distribution_conditions": {
+    "N": {
+      "requirements": [
+        "Retain original copyright, permission and warranty notices and referenced complete licence texts.",
+        "For GPL3/LGPL3 elections include the applicable full texts and clear component-specific distribution/election notices.",
+        "An existing copyright file containing an instruction to give an attribution is not automatically proof that the required affirmative attribution has been supplied.",
+        "Do not call the entire image Apache-2.0, fully open-source, or patent-cleared."
+      ]
+    },
+    "P": {
+      "requirements": [
+        "BSD/MIT/ISC variants retain their exact notice/disclaimer and non-endorsement conditions.",
+        "Apache-2.0 components require applicable licence and NOTICE handling and preservation of attribution and modification notices.",
+        "FreeType FTL requires an acknowledgement/disclaimer in distribution documentation.",
+        "IJG-derived libjpeg requires the accompanying-documentation acknowledgement specified in its licence.",
+        "Bitstream Vera font terms include naming/modification and sale-related conditions; preserve the actual licence.",
+        "libmysofa MIT-KEMAR data requires author citation when used in research or commercial applications.",
+        "Retain applicable AOM, VPX, rav1e and other patent-licence notices; these do not establish clearance for all third-party patents."
+      ]
+    },
+    "G3": {
+      "primary_text": {
+        "licence_file": "GPL-3",
+        "lines": [
+          [
+            134,
+            145
+          ],
+          [
+            275,
+            286
+          ],
+          [
+            563,
+            577
+          ]
+        ]
+      },
+      "requirements": [
+        "Provide no-further-charge equivalent access to complete Corresponding Source.",
+        "Third-party servers are expressly allowed.",
+        "Maintain clear directions next to the object code describing exactly where matching Corresponding Source can be obtained.",
+        "The distributor remains responsible for source availability for as long as needed to satisfy the licence.",
+        "Do not require a formal upstream hosting agreement that the licence does not require.",
+        "Do not conflate section 6(d) with a three-year written offer.",
+        "Verify availability and completeness, monitor links and have a practical replacement or mirror response if a host stops providing required source."
+      ],
+      "additional_authority": "https://www.gnu.org/licenses/gpl-faq.html#SourceAndBinaryOnDifferentSites"
+    },
+    "L3": {
+      "primary_text": [
+        {
+          "licence_file": "LGPL-2",
+          "lines": [
+            [
+              399,
+              410
+            ]
+          ]
+        },
+        {
+          "licence_file": "LGPL-2.1",
+          "lines": [
+            [
+              420,
+              431
+            ]
+          ]
+        },
+        {
+          "licence_file": "LGPL-3",
+          "lines": [
+            [
+              79,
+              126
+            ]
+          ]
+        }
+      ],
+      "requirements": [
+        "Section 13 permits a later LGPL version when the library's grant explicitly allows later versions; it does not turn every copy of the LGPL2.1 text into an or-later grant.",
+        "LGPL3 combined works need prominent library-use notices and both GPL3 and LGPL3 texts.",
+        "Do not restrict modification of library portions or reverse engineering for debugging modifications.",
+        "Satisfy LGPL3 section 4(d): appropriate Minimal Corresponding Source and Corresponding Application Code, or a suitable replaceable shared-library mechanism.",
+        "Provide Installation Information where applicable.",
+        "Keep the source and relinking/replacement materials matched to the actual binary and dependency versions."
+      ],
+      "section3_warning": {
+        "primary_text": {
+          "licence_file": "LGPL-2.1",
+          "lines": [
+            [
+              214,
+              226
+            ]
+          ]
+        },
+        "explanation": "Section 3 is a distinct conversion to ordinary GPL: it requires altering all notices referring to the LGPL to refer to the selected GPL version, with no other notice change, and is irreversible for that copy. This review does not claim that merely adding a GPL3 link performs that conversion and does not recommend using it to rewrite the immutable release."
+      }
+    },
+    "V2": {
+      "primary_text": [
+        {
+          "licence_file": "GPL-2",
+          "lines": [
+            [
+              134,
+              170
+            ]
+          ]
+        },
+        {
+          "licence_file": "LGPL-2.1",
+          "lines": [
+            [
+              231,
+              242
+            ],
+            [
+              276,
+              318
+            ]
+          ]
+        }
+      ],
+      "requirements": [
+        "Preserve the applicable v2/v2.1 distribution conditions.",
+        "Provide complete corresponding source and required build/install materials through an accompanying or defensible same-place/equivalent-access arrangement.",
+        "For LGPL works also satisfy notice and replacement/relinking conditions; source hosting does not replace those conditions.",
+        "A third-party upstream link is not assumed to satisfy the older licences' same-place wording.",
+        "No written offer is elected by this review."
+      ]
+    },
+    "M2": {
+      "primary_text": {
+        "notice_package": "libsrt1.5-gnutls",
+        "lines": [
+          [
+            232,
+            268
+          ],
+          [
+            270,
+            276
+          ]
+        ]
+      },
+      "requirements": [
+        "Make covered source including modifications available under MPL2.",
+        "Inform binary recipients how to obtain that source by reasonable means in a timely manner and at no more than distribution cost.",
+        "Preserve source licence notices and recipients' rights.",
+        "Check applicable secondary-licence conditions for a larger GPL combination rather than assuming all MPL versions are GPL-compatible."
+      ]
+    },
+    "DB": {
+      "primary_text": {
+        "notice_package": "libdb5.3t64",
+        "lines": [
+          [
+            31,
+            49
+          ]
+        ]
+      },
+      "requirements": [
+        "Provide information on obtaining complete DB source and accompanying software using DB.",
+        "Source must be included or available for no more than distribution cost plus a nominal fee and freely redistributable under reasonable conditions.",
+        "For executables cover all contained modules, subject to the stated operating-system component exclusion.",
+        "Account for jackd2, not just db5.3."
+      ]
+    },
+    "CS": {
+      "requirements": [
+        "Exact Debian versions require Debian source, patches and build materials, not merely an upstream release of a similar version.",
+        "Include statically incorporated source and required build dependencies; installed dpkg source mappings alone are incomplete.",
+        "Preserve all required notices when mirroring complete source archives.",
+        "Validate binary/source correspondence and licence compatibility separately.",
+        "Mirror-only classification is not a declaration that mirroring cures other licence defects."
+      ]
+    }
+  }
+}

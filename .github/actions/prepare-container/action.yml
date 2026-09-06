@@ -1,0 +1,126 @@
+name: Build and validate the container candidate
+description: Shared CI and image-retry build, conversion, size and browser checks.
+
+inputs:
+  source-directory:
+    description: Exact application source checkout (release tooling stays at the workspace root)
+    default: .
+  image:
+    description: Candidate repository without a tag
+    required: true
+  tag:
+    description: Local candidate tag or release version
+    required: true
+  version:
+    description: Version compiled into the executables
+    required: true
+  revision:
+    description: Exact application source commit
+    required: true
+  source-url:
+    description: Versioned corresponding-source location, empty for non-release CI
+    default: ''
+  reuse-archive:
+    description: Validate an already fetched OCI archive instead of rebuilding it
+    default: 'false'
+  upload-candidate:
+    description: Retain the validated archive and receipt for downstream publication
+    default: 'false'
+
+outputs:
+  artifact-id:
+    description: Immutable artifact containing the validated OCI archive and receipt
+    value: ${{ steps.candidate.outputs.artifact-id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare candidate storage
+      shell: bash
+      run: mkdir -p .release
+    - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+      if: inputs.reuse-archive != 'true'
+      with:
+        cache-binary: true
+    - name: Build attested candidate without pushing
+      if: inputs.reuse-archive != 'true'
+      uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+      with:
+        context: ${{ inputs.source-directory }}
+        file: ${{ inputs.source-directory }}/deploy/Dockerfile
+        platforms: linux/amd64
+        push: false
+        outputs: type=oci,dest=${{ github.workspace }}/.release/candidate.oci.tar
+        provenance: mode=max
+        sbom: true
+        tags: ${{ inputs.image }}:${{ inputs.tag }}
+        labels: |
+          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          org.opencontainers.image.revision=${{ inputs.revision }}
+          org.opencontainers.image.version=${{ inputs.version }}
+          io.github.filetwist.corresponding-source=${{ inputs.source-url }}
+        build-args: |
+          VERSION=${{ inputs.version }}
+          REVISION=${{ inputs.revision }}
+        cache-from: type=gha,version=2,scope=filetwist-runtime
+        cache-to: type=gha,version=2,mode=max,scope=filetwist-runtime
+    - name: Load the exact runtime from the attested archive
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        TAG: ${{ inputs.tag }}
+      run: |
+        python3 scripts/container-image.py load \
+          --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG"
+    - name: Exercise required runtime codecs and conversions
+      shell: bash
+      working-directory: ${{ inputs.source-directory }}
+      env:
+        IMAGE: ${{ inputs.image }}:${{ inputs.tag }}
+      run: scripts/validate-container.sh "$IMAGE"
+    - name: Enforce the image size budget
+      shell: bash
+      working-directory: ${{ inputs.source-directory }}
+      env:
+        IMAGE: ${{ inputs.image }}:${{ inputs.tag }}
+      run: scripts/measure-container.sh "$IMAGE"
+    - name: Prepare browser tests
+      uses: ./.github/actions/setup-browser-tests
+      with:
+        source-directory: ${{ inputs.source-directory }}
+    - name: Exercise the browser workflow
+      shell: bash
+      working-directory: ${{ inputs.source-directory }}
+      env:
+        IMAGE: ${{ inputs.image }}:${{ inputs.tag }}
+      run: make test-browser IMAGE="$IMAGE"
+    - name: Record successful validation of this exact archive
+      if: inputs.upload-candidate == 'true'
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        TAG: ${{ inputs.tag }}
+        REVISION: ${{ inputs.revision }}
+      run: |
+        python3 scripts/container-image.py record-validation \
+          --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG" \
+          --revision "$REVISION"
+    - name: Preserve the validated candidate
+      id: candidate
+      if: inputs.upload-candidate == 'true'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      with:
+        name: container-candidate-${{ inputs.tag }}-${{ github.run_attempt }}
+        path: |
+          .release/candidate.oci.tar
+          .release/candidate-validation.json
+        compression-level: 0
+        retention-days: 7
+        if-no-files-found: error
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      if: failure()
+      with:
+        name: container-browser-failure-${{ inputs.tag }}-${{ github.run_attempt }}
+        path: ${{ inputs.source-directory }}/tests/browser/test-results/
+        retention-days: 7
+        if-no-files-found: ignore
