@@ -25,14 +25,15 @@ const deleteLeaseGrace = 3 * time.Second
 
 // Errors returned by Manager operations.
 var (
-	// ErrNotFound reports an unknown or already removed job.
+	// ErrNotFound reports an unknown or already removed job or uploaded file.
 	ErrNotFound = storage.ErrNotFound
 	// ErrShuttingDown reports that intake stopped because the service is
 	// shutting down.
 	ErrShuttingDown = errors.New("jobs: service is shutting down")
 	// ErrQueueFull reports that the bounded job queue has no free slot.
 	ErrQueueFull = errors.New("jobs: queue is full")
-	// ErrNotStartable reports a start request for a job that is not pending.
+	// ErrNotStartable reports a start or file-removal request for a job that
+	// is not pending.
 	ErrNotStartable = errors.New("jobs: job is not startable")
 	// ErrNoConvertibleFiles reports a start request for a job whose files all
 	// failed probing.

@@ -259,8 +259,17 @@ func (store *Store) Delete(id string) error {
 		}
 		return fmt.Errorf("storage: inspect job directory: %w", err)
 	}
+	manifest, manifestErr := store.Load(id)
 	if err := os.RemoveAll(dir); err != nil {
-		return fmt.Errorf("storage: remove job directory: %w", err)
+		removeErr := fmt.Errorf("storage: remove job directory: %w", err)
+		// Empty manifests are safe to restore after partial deletion and keep
+		// the directory discoverable for later cleanup attempts.
+		if manifestErr == nil && len(manifest.Files) == 0 {
+			if saveErr := store.Save(manifest); saveErr != nil {
+				return errors.Join(removeErr, fmt.Errorf("storage: preserve empty manifest after failed removal: %w", saveErr))
+			}
+		}
+		return removeErr
 	}
 	return nil
 }

@@ -93,8 +93,9 @@ func NewApp(options Options) (*App, error) {
 		lookupTool:  lookupTool,
 	}
 	templates, err := parseTemplates(template.FuncMap{
-		"url":   joinURL,
-		"asset": assetURL,
+		"url":    joinURL,
+		"asset":  assetURL,
+		"plural": plural,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("web: parse templates: %w", err)
@@ -113,12 +114,14 @@ func (app *App) Handler() http.Handler {
 	}))
 	inner := http.NewServeMux()
 	inner.HandleFunc("GET /{$}", app.handleIndex)
+	inner.HandleFunc("GET /help", app.handleHelp)
 	inner.HandleFunc("POST /jobs", app.handleUpload)
 	inner.HandleFunc("GET /jobs/{id}", app.handleJobPage)
 	inner.HandleFunc("GET /jobs/{id}/status", app.handleJobStatus)
 	inner.HandleFunc("POST /jobs/{id}/start", app.handleStart)
 	inner.HandleFunc("POST /jobs/{id}/cancel", app.handleCancel)
 	inner.HandleFunc("POST /jobs/{id}/delete", app.handleDelete)
+	inner.HandleFunc("POST /jobs/{id}/files/{fileID}/remove", app.handleRemoveFile)
 	inner.HandleFunc("GET /jobs/{id}/files/{fileID}", app.handleFileDownload)
 	inner.HandleFunc("GET /jobs/{id}/download", app.handleArchiveDownload)
 	inner.HandleFunc("GET /healthz", app.handleHealth)

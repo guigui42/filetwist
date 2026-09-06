@@ -16,7 +16,8 @@ func TestCrossOriginMutationsAreRejected(t *testing.T) {
 			}, nil)
 			manifest := server.upload(t, []string{"photo.jpg"})
 			for _, action := range []string{"/jobs", "/jobs/" + manifest.ID + "/start",
-				"/jobs/" + manifest.ID + "/cancel", "/jobs/" + manifest.ID + "/delete"} {
+				"/jobs/" + manifest.ID + "/cancel", "/jobs/" + manifest.ID + "/delete",
+				"/jobs/" + manifest.ID + "/files/" + manifest.Files[0].ID + "/remove"} {
 				t.Run(action, func(t *testing.T) {
 					request := uploadRequest(t, server.path(action), []string{"unexpected.jpg"})
 					request.Header.Set("Origin", "https://untrusted.example")

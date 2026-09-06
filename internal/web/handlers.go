@@ -47,10 +47,49 @@ func (app *App) handleIndex(writer http.ResponseWriter, request *http.Request) {
 			BadgeClass:   jobBadgeClass(manifest.State),
 			FileCount:    len(manifest.Files),
 			CreatedLabel: humanSince(manifest.CreatedAt, now),
+			Title:        jobTitle(manifest),
 		})
 	}
 	app.renderPage(writer, http.StatusOK, data)
 	_ = request
+}
+
+func (app *App) handleHelp(writer http.ResponseWriter, _ *http.Request) {
+	data := app.newPageData("Filetwist help", "help")
+	for _, operation := range conversion.AllOperations() {
+		data.Operations = append(data.Operations, operationOption(operation))
+	}
+	app.renderPage(writer, http.StatusOK, data)
+}
+
+func (app *App) handleRemoveFile(writer http.ResponseWriter, request *http.Request) {
+	id, fileID := request.PathValue("id"), request.PathValue("fileID")
+	if storage.ValidateID(id) != nil || storage.ValidateFileID(fileID) != nil {
+		app.renderNotice(writer, http.StatusNotFound, "error", "This file is no longer available.")
+		return
+	}
+	manifest, err := app.manager.RemoveFile(id, fileID)
+	if err != nil {
+		switch {
+		case errors.Is(err, jobs.ErrNotFound):
+			app.renderNotice(writer, http.StatusNotFound, "error", "This file is no longer available. Reload the job to see its current files.")
+		case errors.Is(err, jobs.ErrNotStartable):
+			app.renderNotice(writer, http.StatusConflict, "error", "Files can only be removed before conversion starts. Reload the job to see its current status.")
+		case errors.Is(err, jobs.ErrLeased):
+			app.renderNotice(writer, http.StatusConflict, "error", "The job is still in use. Try removing the file again in a moment.")
+		default:
+			app.logger.Error("file removal failed", slog.String("job", id), slog.String("error", err.Error()))
+			app.renderNotice(writer, http.StatusInternalServerError, "error", "The file could not be removed. Reload the job before trying again.")
+		}
+		return
+	}
+	if manifest.ID == "" {
+		app.renderNotice(writer, http.StatusOK, "hint", "The last file was removed and the empty job was deleted.")
+		return
+	}
+	data := app.newPageData("Filetwist", "job")
+	data.Job = app.buildJobView(manifest, app.now())
+	app.renderFragment(writer, http.StatusOK, "job", data)
 }
 
 func (app *App) handleUpload(writer http.ResponseWriter, request *http.Request) {

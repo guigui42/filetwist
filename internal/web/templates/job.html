@@ -1,21 +1,42 @@
 {{define "job"}}
-<section id="job" class="card" data-job-state="{{.Job.State}}"
+<section id="job" class="card job-panel" data-job-state="{{.Job.State}}" data-job-id="{{.Job.ID}}" data-job-url="{{url .Base (printf "/jobs/%s" .Job.ID)}}"
   {{if .Job.Poll}}hx-get="{{url .Base (printf "/jobs/%s/status" .Job.ID)}}" hx-trigger="every 2s" hx-target="this" hx-swap="outerHTML"{{end}}>
   <header>
-    <h2>Job {{.Job.ShortID}} <span class="badge {{.Job.BadgeClass}}">{{.Job.StateLabel}}</span></h2>
+    <h2 id="job-heading" tabindex="-1">{{.Job.Heading}}</h2>
+    <p id="job-status" role="status" aria-live="polite">{{.Job.StatusMessage}}</p>
+    <p class="meta">{{.Job.FileCount}} file{{plural .Job.FileCount}} &middot; {{.Job.TotalBytesLabel}} uploaded &middot; Expires {{.Job.ExpiresLabel}}</p>
   </header>
-  <dl class="summary">
-    <dt>Files</dt><dd>{{.Job.FileCount}}</dd>
-    <dt>Uploaded</dt><dd>{{.Job.TotalBytesLabel}}</dd>
-    <dt>Expires</dt><dd>{{.Job.ExpiresLabel}}</dd>
-  </dl>
+  {{if .Job.Poll}}<progress aria-label="Files finished" max="{{.Job.FileCount}}" value="{{.Job.FinishedCount}}"></progress>{{end}}
+  {{if .Job.HasOutputs}}
+  <div class="actions download-actions">
+    <a class="button primary-download" href="{{url .Base (printf "/jobs/%s/download" .Job.ID)}}">Download all as ZIP</a>
+  </div>
+  {{end}}
+  <div id="job-notice" class="request-notice" tabindex="-1"></div>
   {{if .Job.ErrorMessage}}<p class="error" role="alert">{{.Job.ErrorMessage}}</p>{{end}}
 
   <form id="job-form" class="job-form"
+    hx-disabled-elt="#job button, #job select"
     {{if .Job.CanStart}}hx-post="{{url .Base (printf "/jobs/%s/start" .Job.ID)}}" hx-target="#job-panel" hx-swap="innerHTML" hx-trigger="submit"{{end}}>
+    {{if gt .Job.ConvertibleCount 1}}{{if .Job.CanStart}}
+    <details class="batch-tools" id="batch-tools">
+      <summary>Apply a preset to several files</summary>
+      <p class="hint">Only files that support the selected preset will change. You can still adjust each file below.</p>
+      <div class="operation">
+        <label for="batch-operation">Batch preset</label>
+        <select id="batch-operation">
+          <option value="">Choose a preset</option>
+          {{range .Job.BatchOptions}}<option value="{{.Value}}">{{.Label}} ({{.Format}})</option>{{end}}
+        </select>
+        <button id="apply-preset" type="button" class="secondary" disabled>Apply to compatible files</button>
+      </div>
+      <label class="check-label"><input id="keep-individual" type="checkbox" checked> Keep individual choices</label>
+      <p id="batch-status" class="hint" role="status" aria-live="polite"></p>
+    </details>
+    {{end}}{{end}}
     <ul class="files">
       {{range .Job.Files}}
-      <li class="file">
+      <li class="file" data-file-id="{{.ID}}">
         <header>
           <h3>{{.Name}}</h3>
           <span class="badge {{.BadgeClass}}">{{.StateLabel}}</span>
@@ -24,34 +45,45 @@
         {{if .CanSelect}}
         <div class="operation">
           <label for="op-{{.ID}}">Operation</label>
-          <select id="op-{{.ID}}" name="operation.{{.ID}}">
-            {{range .Options}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+          <select id="op-{{.ID}}" name="operation.{{.ID}}" data-operation aria-describedby="help-{{.ID}}">
+            {{range .Options}}<option value="{{.Value}}"{{if .Selected}} selected{{end}} data-description="{{.Description}}">{{.Label}} ({{.Format}})</option>{{end}}
           </select>
           <span class="hint">Recommended: {{.RecommendedLabel}}</span>
         </div>
+        <p id="help-{{.ID}}" class="operation-help">{{.OperationHelp}}</p>
         {{else if .SelectedLabel}}
         <p class="meta">Operation: {{.SelectedLabel}}</p>
         {{end}}
-        {{if .ValidationLabel}}<p class="meta">Validation: {{.ValidationLabel}}</p>{{end}}
-        {{if .ExecutionLabel}}<p class="meta">Execution: {{.ExecutionLabel}}</p>{{end}}
         {{range .Warnings}}<p class="warning">Warning: {{.}}</p>{{end}}
         {{if .ErrorMessage}}<p class="error" role="alert">{{.ErrorMessage}}</p>{{end}}
         {{if .DownloadURL}}
-        <p class="meta"><a class="button secondary" href="{{.DownloadURL}}">Download {{.OutputName}} ({{.OutputSizeLabel}})</a></p>
+        <p class="download-file"><a class="button secondary" href="{{.DownloadURL}}" aria-label="Download {{.OutputName}}">Download file ({{.OutputSizeLabel}})</a></p>
+        {{end}}
+        <details class="conversion-details" id="details-{{.ID}}" data-file-details>
+          <summary id="details-summary-{{.ID}}">Conversion details<span class="visually-hidden"> for {{.Name}}</span></summary>
+          <p class="meta">Detected format: {{.ProbeFormat}}</p>
+          {{if .ValidationLabel}}<p class="meta">Validation: {{.ValidationLabel}}</p>{{end}}
+          {{if .ExecutionLabel}}<p class="meta">Execution: {{.ExecutionLabel}}</p>{{end}}
+          {{if .OutputName}}<p class="meta output-name">Output: {{.OutputName}}</p>{{end}}
+          {{if .OperationHelp}}<p class="hint">{{.OperationHelp}}</p>{{end}}
+        </details>
+        {{if .CanRemove}}
+        <button type="button" id="remove-{{.ID}}" class="text-button" data-remove-file
+          aria-label="Remove {{.Name}}"
+          hx-post="{{url $.Base (printf "/jobs/%s/files/%s/remove" $.Job.ID .ID)}}"
+          hx-target="#job-panel" hx-swap="innerHTML"
+          hx-confirm="Remove this uploaded file? This cannot be undone. Removing the last file also deletes the empty job.">Remove file</button>
         {{end}}
       </li>
       {{end}}
     </ul>
 
     <div class="actions">
-      {{if .Job.CanStart}}<button type="submit">Convert {{.Job.ConvertibleCount}} file(s)</button>{{end}}
+      {{if .Job.CanStart}}<button type="submit">Convert {{.Job.ConvertibleCount}} file{{plural .Job.ConvertibleCount}}</button>{{end}}
       {{if .Job.CanCancel}}
       <button type="button" class="secondary"
         hx-post="{{url .Base (printf "/jobs/%s/cancel" .Job.ID)}}"
         hx-target="#job-panel" hx-swap="innerHTML">Cancel</button>
-      {{end}}
-      {{if .Job.HasOutputs}}
-      <a class="button secondary" href="{{url .Base (printf "/jobs/%s/download" .Job.ID)}}">Download all as ZIP</a>
       {{end}}
       <button type="button" class="danger"
         hx-post="{{url .Base (printf "/jobs/%s/delete" .Job.ID)}}"
@@ -59,14 +91,15 @@
         hx-confirm="Delete this job and every uploaded and converted file?">Delete job</button>
     </div>
   </form>
+  <p class="hint job-reference">Job {{.Job.ShortID}} &middot; <a href="{{url .Base (printf "/jobs/%s" .Job.ID)}}">Link to this job</a> &middot; <a href="{{url .Base "/help#profiles"}}">About conversion presets</a></p>
 </section>
 {{end}}
 
 {{define "jobpage"}}
-<div id="job-panel" aria-live="polite">
+<div id="job-panel">
 {{if .Job}}{{template "job" .}}{{else}}<p class="error" role="alert">This job is no longer available.</p>{{end}}
 </div>
-<p><a href="{{url .Base "/"}}">Back to upload</a></p>
+<p><a class="button secondary" href="{{url .Base "/"}}">Upload more files</a></p>
 {{end}}
 
-{{define "notice"}}<p class="{{.Class}}" role="alert">{{.Message}}</p>{{end}}
+{{define "notice"}}<p class="{{.Class}}" role="alert" tabindex="-1">{{.Message}}</p>{{end}}

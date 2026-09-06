@@ -12,6 +12,26 @@ Use Go 1.27 as specified in [go.mod](go.mod). Runtime integration tests also nee
 the [native recipe](deploy/Dockerfile.runtime) records its toolchain and codec
 dependencies. The web assets are embedded; no frontend build is needed.
 
+### Local preview
+
+With Docker running, start a disposable CPU-mode instance from the repository
+root:
+
+```sh
+make dev
+```
+
+Open <http://127.0.0.1:18769/>. The target builds `filetwist:dev`, runs it in the
+foreground, and binds only to localhost. Press **Ctrl+C** to stop; the container
+and its uploaded files/results are removed when it exits. This does not use
+your Compose deployment's data volume.
+
+Use `make dev DEV_PORT=18080` if the default port is occupied. You can also
+override the image name with `IMAGE=filetwist:my-dev`. There is no automatic
+reload: stop and rerun `make dev` after editing code or embedded web assets.
+
+### Checks
+
 Run the smallest relevant tests while developing. Before submitting:
 
 ```sh
@@ -71,8 +91,12 @@ make test-browser IMAGE=filetwist:local
 On Linux, use `npx playwright install --with-deps chromium` when browser system
 libraries are missing. The tests cover upload, operation selection, polling,
 individual and ZIP downloads, failed-action retry, cancellation, and deletion.
-Conversion and storage use the real image; the queue-full response alone is
-injected to exercise deterministic error handling.
+They also cover shared-workspace help, preset explanations, eligible batch
+selection, individual file removal, focus transitions, and mobile touch targets.
+Conversion and storage use the real image. A queue-full response exercises
+deterministic error recovery, and a controlled upload transport covers
+cancellation before and after the transfer/inspection boundary without timing
+races.
 
 The test server uses loopback port 18765 and refuses to reuse an existing
 service. Set `FILETWIST_TEST_PORT` to another unused port if needed. Job data is

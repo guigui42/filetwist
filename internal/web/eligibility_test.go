@@ -114,7 +114,7 @@ func TestUploadRendersAndEnforcesDetailedEligibility(t *testing.T) {
 				if file.State != storage.FileInspected {
 					t.Fatalf("file state = %s; want inspected", file.State)
 				}
-				if !strings.Contains(response.Body.String(), `<option value="`+string(tt.recommended)+`" selected>`) {
+				if !strings.Contains(response.Body.String(), `<option value="`+string(tt.recommended)+`" selected `) {
 					t.Error("eligible recommendation is not selected in the form")
 				}
 			}

@@ -4,6 +4,36 @@ Upload files, review their detected type and recommended operation, then select
 **Convert**. Each file reports its result, warnings, and execution path.
 Download successful results individually or as a streamed ZIP.
 
+The upload form identifies this as a shared workspace before you send any files.
+It checks file-count and total-size limits before sending, while the server
+remains authoritative. **Cancel upload** is available while bytes are being sent
+and keeps the selected files available to retry. Once the upload is sent, the
+control disappears while the server finishes inspecting the files. Inspection
+continues even if the browser disconnects after the uploaded bytes are stored.
+The built-in **Help & file handling** page (`/help`, under `WEBROOT` when set)
+explains access, retention, conversion tradeoffs, and recovery without requiring
+an external documentation service.
+
+After upload, review takes focus and the uploader collapses to **Upload more
+files**. The browser URL points to the job so it can be revisited. Each preset
+shows its output format and a short explanation before conversion. Technical
+probe and execution information remains available under **Conversion details**;
+warnings and errors stay visible. Successful jobs put **Download all as ZIP**
+before the per-file results.
+
+For batches, open **Apply a preset to several files** and explicitly apply a
+preset to eligible files. **Keep individual choices** is enabled by default and
+preserves presets changed separately. Ineligible files are unchanged, and the
+interface reports how many choices were applied or kept. Each file can still
+be adjusted afterward; the server validates every operation again at start.
+
+You can remove a selected file before upload or an uploaded file while its job
+is still pending. Removing an uploaded file deletes its stored input; removing
+the last file deletes the empty job. Once conversion starts, removal is
+unavailable: use Cancel or Delete job instead. A failed remove request preserves
+the current review controls, and remaining preset choices survive successful
+removal in the browser.
+
 Operation choices reflect the detected streams and image properties. For
 example, silent video does not offer audio extraction, and unsupported
 high-precision audio does not offer lossless FLAC. If the usual recommendation
