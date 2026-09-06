@@ -17,7 +17,7 @@ import subprocess
 import tarfile
 from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
-from release_common import release_version as version, source_revision
+from release_common import asset_prefix, release_identity, release_version as version, source_revision
 
 
 LICENSES = "usr/local/share/licenses/filetwist/"
@@ -48,14 +48,20 @@ def repository(value):
     return value
 
 
-def release_metadata(repo, tag, revision):
+def release_metadata(repo, tag, revision, component=None):
     repository(repo)
     source_revision(revision)
+    if component not in (None, "app", "media"):
+        raise ValueError("Expected the app or media component.")
+    identity = release_identity(tag or ("media-v0.0.0-ci" if component == "media" else "v0.0.0-ci"))
+    if component and identity["component"] != component:
+        raise ValueError("Release tag does not match the requested component.")
     return {
+        **identity,
         "sha": revision,
         "version": version(tag) if tag else revision,
         "image": f"ghcr.io/{repo.lower()}" if tag else "filetwist",
-        "tag": tag or "v0.0.0-ci",
+        "tag": tag or ("media-v0.0.0-ci" if component == "media" else "v0.0.0-ci"),
         "source_url": f"https://github.com/{repo}/releases/tag/{tag}/" if tag else "",
     }
 
@@ -166,6 +172,47 @@ def check_dependency_inputs(application_archive, policy):
                          or observed[name] != expected[name])
         raise ValueError("Dependency manifests or vendored runtime assets changed. Renew review: " + ", ".join(changed))
     return observed
+
+
+def media_runtime_pin(recipe):
+    matches = re.findall(rb"(?m)^ARG MEDIA_RUNTIME_IMAGE=(\S+)$", recipe)
+    if (len(matches) != 1
+            or not re.fullmatch(rb"ghcr\.io/[a-z0-9_.-]+/[a-z0-9_.-]+@sha256:[0-9a-f]{64}", matches[0])
+            or b"\nFROM ${MEDIA_RUNTIME_IMAGE}\n" not in recipe):
+        raise ValueError("Application recipe must consume one immutable digest-pinned media runtime.")
+    return matches[0].decode()
+
+
+def check_build_recipe(tag, checkout, files, policy):
+    identity = release_identity(tag)
+    path = identity["recipe"]
+    recipe = run("git", "-C", str(checkout), "show", f"HEAD:{path}")
+    if recipe != files[LICENSES + "Dockerfile"]:
+        raise ValueError("Candidate build recipe differs from its exact source commit.")
+    expected = (policy.get("dependency_inputs_sha256", {}).get(path)
+                if identity["component"] == "media" else policy.get("dockerfile_sha256"))
+    if sha256(recipe) != expected:
+        raise ValueError("Dockerfile changed. Renew dependency/build configuration review.")
+    runtime = policy.get("media_runtime")
+    if identity["component"] == "media" or runtime:
+        required = {"deploy/Dockerfile.runtime", "scripts/build-ffmpeg.sh"}
+        if not required.issubset(policy.get("additional_dependency_paths", [])):
+            raise ValueError("Native recipe and build helper must be dependency-review inputs.")
+        helper = run("git", "-C", str(checkout), "show", "HEAD:scripts/build-ffmpeg.sh")
+        if helper != files.get(FFMPEG + "build-ffmpeg.sh"):
+            raise ValueError("Native build helper differs from the exact source checkout.")
+        native = files.get(LICENSES + "Dockerfile.runtime")
+        if not native:
+            raise ValueError("The original native build recipe must be retained.")
+        if identity["component"] == "media":
+            if native != recipe:
+                raise ValueError("Media runtime must retain its exact native recipe.")
+        elif (media_runtime_pin(recipe) != runtime.get("image")
+              or sha256(native) != runtime.get("dockerfile_sha256")):
+            raise ValueError("Media runtime pin or original native recipe changed. Renew review.")
+    elif b"ARG MEDIA_RUNTIME_IMAGE" in recipe:
+        raise ValueError("Missing reviewed media runtime identity.")
+    return path
 
 
 def parse_inventory(content):
@@ -672,7 +719,7 @@ def prepare(args):
     output = args.output
     reject_symlinks(output)
     output.mkdir(parents=True, exist_ok=True)
-    prefix = f"filetwist_{version(args.tag)}"
+    prefix = asset_prefix(args.tag)
     with tarfile.open(args.inventory) as archive:
         files = read_archive(archive)
     packages, custom, snapshot = candidate_sources(files)
@@ -706,12 +753,7 @@ def prepare(args):
     revision = run("git", "-C", str(args.checkout), "rev-parse", "HEAD").decode().strip()
     if revision != args.revision or not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("Source checkout does not match the published binary release.")
-    recipe = run("git", "-C", str(args.checkout), "show", "HEAD:deploy/Dockerfile")
-    if recipe != files[LICENSES + "Dockerfile"]:
-        raise ValueError("Candidate build recipe differs from its exact source commit.")
-    # Review dependency build configuration too, not application version/revision labels.
-    if sha256(recipe) != policy.get("dockerfile_sha256"):
-        raise ValueError("Dockerfile changed. Renew dependency/build configuration review.")
+    recipe_path = check_build_recipe(args.tag, args.checkout, files, policy)
     application_archive = run("git", "-C", str(args.checkout), "archive", "--format=tar", revision)
     dependency_hashes = check_dependency_inputs(application_archive, policy)
     source_url = f"https://github.com/{repository(args.repository)}/releases/tag/{args.tag}/"
@@ -775,6 +817,9 @@ def prepare(args):
                 or labels.get("org.opencontainers.image.version") != version(args.tag)
                 or labels.get("io.github.filetwist.corresponding-source") != source_url):
             raise ValueError("OCI source/revision labels differ from the prepared source.")
+        if (policy.get("media_runtime") and release_identity(args.tag)["component"] == "app"
+                and labels.get("io.github.filetwist.media-runtime") != policy["media_runtime"]["image"]):
+            raise ValueError("OCI media runtime label differs from the reviewed immutable pin.")
     finally:
         candidate.archive.close()
     manifest = {
@@ -795,6 +840,10 @@ def prepare(args):
         "mirrors": {"url": f"{download_base}/{mirrors_name}", "sha256": sha256(output / mirrors_name)},
         "libvips": vips, "debian_sources": packages,
     }
+    if policy.get("media_runtime"):
+        manifest["build_recipe"] = recipe_path
+        if release_identity(args.tag)["component"] == "app":
+            manifest["media_runtime"] = policy["media_runtime"]
     (output / (prefix + "_sources.json")).write_text(json.dumps(manifest, indent=2) + "\n")
     rows = "\n".join(f"| {p['name']} | `{p['version']}` | {p['source_route']} |" for p in packages)
     (output / (prefix + "_sources.md")).write_text(
@@ -827,6 +876,8 @@ def prepare(args):
 
 def resolve(args):
     version(args.tag)
+    if args.tag == "v0.0.1":
+        raise ValueError("v0.0.1 is permanently binary-only; use a new version for container publication.")
     repository(args.repository)
     assets = release_assets(args.repository, args.tag)
     markers = [item for item in assets if item["name"] == "filetwist-source-commit.txt"]
@@ -842,7 +893,7 @@ def resolve(args):
                                    f"repos/{args.repository}/git/tags/{reference['sha']}"))["object"]
     if reference["type"] != "commit" or reference["sha"] != revision:
         raise ValueError("Version tag no longer points at the commit recorded by the binary release.")
-    previous = [item for item in assets if item["name"] == f"filetwist_{version(args.tag)}_sources.json"]
+    previous = [item for item in assets if item["name"] == release_identity(args.tag)["source_manifest"]]
     runtime, image_index, artifact = "", "", ""
     if previous:
         manifest = json.loads(asset_bytes(args.repository, previous[0]))
@@ -860,7 +911,7 @@ def resolve(args):
 
 def publish(args):
     resolve(args)
-    prefix = f"filetwist_{version(args.tag)}"
+    prefix = asset_prefix(args.tag)
     expected = {prefix + suffix for suffix in (
         "_sources.json", "_sources.md", "_source-materials.tar.gz",
         "_source-mirrors.tar.gz", "_source-checksums.txt",
@@ -891,7 +942,7 @@ def publish(args):
 
 
 def check_links(args):
-    name = f"filetwist_{version(args.tag)}_sources.json"
+    name = release_identity(args.tag)["source_manifest"]
     assets = [item for item in release_assets(repository(args.repository), args.tag) if item["name"] == name]
     if len(assets) != 1:
         raise ValueError("Missing versioned source manifest.")
@@ -912,6 +963,31 @@ def inspect_inputs(args):
     print(json.dumps(dependency_inputs(archive, args.first_party_asset, args.additional_path), indent=2))
 
 
+def runtime_release(args):
+    identity = release_identity(args.tag)
+    source_revision(args.revision)
+    repository(args.repository)
+    if identity["component"] != "media":
+        raise ValueError("Only media-v* releases may bypass binary publication.")
+    revision = run("git", "rev-parse", f"refs/tags/{args.tag}^{{commit}}").decode().strip()
+    if revision != args.revision:
+        raise ValueError("Media tag differs from the validated candidate commit.")
+    response = subprocess.run(
+        ["gh", "api", "--include", "--silent", f"repos/{args.repository}/releases/tags/{args.tag}"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    )
+    status = re.match(rb"HTTP/\S+\s+([0-9]{3})", response.stdout)
+    if not status or status[1] not in (b"200", b"404") or (status[1] == b"200" and response.returncode):
+        raise ValueError("Cannot inspect the runtime release: " + response.stderr.decode(errors="replace").strip())
+    if status[1] == b"404":
+        options = ["--prerelease"] if "-" in identity["version"] else []
+        run("gh", "release", "create", args.tag, "--repo", args.repository,
+            "--verify-tag", "--latest=false", "--title", f"Filetwist media runtime {identity['version']}",
+            "--notes", "Versioned FFmpeg/libvips runtime. Source assets and the protected GHCR publication follow validation.",
+            *options)
+    publish_assets(args.repository, args.tag, {"filetwist-source-commit.txt": (revision + "\n").encode()})
+
+
 def review_template(args):
     source_revision(args.revision)
     with tarfile.open(args.inventory) as archive:
@@ -929,14 +1005,22 @@ def review_template(args):
     )
     if not match or not re.fullmatch(r"SHA256: [0-9a-f]{64}", vips_lines[1]):
         raise ValueError("Missing exact libvips source identity.")
+    additional = list(args.additional_path)
+    recipe = files[LICENSES + "Dockerfile"]
+    runtime = None
+    if LICENSES + "Dockerfile.runtime" in files:
+        additional = sorted(set(additional) | {"deploy/Dockerfile.runtime", "scripts/build-ffmpeg.sh"})
+        if b"ARG MEDIA_RUNTIME_IMAGE" in recipe:
+            runtime = {"image": media_runtime_pin(recipe),
+                       "dockerfile_sha256": sha256(files[LICENSES + "Dockerfile.runtime"])}
     policy = {
         "schema_version": 1, "status": "pending",
         "blockers": [{"id": "redistribution-review", "status": "pending", "resolution": ""}],
         "dockerfile_sha256": sha256(files[LICENSES + "Dockerfile"]),
         "first_party_assets": args.first_party_asset,
-        "additional_dependency_paths": args.additional_path,
+        "additional_dependency_paths": additional,
         "dependency_inputs_sha256": dependency_inputs(
-            application, args.first_party_asset, args.additional_path,
+            application, args.first_party_asset, additional,
         ),
         "notice_sha256": {name: sha256(content) for name, content in sorted(files.items())
                          if name.startswith("usr/share/common-licenses/") or name in (
@@ -948,6 +1032,8 @@ def review_template(args):
         "debian_sources": [package for package in packages if not package.get("custom_build")],
         "supplemental_notices": [],
     }
+    if runtime:
+        policy["media_runtime"] = runtime
     print(json.dumps(policy, indent=2))
 
 
@@ -965,7 +1051,7 @@ def main():
         inputs_command.add_argument("--additional-path", action="append", default=[])
         if name == "review-template":
             inputs_command.add_argument("--inventory", type=Path, required=True)
-    for name in ("metadata", "resolve", "prepare", "publish", "verify", "check-links"):
+    for name in ("metadata", "resolve", "prepare", "publish", "verify", "check-links", "runtime-release"):
         command = commands.add_parser(name)
         command.add_argument("--tag", required=name != "metadata", default="")
         command.add_argument("--repository", required=True)
@@ -978,11 +1064,15 @@ def main():
             command.add_argument("--directory", type=Path, required=True)
         elif name == "metadata":
             command.add_argument("--revision", required=True)
+            command.add_argument("--component", choices=("app", "media"))
+        elif name == "runtime-release":
+            command.add_argument("--revision", required=True)
     args = parser.parse_args()
-    {"metadata": lambda value: output_values(release_metadata(value.repository, value.tag, value.revision)),
+    {"metadata": lambda value: output_values(release_metadata(value.repository, value.tag, value.revision,
+                                                             value.component)),
      "dependency-inputs": inspect_inputs, "review-template": review_template,
      "requests": requests, "resolve": resolve, "prepare": prepare, "publish": publish,
-     "verify": publish, "check-links": check_links}[args.command](args)
+     "verify": publish, "check-links": check_links, "runtime-release": runtime_release}[args.command](args)
 
 
 if __name__ == "__main__":

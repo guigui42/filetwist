@@ -2,20 +2,18 @@
 # check=skip=InvalidBaseImagePlatform
 
 ARG GO_IMAGE=golang:1.27.0-trixie@sha256:df98008ecd2b0ecc9f0a94d1b07e3564a9c92b555369b33d9b5f60d0765b2db7
-ARG DEBIAN_IMAGE=debian:trixie-slim@sha256:abc9cb88a5587630d7f915f47b23b0668fe250fbfc6457aa4d52b534c1bbf73f
+# Bootstrap: the immutable v0.0.2 index. Future pins come from media-v* releases,
+# never from the preceding application release.
+ARG MEDIA_RUNTIME_IMAGE=ghcr.io/guigui42/filetwist@sha256:1313a23528b3c66d5e5167365f1b0aa7be4f70c78a1e8f1a935e178dc75a17fa
 
 FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS go-build
-
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=dev
-
 WORKDIR /src
-
 COPY go.mod ./
 COPY cmd ./cmd
 COPY internal ./internal
-
 RUN test "${TARGETOS}" = linux \
     && test "${TARGETARCH}" = amd64 \
     && CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" \
@@ -28,245 +26,27 @@ RUN test "${TARGETOS}" = linux \
       -o /out/filetwist-server ./cmd/filetwist-server \
     && cp /usr/local/go/LICENSE /out/go.LICENSE
 
-FROM ${DEBIAN_IMAGE} AS vips-build
-
-ARG DEBIAN_SNAPSHOT=20260905T000000Z
-ARG VIPS_VERSION=8.18.6
-ARG VIPS_SHA256=3c41e1d5458081bfa4a5bc54e116c46259c75c6760a18027764555632b9dda3e
-
-WORKDIR /build
-ENV TMPDIR=/build
-
-RUN printf '%s\n' \
-      'Types: deb' \
-      "URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}" \
-      'Suites: trixie trixie-updates' \
-      'Components: main non-free' \
-      'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
-      'Check-Valid-Until: no' \
-      '' \
-      'Types: deb' \
-      "URIs: http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}" \
-      'Suites: trixie-security' \
-      'Components: main non-free' \
-      'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
-      'Check-Valid-Until: no' \
-      > /etc/apt/sources.list.d/debian.sources \
-    && apt-get update \
-    && apt-get install --yes --no-install-recommends \
-      build-essential \
-      ca-certificates \
-      curl \
-      libexpat1-dev \
-      libglib2.0-dev \
-      libheif-dev \
-      libjpeg62-turbo-dev \
-      liblcms2-dev \
-      libpng-dev \
-      libtiff-dev \
-      libwebp-dev \
-      meson \
-      ninja-build \
-      pkg-config \
-    && curl --fail --location --show-error \
-      "https://github.com/libvips/libvips/releases/download/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz" \
-      --output /build/vips.tar.xz \
-    && echo "${VIPS_SHA256}  /build/vips.tar.xz" | sha256sum --check --strict \
-    && mkdir /build/vips \
-    && tar --extract --xz --file /build/vips.tar.xz \
-      --directory /build/vips --strip-components=1 \
-    && meson setup /build/vips/build /build/vips \
-      --prefix=/opt/vips \
-      --libdir=lib \
-      --buildtype=release \
-      --strip \
-      -Darchive=disabled \
-      -Dcfitsio=disabled \
-      -Dcgif=disabled \
-      -Dcplusplus=false \
-      -Ddeprecated=false \
-      -Dexamples=false \
-      -Dexif=disabled \
-      -Dfftw=disabled \
-      -Dfontconfig=disabled \
-      -Dheif=enabled \
-      -Dheif-module=disabled \
-      -Dhighway=disabled \
-      -Dimagequant=disabled \
-      -Dintrospection=disabled \
-      -Djpeg=enabled \
-      -Djpeg-xl=disabled \
-      -Dlcms=enabled \
-      -Dmagick=disabled \
-      -Dmatio=disabled \
-      -Dmodules=disabled \
-      -Dnifti=disabled \
-      -Dopenexr=disabled \
-      -Dopenjpeg=disabled \
-      -Dopenslide=disabled \
-      -Dorc=disabled \
-      -Dpangocairo=disabled \
-      -Dpdfium=disabled \
-      -Dpng=enabled \
-      -Dpoppler=disabled \
-      -Dquantizr=disabled \
-      -Draw=disabled \
-      -Drsvg=disabled \
-      -Dspng=disabled \
-      -Dtiff=enabled \
-      -Duhdr=disabled \
-      -Dwebp=enabled \
-      -Dzlib=enabled \
-    && meson compile -C /build/vips/build \
-    && meson install -C /build/vips/build
-
-RUN install --directory /opt/vips/share/licenses/libvips \
-    && install --mode=0644 /build/vips/LICENSE /opt/vips/share/licenses/libvips/LICENSE \
-    && printf '%s\n' \
-      "https://github.com/libvips/libvips/releases/download/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz" \
-      "SHA256: ${VIPS_SHA256}" \
-      'Built without source modifications; see the bundled Dockerfile for build options.' \
-      > /opt/vips/share/licenses/libvips/SOURCE
-
-FROM ${DEBIAN_IMAGE} AS ffmpeg-build
-
-ARG DEBIAN_SNAPSHOT=20260905T000000Z
-ARG FFMPEG_VERSION=7:7.1.5-0+deb13u1
-ARG FFMPEG_DSC_SHA256=9ed2ed34cbe7f056eeebbe9045c5e2d15e41b5b053fe7c8ba6979a0b6fb081ce
-ARG FFMPEG_BUILD_JOBS=4
-
-WORKDIR /build
-ENV TMPDIR=/build
-
-RUN printf '%s\n' \
-      'Types: deb deb-src' \
-      "URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}" \
-      'Suites: trixie trixie-updates' \
-      'Components: main' \
-      'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
-      'Check-Valid-Until: no' \
-      '' \
-      'Types: deb deb-src' \
-      "URIs: http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}" \
-      'Suites: trixie-security' \
-      'Components: main' \
-      'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
-      'Check-Valid-Until: no' \
-      > /etc/apt/sources.list.d/debian.sources \
-    && apt-get update \
-    && apt-get install --yes --no-install-recommends \
-      build-essential \
-      ca-certificates \
-      libbz2-dev \
-      libdav1d-dev \
-      libdrm-dev \
-      liblzma-dev \
-      libmp3lame-dev \
-      libva-dev \
-      libx264-dev \
-      libzimg-dev \
-      nasm \
-      pkg-config \
-      zlib1g-dev
-
-COPY --chmod=0755 scripts/build-ffmpeg.sh /usr/local/bin/build-ffmpeg
-RUN build-ffmpeg
-
-FROM ${DEBIAN_IMAGE}
-
-ARG DEBIAN_SNAPSHOT=20260905T000000Z
-
-RUN printf '%s\n' \
-      'Types: deb' \
-      "URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}" \
-      'Suites: trixie trixie-updates' \
-      'Components: main non-free' \
-      'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
-      'Check-Valid-Until: no' \
-      '' \
-      'Types: deb' \
-      "URIs: http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}" \
-      'Suites: trixie-security' \
-      'Components: main non-free' \
-      'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
-      'Check-Valid-Until: no' \
-      > /etc/apt/sources.list.d/debian.sources \
-    && apt-get update \
-    && apt-get install --yes --no-install-recommends \
-      ca-certificates \
-      intel-media-va-driver-non-free \
-      libbz2-1.0 \
-      libdav1d7 \
-      libdrm2 \
-      libexpat1 \
-      libglib2.0-0t64 \
-      libheif-plugin-aomenc \
-      libheif-plugin-dav1d \
-      libheif-plugin-libde265 \
-      libheif-plugin-x265 \
-      libheif1 \
-      libjpeg62-turbo \
-      liblcms2-2 \
-      liblzma5 \
-      libmp3lame0 \
-      libpng16-16t64 \
-      libtiff6 \
-      libva-drm2 \
-      libva2 \
-      libwebp7 \
-      libwebpdemux2 \
-      libwebpmux3 \
-      libx264-164 \
-      libzimg2 \
-      zlib1g \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd --system --uid 10001 --create-home \
-      --home-dir /home/filetwist --shell /usr/sbin/nologin filetwist \
-    && install --directory --owner=10001 --group=10001 --mode=0750 /data
-
-COPY --from=vips-build /opt/vips /opt/vips
-COPY --from=ffmpeg-build /opt/ffmpeg /opt/ffmpeg
-COPY --from=ffmpeg-build /opt/ffmpeg/share/licenses/ffmpeg/copyright /usr/share/doc/ffmpeg/copyright
+FROM ${MEDIA_RUNTIME_IMAGE}
+USER 0:0
+# Preserve the bootstrap's original native recipe before replacing the app recipe.
+# Versioned media seeds already carry Dockerfile.runtime.
+RUN if [ ! -f /usr/local/share/licenses/filetwist/Dockerfile.runtime ]; then \
+      cp /usr/local/share/licenses/filetwist/Dockerfile \
+        /usr/local/share/licenses/filetwist/Dockerfile.runtime; \
+    fi \
+    && sed -i 's/bundled Dockerfile for/bundled Dockerfile.runtime for/' \
+      /opt/vips/share/licenses/libvips/SOURCE
 COPY --from=go-build /out/filetwist /usr/local/bin/filetwist
 COPY --from=go-build /out/filetwist-server /usr/local/bin/filetwist-server
-RUN install --directory --mode=0755 /usr/local/share/licenses/filetwist
+COPY --from=go-build /out/go.LICENSE /usr/local/share/licenses/filetwist/go.LICENSE
 COPY --chmod=0644 LICENSE /usr/local/share/licenses/filetwist/LICENSE
 COPY --chmod=0644 internal/web/static/htmx.LICENSE /usr/local/share/licenses/filetwist/htmx.LICENSE
-COPY --from=go-build /out/go.LICENSE /usr/local/share/licenses/filetwist/go.LICENSE
 COPY --chmod=0644 THIRD_PARTY_NOTICES.md /usr/local/share/licenses/filetwist/THIRD_PARTY_NOTICES.md
 COPY --chmod=0644 deploy/Dockerfile /usr/local/share/licenses/filetwist/Dockerfile
-
-ENV PATH="/opt/ffmpeg/bin:/opt/vips/bin:${PATH}" \
-    LD_LIBRARY_PATH="/opt/ffmpeg/lib:/opt/vips/lib" \
-    DATA_DIR="/data"
-
-RUN printf 'Binary package\tBinary version\tSource package\tSource version\n' \
-      > /usr/local/share/licenses/filetwist/debian-packages.tsv \
-    && dpkg-query --show --showformat='${binary:Package}\t${Version}\t${source:Package}\t${source:Version}\n' \
-      > /usr/local/share/licenses/filetwist/debian-packages.unsorted \
-    && LC_ALL=C sort /usr/local/share/licenses/filetwist/debian-packages.unsorted \
-      >> /usr/local/share/licenses/filetwist/debian-packages.tsv \
-    && rm /usr/local/share/licenses/filetwist/debian-packages.unsorted \
-    && printf '%s\n' "${DEBIAN_SNAPSHOT}" \
-      > /usr/local/share/licenses/filetwist/debian-snapshot.txt \
-    && ffmpeg -hide_banner -buildconf \
-      > /usr/local/share/licenses/filetwist/ffmpeg-buildconf.txt 2>&1 \
-    || { cat /usr/local/share/licenses/filetwist/ffmpeg-buildconf.txt >&2; exit 1; }
 COPY --chmod=0755 scripts/probe-media.sh /usr/local/bin/probe-media
 COPY --chmod=0755 scripts/filetwist-container.sh /usr/local/bin/filetwist-container
 
-RUN printf '%s\n' '/opt/vips/lib' > /etc/ld.so.conf.d/libvips.conf \
-    && printf '%s\n' '/opt/ffmpeg/lib' > /etc/ld.so.conf.d/ffmpeg.conf \
-    && ldconfig \
-    && ! dpkg-query --show --showformat='${binary:Package}\n' \
-      | grep -E '^(ffmpeg|libavcodec[0-9]|libavdevice[0-9]|libavfilter[0-9]|libavformat[0-9]|libavutil[0-9]|libpostproc[0-9]|libswresample[0-9]|libswscale[0-9]|libzvbi|libcdio)' \
-    && ldd /opt/ffmpeg/bin/ffmpeg /opt/ffmpeg/bin/ffprobe > /usr/local/share/licenses/filetwist/ffmpeg-linkage.txt \
-    && ! grep -E 'not found|libzvbi|libcdio' /usr/local/share/licenses/filetwist/ffmpeg-linkage.txt \
-    && probe-media capabilities \
-    && filetwist --version \
-    && filetwist-server version
-
-# Release metadata must not invalidate the dependency installation layers.
+ARG MEDIA_RUNTIME_IMAGE
 ARG VERSION=dev
 ARG REVISION=unknown
 LABEL org.opencontainers.image.title="Filetwist" \
@@ -274,19 +54,14 @@ LABEL org.opencontainers.image.title="Filetwist" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${REVISION}" \
       org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.source="https://github.com/guigui42/filetwist"
-
+      org.opencontainers.image.source="https://github.com/guigui42/filetwist" \
+      io.github.filetwist.media-runtime="${MEDIA_RUNTIME_IMAGE}"
 USER 10001:10001
 WORKDIR /data
 VOLUME ["/data"]
 EXPOSE 8080
 STOPSIGNAL SIGTERM
-
-# The healthcheck derives its URL from the same LISTEN_ADDRESS the server
-# binds, so a non-default port needs no argument here. HEALTHCHECK_URL
-# overrides it when the server is reached another way.
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
   CMD ["filetwist-container", "healthcheck"]
-
 ENTRYPOINT ["filetwist-container"]
 CMD ["serve"]

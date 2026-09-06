@@ -441,7 +441,7 @@ def main():
             if (source["release"] != args.tag or source["image_index_sha256"] != candidate.root["digest"]
                     or source["runtime_manifest_sha256"] != candidate.runtime["digest"]
                     or source["source_commit"] != labels.get("org.opencontainers.image.revision")
-                    or labels.get("org.opencontainers.image.version") != args.tag[1:]
+                    or labels.get("org.opencontainers.image.version") != release_version(args.tag)
                     or labels.get("io.github.filetwist.corresponding-source", "").lower() != expected_url.lower()):
                 raise ValueError("OCI candidate does not match the verified versioned source manifest.")
             value = Registry(args.image).push(candidate, args.tag)

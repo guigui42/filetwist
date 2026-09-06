@@ -5,6 +5,9 @@ inputs:
   source-directory:
     description: Exact application source checkout (release tooling stays at the workspace root)
     default: .
+  recipe:
+    description: Reviewed application or media-runtime Dockerfile
+    default: deploy/Dockerfile
   image:
     description: Candidate repository without a tag
     required: true
@@ -35,9 +38,16 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Prepare candidate storage
+    - name: Require a known build recipe and prepare candidate storage
       shell: bash
-      run: mkdir -p .release
+      env:
+        RECIPE: ${{ inputs.recipe }}
+      run: |
+        case "$RECIPE" in
+          deploy/Dockerfile|deploy/Dockerfile.runtime) ;;
+          *) echo "::error::Unsupported container recipe"; exit 1 ;;
+        esac
+        mkdir -p .release
     - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
       if: inputs.reuse-archive != 'true'
       with:
@@ -47,7 +57,7 @@ runs:
       uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
       with:
         context: ${{ inputs.source-directory }}
-        file: ${{ inputs.source-directory }}/deploy/Dockerfile
+        file: ${{ inputs.source-directory }}/${{ inputs.recipe }}
         platforms: linux/amd64
         push: false
         outputs: type=oci,dest=${{ github.workspace }}/.release/candidate.oci.tar
@@ -62,8 +72,8 @@ runs:
         build-args: |
           VERSION=${{ inputs.version }}
           REVISION=${{ inputs.revision }}
-        cache-from: type=gha,version=2,scope=filetwist-runtime
-        cache-to: type=gha,version=2,mode=max,scope=filetwist-runtime
+        cache-from: type=gha,version=2,scope=filetwist-${{ inputs.recipe == 'deploy/Dockerfile.runtime' && 'runtime' || 'app' }}
+        cache-to: type=gha,version=2,mode=max,scope=filetwist-${{ inputs.recipe == 'deploy/Dockerfile.runtime' && 'runtime' || 'app' }}
     - name: Load the exact runtime from the attested archive
       shell: bash
       env:

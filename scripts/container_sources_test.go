@@ -32,6 +32,19 @@ func TestReleasePublicationGuards(t *testing.T) {
 			"upload-release-artifacts: ${{ github.event_name == 'workflow_dispatch' }}",
 			"release-tag: ${{ github.event_name == 'push' && github.ref_name || '' }}",
 		},
+		"workflows/media-runtime.yml": {
+			"permissions:\n  contents: read",
+			"tags: ['media-v*']",
+			"  runtime:\n    if: github.event_name == 'push'",
+			"  container:\n    if: github.event_name == 'push'",
+			"uses: ./.github/workflows/ci.yml",
+			"uses: ./.github/workflows/container-publish.yml",
+			"component: media",
+			"candidate-artifact: ${{ needs.validate.outputs.candidate-artifact }}",
+			"candidate-revision: ${{ needs.validate.outputs.candidate-revision }}",
+			"      actions: read",
+			"git merge-base --is-ancestor HEAD",
+		},
 		"workflows/container-publish.yml": {
 			"  group: ghcr-${{ inputs.tag }}",
 			"  cancel-in-progress: false",
@@ -44,6 +57,8 @@ func TestReleasePublicationGuards(t *testing.T) {
 			"vars.CONTAINER_SOURCE_BASE_URL",
 			"git merge-base --is-ancestor \"$RELEASE_SHA\" \"refs/remotes/origin/$DEFAULT_BRANCH\"",
 			"git worktree add --detach release-source \"$RELEASE_SHA\"",
+			"recipe: ${{ steps.release.outputs.recipe }}",
+			`--source-manifest ".release/assets/$SOURCE_MANIFEST"`,
 		},
 		"actions/prepare-container/action.yml": {
 			"provenance: mode=max",
@@ -52,6 +67,8 @@ func TestReleasePublicationGuards(t *testing.T) {
 			"platforms: linux/amd64",
 			"uses: ./.github/actions/setup-browser-tests",
 			"record-validation",
+			"deploy/Dockerfile|deploy/Dockerfile.runtime)",
+			"file: ${{ inputs.source-directory }}/${{ inputs.recipe }}",
 		},
 	} {
 		t.Run(path, func(t *testing.T) {
@@ -60,6 +77,7 @@ func TestReleasePublicationGuards(t *testing.T) {
 				if !strings.Contains(content, guard) {
 					t.Errorf("publication guard missing: %s", guard)
 				}
+
 			}
 		})
 	}
@@ -72,6 +90,31 @@ func TestReleasePublicationGuards(t *testing.T) {
 		if strings.Contains(publish, prohibited) {
 			t.Errorf("protected image publication must not contain %q", prohibited)
 		}
+	}
+}
+
+func TestMediaLaneSharesChecksAndHasNoBinaryPublisher(t *testing.T) {
+	media := workflowText(t, "workflows/media-runtime.yml")
+	for _, duplicate := range []string{"goreleaser", "build-push-action@", "docker push", "scripts/validate-container.sh", "make test-browser", "--clobber", ":latest"} {
+		if strings.Contains(media, duplicate) {
+			t.Errorf("media release must reuse the common build and source/publish path: %s", duplicate)
+		}
+	}
+	ci := workflowText(t, "workflows/ci.yml")
+	if !strings.Contains(ci, "default: app") || !strings.Contains(ci, "recipe: ${{ steps.metadata.outputs.recipe }}") {
+		t.Fatal("ordinary CI must select the application recipe through shared metadata")
+	}
+	if strings.Contains(workflowText(t, "workflows/release.yml"), "component: media") {
+		t.Fatal("normal application releases must never select native compilation")
+	}
+	publish := workflowText(t, "workflows/container-publish.yml")
+	prepare, tail, ok := strings.Cut(publish, "\n  sources:")
+	if !ok {
+		t.Fatal("source publication job missing")
+	}
+	sources, _, ok := strings.Cut(tail, "\n  publish:")
+	if !ok || strings.Contains(prepare+sources, "packages: write") {
+		t.Fatal("only the protected final image job may write packages")
 	}
 }
 

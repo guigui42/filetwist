@@ -83,6 +83,125 @@ class SourceTests(unittest.TestCase):
             with self.subTest(tag=tag), self.assertRaises(ValueError):
                 sources.version(tag)
 
+    def test_media_metadata_and_recipe_selection(self):
+        revision = "a" * 40
+        for tag, component, version, recipe, prefix in (
+            ("v1.2.3", "app", "1.2.3", "deploy/Dockerfile", "filetwist_1.2.3"),
+            ("media-v1.2.3-rc.1", "media", "1.2.3-rc.1", "deploy/Dockerfile.runtime", "filetwist_media_1.2.3-rc.1"),
+        ):
+            result = sources.release_metadata("owner/repo", tag, revision, component)
+            self.assertEqual(result["version"], version)
+            self.assertEqual(result["recipe"], recipe)
+            self.assertEqual(result["asset_prefix"], prefix)
+            self.assertEqual(result["source_manifest"], prefix + "_sources.json")
+            self.assertEqual(result["image"], "ghcr.io/owner/repo")
+        self.assertEqual(sources.release_metadata("owner/repo", "", revision, "media")["recipe"],
+                         "deploy/Dockerfile.runtime")
+        for tag, component in (("v1.2.3", "media"), ("media-v1.2.3", "app"),
+                               ("media-v1.2.3+local", "media"), ("media-v1.2.3/../Dockerfile", "media")):
+            with self.subTest(tag=tag), self.assertRaises(ValueError):
+                sources.release_metadata("owner/repo", tag, revision, component)
+        with patch.object(sources, "run") as command, self.assertRaisesRegex(ValueError, "binary-only"):
+            sources.resolve(SimpleNamespace(tag="v0.0.1", repository="owner/repo"))
+        command.assert_not_called()
+
+    def test_recipe_and_native_provenance_fail_closed(self):
+        pin = "ghcr.io/owner/repo@sha256:" + "a" * 64
+        app = f"ARG MEDIA_RUNTIME_IMAGE={pin}\nFROM ${{MEDIA_RUNTIME_IMAGE}}\n".encode()
+        native, helper = b"FROM pinned-debian\nRUN meson compile\n", b"exact FFmpeg helper"
+        policy = {
+            "dockerfile_sha256": sources.sha256(app),
+            "media_runtime": {"image": pin, "dockerfile_sha256": sources.sha256(native)},
+            "additional_dependency_paths": ["deploy/Dockerfile.runtime", "scripts/build-ffmpeg.sh"],
+            "dependency_inputs_sha256": {"deploy/Dockerfile.runtime": sources.sha256(native)},
+        }
+        for tag, recipe in (("v1.0.0", app), ("media-v1.0.0", native)):
+            files = {sources.LICENSES + "Dockerfile": recipe,
+                     sources.LICENSES + "Dockerfile.runtime": native,
+                     sources.FFMPEG + "build-ffmpeg.sh": helper}
+            with patch.object(sources, "run", side_effect=[recipe, helper]) as command:
+                selected = sources.check_build_recipe(tag, Path("."), files, policy)
+                self.assertEqual(command.call_args_list[0].args[-1], "HEAD:" + selected)
+            for path in files:
+                changed = {**files, path: b"wrong recipe or helper"}
+                with self.subTest(tag=tag, path=path), \
+                        patch.object(sources, "run", side_effect=[recipe, helper]), self.assertRaises(ValueError):
+                    sources.check_build_recipe(tag, Path("."), changed, policy)
+        for replacement in ("ghcr.io/owner/repo:latest", "ghcr.io/owner/repo@sha256:" + "b" * 64):
+            changed = app.replace(pin.encode(), replacement.encode())
+            changed_policy = {**policy, "dockerfile_sha256": sources.sha256(changed)}
+            files = {sources.LICENSES + "Dockerfile": changed,
+                     sources.LICENSES + "Dockerfile.runtime": native,
+                     sources.FFMPEG + "build-ffmpeg.sh": helper}
+            with patch.object(sources, "run", side_effect=[changed, helper]), self.assertRaises(ValueError):
+                sources.check_build_recipe("v1.0.0", Path("."), files, changed_policy)
+
+    def test_repository_policy_pins_recipes_and_native_inputs(self):
+        root = Path(__file__).resolve().parent.parent
+        policy = json.loads((root / ".github/container-source-policy.json").read_text())
+        app = (root / "deploy/Dockerfile").read_bytes()
+        self.assertEqual(sources.sha256(app), policy["dockerfile_sha256"])
+        self.assertEqual(sources.media_runtime_pin(app), policy["media_runtime"]["image"])
+        for path in ("deploy/Dockerfile.runtime", "scripts/build-ffmpeg.sh"):
+            self.assertIn(path, policy["additional_dependency_paths"])
+            self.assertEqual(sources.sha256((root / path).read_bytes()),
+                             policy["dependency_inputs_sha256"][path])
+        self.assertEqual(policy["dependency_inputs_sha256"]["scripts/build-ffmpeg.sh"],
+                         policy["custom_builds"]["ffmpeg"]["build_material_sha256"][
+                             sources.FFMPEG + "build-ffmpeg.sh"])
+
+    def test_runtime_release_preserves_existing_assets(self):
+        args = SimpleNamespace(tag="media-v1.2.3", repository="owner/repo", revision="a" * 40)
+        existing = sources.subprocess.CompletedProcess([], 0, b"HTTP/2.0 200 OK\r\n", b"")
+        with patch.object(sources, "run", return_value=args.revision.encode()) as command, \
+                patch.object(sources.subprocess, "run", return_value=existing), \
+                patch.object(sources, "publish_assets") as publish:
+            sources.runtime_release(args)
+        self.assertFalse(any("create" in call.args for call in command.call_args_list))
+        publish.assert_called_once_with(args.repository, args.tag,
+                                        {"filetwist-source-commit.txt": (args.revision + "\n").encode()})
+        for tag, revision in (("v1.2.3", args.revision), ("media-v1.2.3", "b" * 40)):
+            with patch.object(sources, "run", return_value=args.revision.encode()), \
+                    patch.object(sources, "publish_assets") as publish, self.assertRaises(ValueError):
+                sources.runtime_release(SimpleNamespace(tag=tag, repository=args.repository, revision=revision))
+            publish.assert_not_called()
+        for code, expected_create in ((404, True), (403, False), (503, False)):
+            response = sources.subprocess.CompletedProcess([], 1, f"HTTP/2.0 {code}\r\n".encode(), b"API error")
+            with self.subTest(code=code), \
+                    patch.object(sources, "run", return_value=args.revision.encode()) as command, \
+                    patch.object(sources.subprocess, "run", return_value=response), \
+                    patch.object(sources, "publish_assets") as publish:
+                if expected_create:
+                    sources.runtime_release(args)
+                    self.assertTrue(any("create" in call.args for call in command.call_args_list))
+                else:
+                    with self.assertRaisesRegex(ValueError, "Cannot inspect"):
+                        sources.runtime_release(args)
+                    publish.assert_not_called()
+                    self.assertFalse(any("create" in call.args for call in command.call_args_list))
+
+    def test_native_fingerprint_ignores_first_party_edits_but_tracks_build_inputs(self):
+        entries = {
+            "go.mod": b"module demo",
+            "cmd/main.go": b"package main",
+            "internal/web/templates/index.html": b"first-party template",
+            "internal/web/static/app.css": b"body {}",
+            "deploy/Dockerfile.runtime": b"FROM digest-pinned-debian\nARG SNAPSHOT=20260905\nRUN meson",
+            "scripts/build-ffmpeg.sh": b"configure --disable-libcdio",
+        }
+        first_party = ["internal/web/static/app.css"]
+        native_paths = ["deploy/Dockerfile.runtime", "scripts/build-ffmpeg.sh"]
+        fingerprint = sources.dependency_inputs(sources.archive_bytes(entries), first_party, native_paths)
+        policy = {"first_party_assets": first_party, "additional_dependency_paths": native_paths,
+                  "dependency_inputs_sha256": fingerprint}
+        for path in entries:
+            changed = sources.archive_bytes({**entries, path: entries[path] + b"\nchanged"})
+            if path in native_paths or path == "go.mod":
+                with self.subTest(path=path), self.assertRaises(ValueError):
+                    sources.check_dependency_inputs(changed, policy)
+            else:
+                self.assertEqual(sources.check_dependency_inputs(changed, policy), fingerprint)
+
     def test_inventory_and_epoch(self):
         inventory = sources.parse_inventory(
             b"Binary package\tBinary version\tSource package\tSource version\n"
@@ -382,10 +501,18 @@ class SourceTests(unittest.TestCase):
         command.assert_not_called()
 
     def test_prepare_complete_repeatable_release(self):
+        self.prepare_complete_repeatable_release("v12.4.0-rc.2")
+
+    def test_prepare_complete_repeatable_media_release(self):
+        self.prepare_complete_repeatable_release("media-v12.4.0-rc.2")
+
+    def prepare_complete_repeatable_release(self, tag):
         directory = Path(".release/source-tests") / str(uuid.uuid4())
         directory.mkdir(parents=True)
         self.addCleanup(shutil.rmtree, directory)
-        revision, tag, repo = "a" * 40, "v12.4.0-rc.2", "owner/project"
+        revision, repo = "a" * 40, "owner/project"
+        media = sources.release_identity(tag)["component"] == "media"
+        prefix = sources.asset_prefix(tag)
         archive_source, vips_source = b"debian upstream source", b"libvips upstream source"
         descriptor = ("Source: demo\nVersion: 2:1.0-3\nChecksums-Sha256:\n "
                       f"{sources.sha256(archive_source)} {len(archive_source)} demo_1.0.orig.tar.xz\n").encode()
@@ -393,7 +520,11 @@ class SourceTests(unittest.TestCase):
                      b"libdemo:amd64\t2:1.0-3+b1\tdemo\t2:1.0-3\n")
         vips_url = "https://github.com/libvips/libvips/releases/download/v3.2.1/vips-3.2.1.tar.xz"
         recipe = b"FROM scratch\n"
-        application_archive = sources.archive_bytes({"go.mod": b"module example.test/demo\n"})
+        helper = b"synthetic native build helper"
+        application_archive = sources.archive_bytes({
+            "go.mod": b"module example.test/demo\n",
+            **({"deploy/Dockerfile.runtime": recipe, "scripts/build-ffmpeg.sh": helper} if media else {}),
+        })
         files = {
             sources.LICENSES + "debian-packages.tsv": inventory,
             sources.LICENSES + "debian-snapshot.txt": b"20260905T000000Z\n",
@@ -427,6 +558,12 @@ class SourceTests(unittest.TestCase):
                         "notice_sha256": sources.sha256(b"libvips notice"),
                         "source_route": "upstream", "reason": "Synthetic reviewed route"},
         }
+        if media:
+            files[sources.LICENSES + "Dockerfile.runtime"] = recipe
+            files[sources.FFMPEG + "build-ffmpeg.sh"] = helper
+            policy["additional_dependency_paths"] = ["deploy/Dockerfile.runtime", "scripts/build-ffmpeg.sh"]
+            policy["dependency_inputs_sha256"] = sources.dependency_inputs(
+                application_archive, [], policy["additional_dependency_paths"])
         (directory / "inventory.tar.gz").write_bytes(sources.archive_bytes(files))
         (directory / "policy.json").write_text(json.dumps(policy))
         source_files = {"demo_1.0-3.dsc": descriptor, "demo_1.0.orig.tar.xz": archive_source}
@@ -437,7 +574,7 @@ class SourceTests(unittest.TestCase):
         ))
         fixture_oci(directory / "candidate.tar", {
             "org.opencontainers.image.revision": revision,
-            "org.opencontainers.image.version": tag[1:],
+            "org.opencontainers.image.version": sources.version(tag),
             "io.github.filetwist.corresponding-source": f"https://github.com/{repo}/releases/tag/{tag}/",
         })
         args = SimpleNamespace(tag=tag, repository=repo, revision=revision, checkout=directory,
@@ -450,8 +587,10 @@ class SourceTests(unittest.TestCase):
             if values[0] == "git":
                 if values[-1] == "HEAD":
                     return revision.encode()
-                if values[-1] == "HEAD:deploy/Dockerfile":
+                if values[-1] == "HEAD:" + sources.release_identity(tag)["recipe"]:
                     return recipe
+                if values[-1] == "HEAD:scripts/build-ffmpeg.sh":
+                    return helper
                 return application_archive
             if values[0] == "curl":
                 Path(values[values.index("--output") + 1]).write_bytes(source_files[values[-1].split("/")[-1]])
@@ -478,7 +617,7 @@ class SourceTests(unittest.TestCase):
                 patch.object(sources, "check_link"):
             sources.prepare(args)
         self.assertEqual(first, {p.name: sources.sha256(p) for p in args.output.glob("filetwist_*")})
-        manifest = json.loads((args.output / "filetwist_12.4.0-rc.2_sources.json").read_text())
+        manifest = json.loads((args.output / (prefix + "_sources.json")).read_text())
         self.assertEqual(manifest["release"], tag)
         self.assertEqual(manifest["source_commit"], revision)
         self.assertEqual(manifest["candidate_artifact_id"], "123")
@@ -634,6 +773,10 @@ class ImageTests(unittest.TestCase):
         self.addCleanup(candidate.archive.close)
         receipt = image.validation_receipt(candidate, archive, revision, tag, run_id)
         image.verify_validation(candidate, archive, receipt, revision, tag, run_id)
+        media_receipt = image.validation_receipt(candidate, archive, revision, "media-v1.2.3", run_id)
+        image.verify_validation(candidate, archive, media_receipt, revision, "media-v1.2.3", run_id)
+        with self.assertRaises(ValueError):
+            image.verify_validation(candidate, archive, receipt, revision, "media-v1.2.3", run_id)
         for field, value in (
             ("source_commit", "b" * 40), ("tag", "v2.0.0"), ("run_id", "5678"),
             ("archive_sha256", "b" * 64), ("image_index_sha256", "sha256:" + "b" * 64),
