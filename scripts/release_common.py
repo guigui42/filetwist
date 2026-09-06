@@ -3,10 +3,28 @@
 import re
 
 
+def release_identity(tag):
+    match = re.fullmatch(r"(media-)?v([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)", tag)
+    if not match or len(tag) > 128:
+        raise ValueError("Expected a Docker-compatible version tag, such as v0.1.0 or media-v1.0.0.")
+    component = "media" if match[1] else "app"
+    version = match[2]
+    prefix = f"filetwist_{'media_' if component == 'media' else ''}{version}"
+    return {
+        "component": component,
+        "version": version,
+        "recipe": "deploy/Dockerfile.runtime" if component == "media" else "deploy/Dockerfile",
+        "asset_prefix": prefix,
+        "source_manifest": prefix + "_sources.json",
+    }
+
+
 def release_version(tag):
-    if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", tag) or len(tag) > 128:
-        raise ValueError("Expected a Docker-compatible version tag, such as v0.1.0.")
-    return tag[1:]
+    return release_identity(tag)["version"]
+
+
+def asset_prefix(tag):
+    return release_identity(tag)["asset_prefix"]
 
 
 def source_revision(revision):

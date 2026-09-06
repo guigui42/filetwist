@@ -8,6 +8,13 @@ Adding these workflows does not publish a release or image by itself.
 The source/OCI helpers use Python 3.11 or newer and its standard library; the
 Ubuntu 24.04 workflow runners already provide it.
 
+Application releases compile only Go over an immutable, digest-pinned media
+runtime. FFmpeg/libvips compilation and Debian installation belong to the
+separate [Release media runtime workflow](../.github/workflows/media-runtime.yml).
+Both lanes use the same CI, candidate validation, corresponding-source and
+protected publication helpers. A cache miss in an application release never
+starts native compilation.
+
 ## One-time repository setup
 
 1. Confirm the public repository URL. Keep `go.mod`, the Docker image source
@@ -20,14 +27,15 @@ Ubuntu 24.04 workflow runners already provide it.
 3. Enable GitHub private vulnerability reporting and confirm that the
    **Security > Report a vulnerability** route works. Follow `SECURITY.md`.
 4. Allow Actions to create releases and write packages. The workflows request
-   `contents: write` only for binary publication and appending corresponding-source
-   assets. Only the protected image job requests `packages: write`.
+   `contents: write` only for binary/runtime release creation and appending
+   corresponding-source assets. Only the protected image job requests `packages: write`.
    They use the repository's `GITHUB_TOKEN`; no personal access token or Docker
    Hub credentials are needed.
 5. Create a GitHub environment named `ghcr` with required reviewers and restrict
    who can publish release tags. Creating the workflow does not configure
-   environment protection rules. Allow version tags (`v*`) and `main` in its
-   deployment policy: image-only retries run the current tooling from `main`.
+   environment protection rules. Allow version tags (`v*`), media tags
+   (`media-v*`) and `main` in its deployment policy: image-only retries run
+   the current tooling from `main`.
    Protect release tags against updates and deletion.
 6. Configure the redistribution gate below. After the first image push, explicitly
    make the package **Public** in its package settings. Public repository visibility
@@ -59,7 +67,7 @@ Complete the [third-party redistribution review](../THIRD_PARTY_NOTICES.md)
 first. The reviewed [source policy](../.github/container-source-policy.json) pins
 each Debian source and binary version, the SHA-256 of every resolved copyright
 notice, shared licence texts, Go/HTMX notices, exact libvips source and licence,
-and the Dockerfile. Package-specific review selects official upstream/Debian
+and the build recipes. Package-specific review selects official upstream/Debian
 source links where permitted and release mirrors where needed.
 Source-built FFmpeg is reviewed separately from dpkg-installed packages. Its
 policy pins the exact Debian source version and every bundled source/build
@@ -99,8 +107,15 @@ check. These declarations also do not replace reviewing notice delivery or
 undeclared embedded contributions.
 
 There is no automatic approval based on a licence keyword. A new dependency,
-changed version, notice, source archive, or Dockerfile fails closed and requires
-a renewed policy review. Application-only releases reuse the same policy.
+changed version, notice, source archive, runtime digest, native recipe or helper
+fails closed and requires a renewed policy review. The dependency fingerprint
+covers the complete `deploy/Dockerfile.runtime` and `scripts/build-ffmpeg.sh`,
+including compiler/base-image digests, Debian snapshots, flags and build
+arguments, not just library versions. Source preparation selects only
+`deploy/Dockerfile` (app) or `deploy/Dockerfile.runtime` (media) from centralized tag
+metadata and compares the bundled recipe byte-for-byte with the exact tagged
+checkout. The app recipe and preserved seed recipe are separately hash-bound.
+Ordinary Go, template and first-party JS/CSS edits reuse the dependency review.
 The policy is evidence of the recorded review, not legal advice or a replacement
 for reviewing the actual terms, including Intel non-free components.
 The `container-source-evidence-<tag>-<attempt>` workflow artifact retains actual
@@ -217,6 +232,61 @@ Never move a Git tag or republish a version with different contents.
 The container workflow is called directly, rather than relying on a
 `release: published` event: releases created by `GITHUB_TOKEN` do not start
 another workflow through that event.
+
+## Updating the media runtime
+
+The initial application pin is the published
+[v0.0.2 source manifest](https://github.com/guigui42/filetwist/releases/download/v0.0.2/filetwist_0.0.2_sources.json)
+index `sha256:1313a23528b3c66d5e5167365f1b0aa7be4f70c78a1e8f1a935e178dc75a17fa`.
+It is a fixed bootstrap seed, not a moving application tag. `v0.0.1` remains
+binary-only. Neither historical tag nor its assets should be changed.
+
+1. Change native dependencies only in `deploy/Dockerfile.runtime` and its
+   existing build helper. Keep immutable base/source pins and bounded compiler
+   parallelism. Build a candidate for source review when these inputs change:
+
+   ```sh
+   docker buildx build --platform linux/amd64 --load \
+     -f deploy/Dockerfile.runtime -t filetwist:media-candidate .
+   scripts/validate-container.sh filetwist:media-candidate
+   scripts/measure-container.sh filetwist:media-candidate
+   make test-browser IMAGE=filetwist:media-candidate
+   ```
+
+2. Collect notices and draft the pending policy with the existing commands above,
+   using `filetwist:media-candidate`. Review changed inputs and notices before
+   updating the approved policy. Retain the app's `dockerfile_sha256` and
+   `media_runtime` entry until its pin is deliberately updated; the media recipe
+   is checked against `dependency_inputs_sha256["deploy/Dockerfile.runtime"]`.
+   The template never approves an unknown native stack.
+3. Merge the reviewed change, then create a new immutable `media-vMAJOR.MINOR.PATCH`
+   tag (prerelease suffixes work too). To test without publication, dispatch
+   `media-runtime.yml` on the branch. Manual media runs are read-only.
+4. On a tag push, shared CI builds `Dockerfile.runtime` and runs the existing
+   conversion, size and browser checks. Its small Filetwist binaries exercise
+   the real runtime rather than a separate dummy validation path. This lane
+   skips GoReleaser, creates a runtime GitHub release with
+   `filetwist-source-commit.txt`, then passes the same validated OCI artifact to
+   the existing source/protected publisher. No native rebuild occurs there.
+   Assets use `filetwist_media_<version>_sources.json` and the matching
+   `filetwist_media_<version>_source-*` names.
+5. After source and anonymous image verification succeed, copy the exact
+   `image_index_sha256` from that media release's source manifest into
+   `MEDIA_RUNTIME_IMAGE` in `deploy/Dockerfile`. Update the reviewed
+   `media_runtime.image`, its preserved native-recipe SHA-256, and the app recipe
+   hash in the policy. Validate this Go-only candidate and its source inventory.
+   Merge this pin change before releasing the application.
+
+Both lanes publish to `ghcr.io/guigui42/filetwist`, using `v*` and `media-v*` tags
+respectively. There is one package visibility setting and no `latest` aliases.
+Never point the runtime pin at a later application image: a fixed media seed
+prevents an ever-growing chain of application layers. Original native recipes,
+notices, inventories and corresponding source remain available after the new
+Go binaries replace the seed binaries.
+
+Use the existing image-only retry with `-f tag=media-v1.0.0` if media publication
+is interrupted. It enforces the same merged-history, immutable-tag, retained
+candidate and no-overwrite rules as app publication.
 
 ## Retry an existing image release
 

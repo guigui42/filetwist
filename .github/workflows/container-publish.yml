@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing version tag, for example v0.1.0
+        description: Existing app or runtime tag, for example v0.1.0 or media-v1.0.0
         required: true
         type: string
 
@@ -41,6 +41,7 @@ jobs:
     outputs:
       image: ${{ steps.release.outputs.image }}
       sha: ${{ steps.release.outputs.sha }}
+      source-manifest: ${{ steps.release.outputs.source_manifest }}
       candidate-artifact: ${{ inputs.candidate-artifact || steps.candidate.outputs.artifact-id }}
       source-artifact: ${{ steps.source-artifact.outputs.artifact-id }}
     steps:
@@ -49,7 +50,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Require an existing published binary release
+      - name: Require an existing published release with an exact source marker
         id: release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -148,6 +149,7 @@ jobs:
         uses: ./.github/actions/prepare-container
         with:
           source-directory: release-source
+          recipe: ${{ steps.release.outputs.recipe }}
           image: ${{ steps.release.outputs.image }}
           tag: ${{ inputs.tag }}
           version: ${{ steps.release.outputs.version }}
@@ -283,10 +285,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGE: ${{ needs.prepare.outputs.image }}
           TAG: ${{ inputs.tag }}
+          SOURCE_MANIFEST: ${{ needs.prepare.outputs.source-manifest }}
         run: |
           python3 scripts/container-image.py push \
             --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG" \
-            --source-manifest ".release/assets/filetwist_${TAG#v}_sources.json"
+            --source-manifest ".release/assets/$SOURCE_MANIFEST"
       - name: Verify anonymous access to the exact published digest
         env:
           IMAGE: ${{ needs.prepare.outputs.image }}

@@ -8,8 +8,9 @@ validation before making a result available.
 
 Use Go 1.27 as specified in [go.mod](go.mod). Runtime integration tests also need
 `ffmpeg`, `ffprobe`, `vips`, and `vipsheader` on `PATH`. The
-[canonical Dockerfile](deploy/Dockerfile) records the container toolchain and
-codec dependencies. The web assets are embedded; no frontend build is needed.
+[application Dockerfile](deploy/Dockerfile) pins the media runtime;
+the [native recipe](deploy/Dockerfile.runtime) records its toolchain and codec
+dependencies. The web assets are embedded; no frontend build is needed.
 
 Run the smallest relevant tests while developing. Before submitting:
 
@@ -24,7 +25,7 @@ The formatting command should print nothing. Format changed Go files with
 `gofmt -w` before submitting. [CI](.github/workflows/ci.yml) runs these checks
 without publishing anything. Converter-dependent Go tests can skip when a tool
 or codec is missing; a green Go run is not a container or hardware check.
-The separate Linux container job builds the runtime and executes the smoke
+The separate Linux container job builds Go over the pinned runtime and executes the smoke
 script with mandatory codec/conversion assertions, then the browser workflow.
 CI also creates a GoReleaser snapshot archive without publishing it.
 
@@ -43,11 +44,11 @@ chain instead of rebuilding or repeating container tests. A receipt binds the
 archive hash, OCI digests, exact commit, tag, run and completed checks; publication
 verifies it again after environment approval.
 
-Docker builds use the GitHub Actions v2 cache in the `filetwist-runtime` scope
-with `mode=max`, including the libvips build stage. Release metadata arguments
-stay below runtime dependency installation so version changes reuse those
-layers. Caches follow GitHub's branch access rules; cache misses download or
-build normally and never bypass conversion checks or publication gates.
+Docker builds use the GitHub Actions v2 cache with `mode=max`: `filetwist-app`
+for Go-only builds and `filetwist-runtime` for deliberate media-runtime builds.
+Native compilation occurs only in the [media-runtime lane](docs/releasing.md#updating-the-media-runtime),
+not when application caches miss. Caches follow GitHub's branch access rules
+and never bypass conversion checks or publication gates.
 
 Describe the user-visible change, affected operations, reproduction steps, and
 checks performed. Add regression coverage for changed behavior. Do not put

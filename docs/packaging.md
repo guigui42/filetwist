@@ -3,13 +3,20 @@
 Use [deploy/Dockerfile](../deploy/Dockerfile) with
 [deploy/compose.yaml](../deploy/compose.yaml). The
 [source-build quick start](../README.md#quick-start-from-source) builds the image
-locally and binds the web interface to loopback, without requiring a registry
-image. The [release workflow](releasing.md) can publish versioned images to GHCR
+locally over a digest-pinned media runtime and binds the web interface to loopback.
+The first build needs registry access to fetch that immutable seed.
+The [release workflow](releasing.md) can publish versioned images to GHCR
 once the maintainer configures the publishing prerequisites.
 
 The supported image target is Linux/amd64. Docker on macOS can run that image
 in CPU mode, with emulation on Apple Silicon. Native macOS acceleration and
 arm64 images are not supported.
+
+Normal builds compile only Go. Native FFmpeg/libvips and Debian installation live
+in [deploy/Dockerfile.runtime](../deploy/Dockerfile.runtime), built deliberately
+through the separate [media-runtime release lane](releasing.md#updating-the-media-runtime).
+Application releases always use the fixed reviewed seed, not the previous
+application image, so they do not accumulate a chain of application layers.
 
 ## Using a published image
 

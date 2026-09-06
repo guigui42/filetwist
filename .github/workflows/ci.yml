@@ -14,6 +14,10 @@ on:
         description: Build and retain this version's validated OCI candidate for the release chain
         type: string
         default: ''
+      component:
+        description: app builds Go over the pinned seed; media deliberately rebuilds native dependencies
+        type: string
+        default: app
     outputs:
       candidate-artifact:
         description: Validated OCI artifact for the release container job
@@ -53,10 +57,13 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Install GoReleaser
+        if: inputs.component != 'media'
         uses: ./.github/actions/setup-goreleaser
       - name: Validate release configuration
+        if: inputs.component != 'media'
         run: goreleaser check
       - name: Build release snapshot
+        if: inputs.component != 'media'
         run: goreleaser release --snapshot --clean
       - name: Check Compose configurations
         run: make packaging-compose-config
@@ -90,14 +97,17 @@ jobs:
         id: metadata
         env:
           TAG: ${{ inputs.release-tag }}
+          COMPONENT: ${{ inputs.component || 'app' }}
         run: |
           python3 scripts/container-sources.py metadata \
-            --repository "$GITHUB_REPOSITORY" --tag "$TAG" --revision "$(git rev-parse HEAD)"
+            --repository "$GITHUB_REPOSITORY" --tag "$TAG" --revision "$(git rev-parse HEAD)" \
+            --component "$COMPONENT"
       - name: Build and validate once for CI and downstream release
         id: candidate
         uses: ./.github/actions/prepare-container
         with:
           image: ${{ steps.metadata.outputs.image }}
+          recipe: ${{ steps.metadata.outputs.recipe }}
           tag: ${{ steps.metadata.outputs.tag }}
           version: ${{ steps.metadata.outputs.version }}
           revision: ${{ steps.metadata.outputs.sha }}

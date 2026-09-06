@@ -18,20 +18,29 @@
       "resolution": "The exact candidate's 146 Debian/custom FFmpeg source identities and libvips were resolved. All 231 selected mirror files were downloaded and SHA-256 verified, complete descriptors checked, and 1586 embedded/supplemental notices retained, including Intel LICENSE.md and third-party-programs.txt. The same helpers enforce this delivery before every image publication. The bundled third-party notice supplies the IJG acknowledgement."
     }
   ],
-  "dockerfile_sha256": "ce74f27968897117552047e444e9a0a053c201ef2e8468d63561301c5a7afb3c",
+  "dockerfile_sha256": "2da948d5003097029359496c7d2a6430899b568731365b676e0546bd451dc0be",
+  "media_runtime": {
+    "image": "ghcr.io/guigui42/filetwist@sha256:1313a23528b3c66d5e5167365f1b0aa7be4f70c78a1e8f1a935e178dc75a17fa",
+    "dockerfile_sha256": "ce74f27968897117552047e444e9a0a053c201ef2e8468d63561301c5a7afb3c"
+  },
   "first_party_assets": [
     "internal/web/static/app.js",
     "internal/web/static/app.css"
   ],
-  "additional_dependency_paths": [],
+  "additional_dependency_paths": [
+    "deploy/Dockerfile.runtime",
+    "scripts/build-ffmpeg.sh"
+  ],
   "dependency_inputs_sha256": {
     ".gitmodules": null,
+    "deploy/Dockerfile.runtime": "3cf1c9bb57e801c98b76af0c636d57a075d204b4f5e8064ad280439afa2694da",
     "go.mod": "bb9946e7060974dbb4bf386de9c4817f95eec0fc488293f4ceab2906afaf7b92",
     "go.sum": null,
     "go.work": null,
     "go.work.sum": null,
     "internal/web/static/htmx.LICENSE": "d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38",
-    "internal/web/static/htmx.min.js": "e209dda5c8235479f3166defc7750e1dbcd5a5c1808b7792fc2e6733768fb447"
+    "internal/web/static/htmx.min.js": "e209dda5c8235479f3166defc7750e1dbcd5a5c1808b7792fc2e6733768fb447",
+    "scripts/build-ffmpeg.sh": "d7c398f9c988c62e399398a60c02836c4341fdb30f4d3b2961b0747e4b45cb92"
   },
   "notice_sha256": {
     "opt/vips/share/licenses/libvips/LICENSE": "dc626520dcd53a22f727af3ee42c770e56c97a64fe3adb063799d8ab032fe551",

@@ -14,20 +14,23 @@ service can access and manage its jobs. There is no built-in authentication,
 TLS, or multi-tenancy. Use a trusted network or an
 [authenticated reverse proxy](docs/reverse-proxy.md).
 
-## Quick start from source
+## Quick start with the published image
 
-You need Docker with Compose. Obtain the source using the repository's
-**Code > Clone** URL, or **Code > Download ZIP** and extract the archive.
-Open a terminal in the resulting directory containing this README.
-No published Filetwist image is required; this command builds a local image,
-including the runtime dependencies:
+You need Docker with Compose. The
+[public container package](https://github.com/guigui42/filetwist/pkgs/container/filetwist)
+includes Filetwist, FFmpeg and libvips. No registry login or compilation is needed.
+Download and extract the
+[v0.0.2 source ZIP](https://github.com/guigui42/filetwist/archive/refs/tags/v0.0.2.zip)
+to obtain its matching Compose files, then open a terminal in that directory.
+Start the released image, pinned to its immutable digest:
 
 ```sh
-FILETWIST_IMAGE=filetwist:local FILETWIST_PORT=127.0.0.1:8080 \
+FILETWIST_IMAGE=ghcr.io/guigui42/filetwist@sha256:1313a23528b3c66d5e5167365f1b0aa7be4f70c78a1e8f1a935e178dc75a17fa \
+FILETWIST_PORT=127.0.0.1:8080 \
 docker compose \
   -f deploy/compose.yaml \
   -f deploy/compose.cpu.yaml \
-  up --build --pull never --detach --wait
+  up --no-build --pull always --detach --wait
 ```
 
 Open <http://127.0.0.1:8080/>. Upload files, review the detected media and selected
@@ -45,11 +48,29 @@ above; Apple Silicon runs this image under Docker emulation. There is no
 supported arm64 image or native macOS acceleration. Linux hosts with a suitable
 Intel render device can use the [VA-API override](docs/packaging.md#intel-va-api).
 
+## Quick start from source
+
+For development, clone the current repository and run the following from its
+root. This builds only the Go application over the immutable media-runtime image
+pinned in [deploy/Dockerfile](deploy/Dockerfile). It pulls that seed on the first
+build; FFmpeg and libvips are not recompiled:
+
+```sh
+FILETWIST_IMAGE=filetwist:local FILETWIST_PORT=127.0.0.1:8080 \
+docker compose \
+  -f deploy/compose.yaml \
+  -f deploy/compose.cpu.yaml \
+  up --build --pull never --detach --wait
+```
+
 ## Release artifacts
 
 Version tags automate Linux/amd64 binary releases and, after redistribution
-approval, GHCR images. Once published, use the repository's **Releases** page
-for archives/checksums and **Packages** for image tags and digests.
+approval, GHCR images. See the
+[v0.0.2 release](https://github.com/guigui42/filetwist/releases/tag/v0.0.2)
+for archives, checksums and corresponding source, and the
+[public package](https://github.com/guigui42/filetwist/pkgs/container/filetwist)
+for image tags and digests.
 The binary archive contains both executables but requires converter tools
 installed separately; see [binary installation](docs/binary-release.md).
 For images, see [pull-based deployment](docs/packaging.md#using-a-published-image).

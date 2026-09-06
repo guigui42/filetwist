@@ -1,0 +1,78 @@
+name: Release media runtime
+run-name: "${{ github.event_name == 'workflow_dispatch' && 'Media runtime dry run' || 'Media runtime' }}: ${{ github.ref_name }}"
+
+on:
+  push:
+    tags: ['media-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: media-runtime-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a merged media version tag
+        if: github.event_name == 'push'
+        env:
+          TAG: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          python3 scripts/container-sources.py metadata \
+            --repository "$GITHUB_REPOSITORY" --tag "$TAG" --revision "$(git rev-parse HEAD)" \
+            --component media
+          git merge-base --is-ancestor HEAD "refs/remotes/origin/$DEFAULT_BRANCH"
+      - name: Describe dry run
+        if: github.event_name == 'workflow_dispatch'
+        run: echo 'Manual media dry run only. No release, source assets or image will be published.' >> "$GITHUB_STEP_SUMMARY"
+
+  validate:
+    needs: tag
+    uses: ./.github/workflows/ci.yml
+    with:
+      component: media
+      release-tag: ${{ github.event_name == 'push' && github.ref_name || '' }}
+
+  runtime:
+    if: github.event_name == 'push'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create the runtime release and preserve its exact source marker
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REVISION: ${{ needs.validate.outputs.candidate-revision }}
+        run: |
+          python3 scripts/container-sources.py runtime-release \
+            --repository "$GITHUB_REPOSITORY" --tag "$TAG" --revision "$REVISION"
+
+  container:
+    if: github.event_name == 'push'
+    needs: [validate, runtime]
+    uses: ./.github/workflows/container-publish.yml
+    permissions:
+      actions: read
+      contents: write
+      packages: write
+    with:
+      tag: ${{ github.ref_name }}
+      candidate-artifact: ${{ needs.validate.outputs.candidate-artifact }}
+      candidate-revision: ${{ needs.validate.outputs.candidate-revision }}

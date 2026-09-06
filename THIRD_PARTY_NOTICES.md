@@ -36,7 +36,10 @@ The image contains the following under `/usr/local/share/licenses/filetwist/`:
   package/version, including transitive runtime dependencies;
 - `debian-snapshot.txt`: the Debian snapshot used for installation;
 - `ffmpeg-buildconf.txt`: the installed FFmpeg build configuration;
-- `Dockerfile`: the build recipe, including libvips configuration.
+- `Dockerfile`: the exact recipe used for this image.
+- `Dockerfile.runtime`: the original native build recipe, including libvips
+  configuration. Application images preserve the seed's recipe before replacing
+  `Dockerfile`; the bootstrap retains the exact v0.0.2 recipe.
 
 `/opt/ffmpeg/share/licenses/ffmpeg/` preserves its exact Debian source descriptor,
 source checksums, Debian packaging, build helper, configure flags and licence
@@ -62,7 +65,8 @@ official Debian/upstream links only for specifically reviewed source routes and
 mirrors complete source sets where required. The versioned release carries the
 source index, mirrored archives, build materials, actual notices and checksums.
 See the [publishing and source-retention procedure](docs/releasing.md).
-Changed dependency identities, notice hashes, libvips source or Dockerfile
+Changed dependency identities, notice hashes, libvips source, runtime digest,
+native recipes or build helpers
 require renewed review; the workflow never approves new terms automatically.
 
 ## Before distributing binaries or images

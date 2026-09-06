@@ -9,7 +9,7 @@ import (
 )
 
 func TestRuntimeUsesOnlySourceBuiltFFmpeg(t *testing.T) {
-	data, err := os.ReadFile("Dockerfile")
+	data, err := os.ReadFile("Dockerfile.runtime")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,10 +120,11 @@ func TestFFmpegBuildRejectsUnboundedParallelism(t *testing.T) {
 }
 
 func TestRuntimeDependencyCacheIgnoresReleaseMetadata(t *testing.T) {
-	data, err := os.ReadFile("Dockerfile")
+	data, err := os.ReadFile("Dockerfile.runtime")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	dockerfile := string(data)
 	start := strings.LastIndex(dockerfile, "\nFROM ")
 	if start < 0 {
@@ -145,5 +146,36 @@ func TestRuntimeDependencyCacheIgnoresReleaseMetadata(t *testing.T) {
 				t.Fatalf("%s must be declared after dependency installation to preserve its cache", name)
 			}
 		})
+	}
+}
+
+func TestApplicationBuildOnlyCompilesGoOverPinnedRuntime(t *testing.T) {
+	data, err := os.ReadFile("Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	recipe := string(data)
+	pin := regexp.MustCompile(`(?m)^ARG MEDIA_RUNTIME_IMAGE=ghcr.io/guigui42/filetwist@sha256:[0-9a-f]{64}$`)
+	if !pin.MatchString(recipe) || strings.Count(recipe, "\nFROM ") != 2 {
+		t.Fatal("application build must contain only a Go builder and a digest-pinned runtime stage")
+	}
+	for _, forbidden := range []string{"apt-get", "meson", "build-ffmpeg", "ffmpeg-build", "vips-build", "Dockerfile.runtime AS"} {
+		if strings.Contains(recipe, forbidden) {
+			t.Errorf("application build must not compile or install native dependencies: %s", forbidden)
+		}
+	}
+	for _, required := range []string{
+		"FROM ${MEDIA_RUNTIME_IMAGE}", "go build -trimpath",
+		"COPY --from=go-build /out/filetwist ", "COPY --from=go-build /out/filetwist-server ",
+		"USER 10001:10001", "io.github.filetwist.media-runtime=",
+	} {
+		if !strings.Contains(recipe, required) {
+			t.Errorf("application recipe missing %s", required)
+		}
+	}
+	preserve := strings.Index(recipe, "cp /usr/local/share/licenses/filetwist/Dockerfile")
+	overwrite := strings.Index(recipe, "COPY --chmod=0644 deploy/Dockerfile ")
+	if preserve < 0 || preserve > overwrite {
+		t.Fatal("bootstrap native recipe must be preserved before replacing the application recipe")
 	}
 }
