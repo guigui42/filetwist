@@ -260,7 +260,11 @@ historical archives. The actual old inventory, notices and build recipe must
 still match that review exactly.
 
 If a run stopped after source publication but before any image push, rerun its
-failed job while the candidate artifact remains available. A rebuilt candidate
+failed job while the candidate artifact remains available. A fresh image-only
+dispatch can also recover the original candidate using the immutable artifact ID
+recorded in the source manifest; it checks that archive's index/runtime digests
+and runs the shared validation without rebuilding. An expired or missing original
+artifact fails explicitly. A rebuilt candidate
 with different runtime or attestation hashes cannot replace that recorded candidate.
 If the original artifact is unavailable and no identical candidate survives, use a new version instead
 of weakening the checks or moving the tag.

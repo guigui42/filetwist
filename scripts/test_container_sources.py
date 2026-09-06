@@ -25,7 +25,7 @@ image = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(image)
 
 
-def fixture_oci(path, labels=None):
+def fixture_oci(path, labels=None, attestation_platform=None, subject_digest=None, empty_config=False):
     blobs = {}
 
     def store(document, media_type):
@@ -38,11 +38,20 @@ def fixture_oci(path, labels=None):
                     "rootfs": {"type": "layers", "diff_ids": []}}, "application/vnd.oci.image.config.v1+json")
     runtime = store({"schemaVersion": 2, "config": config, "layers": []}, image.MANIFEST)
     runtime["platform"] = {"architecture": "amd64", "os": "linux"}
-    layers = [store({"predicateType": predicate}, "application/vnd.in-toto+json")
+    layers = [store({"_type": "https://in-toto.io/Statement/v0.1",
+                     "predicateType": predicate,
+                     "subject": [{"name": "image", "digest": {
+                         "sha256": subject_digest or runtime["digest"][7:]}}]},
+                    "application/vnd.in-toto+json")
               for predicate in ("https://spdx.dev/Document", "https://slsa.dev/provenance/v1")]
-    attestation = store({"schemaVersion": 2, "config": config, "layers": layers}, image.MANIFEST)
-    attestation["annotations"] = {"vnd.docker.reference.digest": runtime["digest"]}
-    attestation["platform"] = {"architecture": "unknown", "os": "unknown"}
+    attestation_config = store(
+        {} if empty_config else {"architecture": "unknown", "os": "unknown", "config": {}},
+        "application/vnd.oci.empty.v1+json" if empty_config else "application/vnd.oci.image.config.v1+json",
+    )
+    attestation = store({"schemaVersion": 2, "config": attestation_config, "layers": layers}, image.MANIFEST)
+    attestation["annotations"] = {"vnd.docker.reference.digest": runtime["digest"],
+                                  "vnd.docker.reference.type": "attestation-manifest"}
+    attestation["platform"] = attestation_platform or {"architecture": "unknown", "os": "unknown"}
     root = store({"schemaVersion": 2, "manifests": [runtime, attestation]}, image.INDEX)
     blobs["index.json"] = json.dumps({"schemaVersion": 2, "manifests": [root]}).encode()
     blobs["oci-layout"] = b'{"imageLayoutVersion":"1.0.0"}'
@@ -432,6 +441,7 @@ class SourceTests(unittest.TestCase):
             "io.github.filetwist.corresponding-source": f"https://github.com/{repo}/releases/tag/{tag}/",
         })
         args = SimpleNamespace(tag=tag, repository=repo, revision=revision, checkout=directory,
+                               candidate_artifact="123",
                                inventory=directory / "inventory.tar.gz", uris=directory / "uris.txt",
                                policy=directory / "policy.json", candidate=directory / "candidate.tar",
                                output=directory / "first")
@@ -459,9 +469,19 @@ class SourceTests(unittest.TestCase):
         second = {p.name: sources.sha256(p) for p in (directory / "second").glob("filetwist_*")}
         self.assertEqual(first, second)
         self.assertEqual(len(first), 5)
+        historical = {p.name: p.read_bytes() for p in (directory / "first").glob("filetwist_*")}
+        published = [{"name": name, "id": name} for name in historical]
+        args.output, args.candidate_artifact = directory / "recovered", "456"
+        with patch.object(sources, "run", side_effect=command), \
+                patch.object(sources, "release_assets", return_value=published), \
+                patch.object(sources, "asset_bytes", side_effect=lambda repo, asset: historical[asset["name"]]), \
+                patch.object(sources, "check_link"):
+            sources.prepare(args)
+        self.assertEqual(first, {p.name: sources.sha256(p) for p in args.output.glob("filetwist_*")})
         manifest = json.loads((args.output / "filetwist_12.4.0-rc.2_sources.json").read_text())
         self.assertEqual(manifest["release"], tag)
         self.assertEqual(manifest["source_commit"], revision)
+        self.assertEqual(manifest["candidate_artifact_id"], "123")
         self.assertEqual(manifest["debian_sources"][0]["version"], "2:1.0-3")
         self.assertTrue(manifest["runtime_manifest_sha256"].startswith("sha256:"))
         for command_name in ("publish", "verify"):
@@ -548,8 +568,29 @@ class ImageTests(unittest.TestCase):
                 info = tarfile.TarInfo(name)
                 info.size = len(content)
                 target.addfile(info, io.BytesIO(content))
-        with self.assertRaisesRegex(ValueError, "checksum mismatch"):
+        opened = tarfile.open(archive)
+        with patch.object(image.tarfile, "open", return_value=opened), \
+                self.assertRaisesRegex(ValueError, "checksum mismatch"):
             image.OCI(archive)
+        self.assertTrue(opened.closed)
+
+    def test_attestations_cannot_hide_other_runtimes_or_subjects(self):
+        directory = Path(".release/source-tests") / str(uuid.uuid4())
+        directory.mkdir(parents=True)
+        self.addCleanup(shutil.rmtree, directory)
+        archive = directory / "candidate.tar"
+        for platform, subject in (
+            ({"architecture": "arm64", "os": "linux"}, None),
+            (None, "0" * 64),
+        ):
+            with self.subTest(platform=platform, subject=subject):
+                fixture_oci(archive, attestation_platform=platform, subject_digest=subject)
+                with self.assertRaises(ValueError):
+                    image.OCI(archive)
+        for empty_config in (False, True):
+            fixture_oci(archive, empty_config=empty_config)
+            accepted = image.OCI(archive)
+            accepted.archive.close()
 
     def test_publish_preserves_complete_oci_graph(self):
         directory = Path(".release/source-tests") / str(uuid.uuid4())

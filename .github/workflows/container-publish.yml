@@ -37,6 +37,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      actions: read
     outputs:
       image: ${{ steps.release.outputs.image }}
       sha: ${{ steps.release.outputs.sha }}
@@ -112,6 +113,36 @@ jobs:
           python3 scripts/container-image.py fetch \
             --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG" \
             --expected-runtime "$EXPECTED_RUNTIME" --expected-index "$EXPECTED_INDEX"
+      - name: Locate the original candidate after an interrupted first push
+        id: recovery
+        if: inputs.candidate-artifact == '' && steps.release.outputs.runtime != '' && steps.existing.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_ID: ${{ steps.release.outputs.candidate-artifact }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" \
+            --jq 'if .expired or .workflow_run.id == null then error("The original candidate artifact is unavailable. Restore the exact archive or use a new version; do not rebuild this recorded version.") else "run-id=" + (.workflow_run.id | tostring) end' \
+            >> "$GITHUB_OUTPUT"
+      - name: Recover the immutable candidate from its original workflow
+        if: steps.recovery.outputs.run-id != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ steps.release.outputs.candidate-artifact }}
+          run-id: ${{ steps.recovery.outputs.run-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+          path: .release
+      - name: Verify recovery against the published source manifest
+        if: steps.recovery.outputs.run-id != ''
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          TAG: ${{ inputs.tag }}
+          EXPECTED_RUNTIME: ${{ steps.release.outputs.runtime }}
+          EXPECTED_INDEX: ${{ steps.release.outputs.index }}
+        run: |
+          python3 scripts/container-image.py verify-index \
+            --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG" \
+            --expected-runtime "$EXPECTED_RUNTIME" --expected-index "$EXPECTED_INDEX"
       - name: Validate an image-only retry with the shared CI checks
         id: candidate
         if: inputs.candidate-artifact == ''
@@ -123,7 +154,7 @@ jobs:
           version: ${{ steps.release.outputs.version }}
           revision: ${{ steps.release.outputs.sha }}
           source-url: ${{ steps.release.outputs.source_url }}
-          reuse-archive: ${{ steps.existing.outputs.exists == 'true' }}
+          reuse-archive: ${{ steps.existing.outputs.exists == 'true' || steps.recovery.outputs.run-id != '' }}
           upload-candidate: true
       - name: Capture actual notices and authenticated exact source metadata
         env:
@@ -145,11 +176,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
           RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          CANDIDATE_ARTIFACT: ${{ inputs.candidate-artifact || steps.candidate.outputs.artifact-id }}
         run: |
           python3 scripts/container-sources.py prepare \
             --repository "$GITHUB_REPOSITORY" --tag "$TAG" --revision "$RELEASE_SHA" \
             --checkout release-source --inventory .release/inventory.tar \
             --uris .release/source-uris.txt --policy .github/container-source-policy.json \
+            --candidate-artifact "$CANDIDATE_ARTIFACT" \
             --candidate .release/candidate.oci.tar --output .release/assets
           printf '## Source review ready\n\nReview the source assets before approving the ghcr job.\n\nExact application commit: `%s`\n' \
             "$RELEASE_SHA" >> "$GITHUB_STEP_SUMMARY"

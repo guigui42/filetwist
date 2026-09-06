@@ -63,6 +63,13 @@ def verify_validation(candidate, archive, receipt, revision, tag, run_id):
 class OCI:
     def __init__(self, path):
         self.archive = tarfile.open(path, "r:")
+        try:
+            self._read_index()
+        except BaseException:
+            self.archive.close()
+            raise
+
+    def _read_index(self):
         self.members = {}
         for member in self.archive:
             if member.isdir():
@@ -72,7 +79,8 @@ class OCI:
                     or member.name in self.members):
                 raise ValueError(f"Unsafe or duplicate OCI archive member: {member.name}")
             self.members[member.name] = member
-        top = json.load(self.archive.extractfile(self.members["index.json"]))
+        with self.archive.extractfile(self.members["index.json"]) as stream:
+            top = json.load(stream)
         if len(top["manifests"]) != 1:
             raise ValueError("Expected one root image descriptor.")
         self.root = top["manifests"][0]
@@ -80,8 +88,12 @@ class OCI:
         if self.root["mediaType"] != INDEX:
             raise ValueError("Candidate needs an OCI index containing provenance and SBOM.")
         self.runtime = runtime_descriptor(self.index)
+        if self.runtime["mediaType"] != MANIFEST:
+            raise ValueError("Runtime must be an OCI image manifest.")
         self.manifest = self.document(self.runtime)
         self.config = self.document(self.manifest["config"])
+        if self.config.get("architecture") != "amd64" or self.config.get("os") != "linux":
+            raise ValueError("Runtime configuration must be Linux/amd64.")
         self.validate_attestations()
 
     def stream(self, descriptor):
@@ -91,10 +103,9 @@ class OCI:
         member = self.members["blobs/sha256/" + value[7:]]
         if member.size != descriptor["size"]:
             raise ValueError(f"OCI size mismatch: {value}")
-        stream = self.archive.extractfile(member)
-        if "sha256:" + hashlib.file_digest(stream, "sha256").hexdigest() != value:
-            raise ValueError(f"OCI checksum mismatch: {value}")
-        stream.close()
+        with self.archive.extractfile(member) as stream:
+            if "sha256:" + hashlib.file_digest(stream, "sha256").hexdigest() != value:
+                raise ValueError(f"OCI checksum mismatch: {value}")
         return self.archive.extractfile(member)
 
     def document(self, descriptor):
@@ -107,10 +118,34 @@ class OCI:
             if descriptor == self.runtime:
                 continue
             annotations = descriptor.get("annotations", {})
-            if annotations.get("vnd.docker.reference.digest") != self.runtime["digest"]:
-                raise ValueError("Attestation does not refer to the tested runtime.")
-            for layer in self.document(descriptor)["layers"]:
+            if (descriptor.get("platform") != {"architecture": "unknown", "os": "unknown"}
+                    or descriptor.get("mediaType") != MANIFEST
+                    or annotations.get("vnd.docker.reference.type") != "attestation-manifest"
+                    or annotations.get("vnd.docker.reference.digest") != self.runtime["digest"]):
+                raise ValueError("Only attestations bound to the tested runtime may accompany it.")
+            manifest = self.document(descriptor)
+            config = self.document(manifest["config"])
+            empty = manifest["config"]["mediaType"] == "application/vnd.oci.empty.v1+json" and config == {}
+            legacy = (
+                manifest["config"]["mediaType"] == "application/vnd.oci.image.config.v1+json"
+                and config.get("architecture") == "unknown" and config.get("os") == "unknown"
+                and not config.get("config", {}).get("Entrypoint")
+                and not config.get("config", {}).get("Cmd")
+            )
+            if not (empty or legacy):
+                raise ValueError("An attestation must not contain a runnable image configuration.")
+            for layer in manifest["layers"]:
+                if layer.get("mediaType") != "application/vnd.in-toto+json":
+                    raise ValueError("Attestation layers must be in-toto statements.")
                 statement = self.document(layer)
+                subjects = statement.get("subject")
+                if (statement.get("_type") not in (
+                        "https://in-toto.io/Statement/v0.1", "https://in-toto.io/Statement/v1")
+                        or not isinstance(subjects, list) or not subjects
+                        or any(not isinstance(subject, dict)
+                               or subject.get("digest", {}).get("sha256") != self.runtime["digest"][7:]
+                               for subject in subjects)):
+                    raise ValueError("Attestation statement subject differs from the tested runtime.")
                 predicates.add(statement.get("predicateType"))
         if not {"https://spdx.dev/Document", "https://slsa.dev/provenance/v0.2"}.issubset(predicates) and not (
             "https://spdx.dev/Document" in predicates and "https://slsa.dev/provenance/v1" in predicates
@@ -353,7 +388,7 @@ class Registry:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("fetch", "load", "push", "record-validation", "verify-validation"))
+    parser.add_argument("command", choices=("fetch", "load", "push", "record-validation", "verify-validation", "verify-index"))
     parser.add_argument("--archive", type=Path, required=True)
     parser.add_argument("--image", required=True)
     parser.add_argument("--tag", required=True)
@@ -381,7 +416,12 @@ def main():
         return
     candidate = OCI(args.archive)
     try:
-        if args.command in ("record-validation", "verify-validation"):
+        if args.command == "verify-index":
+            if (candidate.runtime["digest"] != args.expected_runtime
+                    or candidate.root["digest"] != args.expected_index):
+                raise ValueError("Recovered candidate differs from the immutable source manifest.")
+            print("Recovered the exact OCI index and runtime recorded by the release.")
+        elif args.command in ("record-validation", "verify-validation"):
             run_id = os.environ.get("GITHUB_RUN_ID", "")
             if args.command == "record-validation":
                 receipt = validation_receipt(candidate, args.archive, args.revision, args.tag, run_id)

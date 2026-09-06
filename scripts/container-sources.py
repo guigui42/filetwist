@@ -653,7 +653,7 @@ def previous_materials(repo, tag, prefix):
         files = read_archive(archive)
     if sha256(files["source/review.json"]) != manifest["review_sha256"]:
         raise ValueError("Published historical review differs from its recorded hash.")
-    return content, files
+    return content, files, manifest
 
 
 def requests(args):
@@ -667,6 +667,8 @@ def requests(args):
 
 
 def prepare(args):
+    if not re.fullmatch(r"[1-9][0-9]*", args.candidate_artifact):
+        raise ValueError("An immutable candidate artifact ID is required for recoverable publication.")
     output = args.output
     reject_symlinks(output)
     output.mkdir(parents=True, exist_ok=True)
@@ -786,6 +788,8 @@ def prepare(args):
         "review_sha256": sha256(policy_bytes), "source_index_url": source_url,
         "dependency_inputs_sha256": dependency_hashes,
         "review_status": policy.get("status", "pending"),
+        "candidate_artifact_id": (previous[2]["candidate_artifact_id"] if previous
+                                  else args.candidate_artifact),
         "blockers": policy.get("blockers", []),
         "materials": {"url": f"{download_base}/{materials_name}", "sha256": sha256(output / materials_name)},
         "mirrors": {"url": f"{download_base}/{mirrors_name}", "sha256": sha256(output / mirrors_name)},
@@ -839,17 +843,19 @@ def resolve(args):
     if reference["type"] != "commit" or reference["sha"] != revision:
         raise ValueError("Version tag no longer points at the commit recorded by the binary release.")
     previous = [item for item in assets if item["name"] == f"filetwist_{version(args.tag)}_sources.json"]
-    runtime, image_index = "", ""
+    runtime, image_index, artifact = "", "", ""
     if previous:
         manifest = json.loads(asset_bytes(args.repository, previous[0]))
         runtime = manifest.get("runtime_manifest_sha256", "")
         image_index = manifest.get("image_index_sha256", "")
+        artifact = manifest.get("candidate_artifact_id", "")
         if (manifest.get("source_commit") != revision
                 or not re.fullmatch(r"sha256:[0-9a-f]{64}", runtime)
-                or not re.fullmatch(r"sha256:[0-9a-f]{64}", image_index)):
+                or not re.fullmatch(r"sha256:[0-9a-f]{64}", image_index)
+                or not isinstance(artifact, str) or not re.fullmatch(r"[1-9][0-9]*", artifact)):
             raise ValueError("Existing source manifest is incompatible or differs from the release. Do not overwrite it.")
     output_values({**release_metadata(args.repository, args.tag, revision),
-                   "runtime": runtime, "index": image_index})
+                   "runtime": runtime, "index": image_index, "candidate-artifact": artifact})
 
 
 def publish(args):
@@ -967,6 +973,7 @@ def main():
             for value in ("inventory", "uris", "policy", "checkout", "output", "candidate"):
                 command.add_argument("--" + value, type=Path, required=True)
             command.add_argument("--revision", required=True)
+            command.add_argument("--candidate-artifact", required=True)
         elif name in ("publish", "verify"):
             command.add_argument("--directory", type=Path, required=True)
         elif name == "metadata":
