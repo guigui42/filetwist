@@ -1,0 +1,4 @@
+services:
+  filetwist:
+    environment:
+      ACCELERATION: cpu

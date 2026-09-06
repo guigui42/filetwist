@@ -1,0 +1,52 @@
+name: filetwist
+
+services:
+  filetwist:
+    image: ${FILETWIST_IMAGE:-filetwist:prototype}
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        VERSION: ${FILETWIST_VERSION:-dev}
+        REVISION: ${FILETWIST_REVISION:-unknown}
+      platforms:
+        - linux/amd64
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    volumes:
+      - filetwist-data:/data
+    ports:
+      - "${FILETWIST_PORT:-127.0.0.1:8080}:${FILETWIST_CONTAINER_PORT:-8080}"
+    environment:
+      DATA_DIR: /data
+      # One variable drives the bind port, the published port, and the
+      # healthcheck, which derives its URL from LISTEN_ADDRESS.
+      LISTEN_ADDRESS: ":${FILETWIST_CONTAINER_PORT:-8080}"
+      JOB_TTL: ${FILETWIST_JOB_TTL:-24h}
+      MAX_CONCURRENT_PROCESSES: ${FILETWIST_MAX_CONCURRENT_PROCESSES:-2}
+      MAX_FILES_PER_JOB: ${FILETWIST_MAX_FILES_PER_JOB:-25}
+      MAX_UPLOAD_SIZE: ${FILETWIST_MAX_UPLOAD_SIZE:-4GiB}
+      MIN_FREE_SPACE: ${FILETWIST_MIN_FREE_SPACE:-2GiB}
+      COMMAND_TIMEOUT: ${FILETWIST_COMMAND_TIMEOUT:-10m}
+      DIAGNOSTICS: ${FILETWIST_DIAGNOSTICS:-local}
+      READ_STALL_TIMEOUT: ${FILETWIST_READ_STALL_TIMEOUT:-60s}
+      WRITE_STALL_TIMEOUT: ${FILETWIST_WRITE_STALL_TIMEOUT:-60s}
+      MIN_UPLOAD_RATE: ${FILETWIST_MIN_UPLOAD_RATE:-4KiB}
+      TRUSTED_PROXIES: ${FILETWIST_TRUSTED_PROXIES:-none}
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "filetwist-container", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  filetwist-data:

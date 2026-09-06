@@ -1,0 +1,165 @@
+name: Publish container
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Existing version tag to build and publish
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag, for example v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ghcr-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: ghcr
+    steps:
+      - name: Require publication approval and corresponding source
+        id: release
+        env:
+          TAG: ${{ inputs.tag }}
+          PUBLISH_ENABLED: ${{ vars.GHCR_PUBLISH_ENABLED }}
+          SOURCE_BASE_URL: ${{ vars.CONTAINER_SOURCE_BASE_URL }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ || ${#TAG} -gt 128 ]]; then
+            echo "::error::Expected a version tag supported by Docker, such as v0.1.0 or v0.1.0-rc.1."
+            exit 1
+          fi
+          if [[ "$PUBLISH_ENABLED" != "true" ]]; then
+            echo "::error::Complete the redistribution review and set GHCR_PUBLISH_ENABLED=true before publishing."
+            exit 1
+          fi
+          if [[ "$SOURCE_BASE_URL" != https://* || "$SOURCE_BASE_URL" =~ [[:space:]?#] ]]; then
+            echo "::error::Set CONTAINER_SOURCE_BASE_URL to the HTTPS directory hosting versioned corresponding source."
+            exit 1
+          fi
+          source_url="${SOURCE_BASE_URL%/}/${TAG}/"
+          curl --fail --location --silent --show-error \
+            --proto '=https' --proto-redir '=https' \
+            --connect-timeout 10 --max-time 60 --output /dev/null "$source_url"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "source_url=$source_url" >> "$GITHUB_OUTPUT"
+      - name: Require an existing published release
+        id: github-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          draft=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')
+          if [[ "$draft" != "false" ]]; then
+            echo "::error::Publish the GitHub release for this tag before publishing its image."
+            exit 1
+          fi
+          revision=$(gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern filetwist-source-commit.txt --output -)
+          if [[ ! "$revision" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::The release must include the source commit recorded by GoReleaser."
+            exit 1
+          fi
+          echo "sha=$revision" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ steps.github-release.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Record the tagged commit
+        id: commit
+        env:
+          TAG: ${{ inputs.tag }}
+          RELEASE_SHA: ${{ steps.github-release.outputs.sha }}
+        run: |
+          if [[ "$(git rev-parse "refs/tags/${TAG}^{commit}")" != "$RELEASE_SHA" ]]; then
+            echo "::error::The version tag no longer points at the commit recorded in the release."
+            exit 1
+          fi
+          echo "sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        id: metadata
+        with:
+          images: ${{ steps.release.outputs.image }}
+          flavor: latest=false
+          tags: type=raw,value=${{ inputs.tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
+            org.opencontainers.image.version=${{ steps.release.outputs.version }}
+            io.github.filetwist.corresponding-source=${{ steps.release.outputs.source_url }}
+      - name: Build candidate without pushing
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          file: deploy/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          provenance: false
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.release.outputs.version }}
+            REVISION=${{ steps.commit.outputs.sha }}
+          cache-from: type=gha,scope=filetwist-runtime
+          cache-to: type=gha,mode=max,scope=filetwist-runtime
+      - name: Exercise the candidate
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}:${{ inputs.tag }}
+        run: |
+          scripts/validate-container.sh "$IMAGE"
+          scripts/measure-container.sh "$IMAGE"
+          npm --prefix tests/browser ci
+          npm --prefix tests/browser exec -- playwright install --with-deps chromium
+          make test-browser IMAGE="$IMAGE"
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish tested build with attestations
+        id: push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          file: deploy/Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: mode=max
+          sbom: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.release.outputs.version }}
+            REVISION=${{ steps.commit.outputs.sha }}
+      - name: Record published digest
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+          SOURCE_URL: ${{ steps.release.outputs.source_url }}
+        run: |
+          printf '## Published container\n\n`%s@%s`\n\nCorresponding source: %s\n' \
+            "$IMAGE" "$DIGEST" "$SOURCE_URL" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: container-browser-failure-artifacts
+          path: tests/browser/test-results/
+          retention-days: 7
+          if-no-files-found: ignore

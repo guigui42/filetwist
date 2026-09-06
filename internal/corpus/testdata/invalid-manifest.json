@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.1",
+  "fixtures": [
+    {
+      "id": "Invalid ID",
+      "title": "",
+      "input_path": "../private/photo.png",
+      "representation": "archive",
+      "source": {
+        "category": "private_capture",
+        "privacy": "private",
+        "redistribution": "allowed"
+      },
+      "input": {
+        "media_kind": "image",
+        "extension": "PNG",
+        "mime_type": "not a mime type",
+        "properties": {
+          "container": "",
+          "streams": [],
+          "alpha": "",
+          "metadata": {
+            "gps": "",
+            "color_profile": "",
+            "exif": "",
+            "xmp": "",
+            "gain_map": ""
+          }
+        }
+      },
+      "operation": "raw_ffmpeg",
+      "expected": {
+        "outcome": "success"
+      },
+      "tolerances": {
+        "duration_millis": -1,
+        "dimension_pixels": -1,
+        "frame_rate_millifps": -1,
+        "bitrate_percent": 101
+      },
+      "traits": [
+        "Duplicate",
+        "Duplicate"
+      ]
+    }
+  ]
+}

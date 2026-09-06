@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.1",
+  "fixtures": [
+    {
+      "id": "generated-test-png",
+      "title": "Generated test PNG",
+      "input_path": "generated/test.png",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "test generator"
+      },
+      "input": {
+        "media_kind": "image",
+        "extension": ".png",
+        "mime_type": "image/png",
+        "properties": {
+          "container": "png",
+          "streams": [
+            {
+              "kind": "image",
+              "codec": "png",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 2,
+            "height": 2
+          },
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "required",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "lossless_image",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "png",
+          "streams": [
+            {
+              "kind": "image",
+              "codec": "png",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 2,
+            "height": 2
+          },
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "required",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 0,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "transparency"
+      ]
+    }
+  ]
+}

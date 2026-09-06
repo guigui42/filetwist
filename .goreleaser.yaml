@@ -1,0 +1,88 @@
+version: 2
+project_name: filetwist
+
+before:
+  hooks:
+    - sh scripts/prepare-release.sh
+
+builds:
+  - id: cli
+    main: ./cmd/filetwist
+    binary: filetwist
+    env:
+      - CGO_ENABLED=0
+    goos: [linux]
+    goarch: [amd64]
+    goamd64: [v1]
+    flags:
+      - -trimpath
+      - -buildvcs=false
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+  - id: server
+    main: ./cmd/filetwist-server
+    binary: filetwist-server
+    env:
+      - CGO_ENABLED=0
+    goos: [linux]
+    goarch: [amd64]
+    goamd64: [v1]
+    flags:
+      - -trimpath
+      - -buildvcs=false
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - ids: [cli, server]
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - THIRD_PARTY_NOTICES.md
+      - src: docs/binary-release.md
+        dst: .
+        strip_parent: true
+      - src: .release/go.LICENSE
+        dst: licenses
+        strip_parent: true
+      - src: internal/web/static/htmx.LICENSE
+        dst: licenses
+        strip_parent: true
+      - src: .release/filetwist-source-commit.txt
+        dst: .
+        strip_parent: true
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+  extra_files:
+    - glob: .release/filetwist-source-commit.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-dev-{{ .ShortCommit }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^copilot checkpoint:'
+
+release:
+  name_template: "Filetwist {{ .Tag }}"
+  target_commitish: "{{ .FullCommit }}"
+  prerelease: auto
+  extra_files:
+    - glob: .release/filetwist-source-commit.txt
+  header: |
+    Linux/amd64 binaries for Filetwist. The archive includes both the CLI and
+    server, installation notes, and licence notices. FFmpeg/ffprobe and
+    libvips/vipsheader must be installed separately; they are not in this archive.
+
+    Filetwist is a shared household workspace without built-in authentication
+    or TLS. Keep originals and review the documented conversion limitations.
+    During the source preview, security fixes target the current main branch.
+
+    Container publication runs separately after this release and requires the
+    configured redistribution approval. See docs/releasing.md at this tag for
+    the image name, prerequisites, and publishing status.

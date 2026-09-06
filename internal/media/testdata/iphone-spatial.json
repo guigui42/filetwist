@@ -1,0 +1,71 @@
+{
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "hevc",
+      "codec_type": "video",
+      "width": 1921,
+      "height": 1081,
+      "pix_fmt": "yuv420p10le",
+      "disposition": {
+        "default": 1,
+        "attached_pic": 0
+      },
+      "side_data_list": [
+        {
+          "side_data_type": "Display Matrix",
+          "rotation": 90
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "sample_rate": "48000",
+      "channels": 2,
+      "channel_layout": "stereo",
+      "disposition": {
+        "default": 1,
+        "attached_pic": 0
+      }
+    },
+    {
+      "index": 2,
+      "codec_name": "apac",
+      "codec_type": "audio",
+      "sample_rate": "48000",
+      "channels": 4,
+      "channel_layout": "4.0",
+      "disposition": {
+        "default": 0,
+        "attached_pic": 0
+      }
+    },
+    {
+      "index": 3,
+      "codec_name": "mjpeg",
+      "codec_type": "video",
+      "width": 640,
+      "height": 480,
+      "disposition": {
+        "default": 0,
+        "attached_pic": 1
+      }
+    },
+    {
+      "index": 4,
+      "codec_name": "bin_data",
+      "codec_type": "data",
+      "disposition": {
+        "default": 0,
+        "attached_pic": 0
+      }
+    }
+  ],
+  "format": {
+    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration": "12.345000",
+    "size": "1234567"
+  }
+}

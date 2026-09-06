@@ -1,0 +1,9 @@
+services:
+  filetwist:
+    devices:
+      - "${VAAPI_DEVICE:-/dev/dri/renderD128}:${VAAPI_DEVICE:-/dev/dri/renderD128}:rwm"
+    group_add:
+      - "${FILETWIST_RENDER_GID:?set FILETWIST_RENDER_GID to the render device group ID}"
+    environment:
+      ACCELERATION: auto
+      VAAPI_DEVICE: "${VAAPI_DEVICE:-/dev/dri/renderD128}"

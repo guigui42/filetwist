@@ -1,0 +1,1530 @@
+{
+  "schema_version": "1.1",
+  "fixtures": [
+    {
+      "id": "generated-rgba-png",
+      "title": "Generated 2x2 transparent RGBA PNG",
+      "input_path": "generated/rgba-2x2.png",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "image",
+        "extension": ".png",
+        "mime_type": "image/png",
+        "properties": {
+          "container": "png",
+          "streams": [
+            {
+              "kind": "image",
+              "codec": "png",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 2,
+            "height": 2
+          },
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "required",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "lossless_image",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "png",
+          "streams": [
+            {
+              "kind": "image",
+              "codec": "png",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 2,
+            "height": 2
+          },
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "required",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 0,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "transparency"
+      ]
+    },
+    {
+      "id": "generated-opaque-jpeg",
+      "title": "Generated 3x2 opaque JPEG",
+      "input_path": "generated/opaque-3x2.jpg",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "image",
+        "extension": ".jpg",
+        "mime_type": "image/jpeg",
+        "properties": {
+          "container": "jpeg",
+          "streams": [
+            {
+              "kind": "image",
+              "codec": "mjpeg",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 3,
+            "height": 2
+          },
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "forbidden",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_photo",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "jpeg",
+          "streams": [
+            {
+              "kind": "image",
+              "codec": "mjpeg",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 3,
+            "height": 2
+          },
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "forbidden",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 0,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "odd-dimensions",
+        "opaque"
+      ]
+    },
+    {
+      "id": "generated-oriented-gps-jpeg",
+      "title": "Generated 3x2 JPEG with EXIF orientation and synthetic GPS tags",
+      "input_path": "generated/oriented-gps-3x2.jpg",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "image",
+        "extension": ".jpg",
+        "mime_type": "image/jpeg",
+        "properties": {
+          "container": "jpeg",
+          "streams": [
+            {
+              "kind": "image",
+              "codec": "mjpeg",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 3,
+            "height": 2
+          },
+          "orientation": {
+            "rotation_degrees": 90,
+            "mirrored": false,
+            "pixel_normalized": false
+          },
+          "alpha": "forbidden",
+          "metadata": {
+            "gps": "required",
+            "color_profile": "ignored",
+            "exif": "required",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_photo",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "jpeg",
+          "streams": [
+            {
+              "kind": "image",
+              "codec": "mjpeg",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 2,
+            "height": 3
+          },
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "forbidden",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 0,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "exif-orientation",
+        "gps-metadata",
+        "metadata-removal"
+      ]
+    },
+    {
+      "id": "generated-animated-gif",
+      "title": "Generated two-frame transparent GIF",
+      "input_path": "generated/animated-2x2.gif",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "image",
+        "extension": ".gif",
+        "mime_type": "image/gif",
+        "properties": {
+          "container": "gif",
+          "streams": [
+            {
+              "kind": "image",
+              "codec": "gif",
+              "count": 1,
+              "pixel_format": "bgra"
+            }
+          ],
+          "dimensions": {
+            "width": 2,
+            "height": 2
+          },
+          "duration_millis": 200,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "required",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_photo",
+      "expected": {
+        "outcome": "rejection",
+        "rejection_code": "animated-image-unsupported"
+      },
+      "tolerances": {
+        "duration_millis": 0,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "animation",
+        "transparency"
+      ]
+    },
+    {
+      "id": "generated-mono-wav",
+      "title": "Generated 100ms mono PCM WAV",
+      "input_path": "generated/tone-8khz-mono.wav",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "audio",
+        "extension": ".wav",
+        "mime_type": "audio/wav",
+        "properties": {
+          "container": "wav",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "pcm_s16le",
+              "count": 1,
+              "channels": 1,
+              "sample_rate": 8000
+            }
+          ],
+          "duration_millis": 100,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "lossless_audio",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "flac",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "flac",
+              "count": 1,
+              "channels": 1,
+              "sample_rate": 8000
+            }
+          ],
+          "duration_millis": 100,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 5,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "low-sample-rate",
+        "mono-audio"
+      ]
+    },
+    {
+      "id": "generated-mono-flac",
+      "title": "Generated 250ms mono FLAC",
+      "input_path": "generated/tone-44khz-mono.flac",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "audio",
+        "extension": ".flac",
+        "mime_type": "audio/flac",
+        "properties": {
+          "container": "flac",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "flac",
+              "count": 1,
+              "channels": 1,
+              "sample_rate": 44100
+            }
+          ],
+          "duration_millis": 250,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_audio",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp3",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "mp3",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "duration_millis": 250,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 80,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "flac-input",
+        "mono-audio"
+      ]
+    },
+    {
+      "id": "generated-stereo-mp3",
+      "title": "Generated 250ms stereo MP3",
+      "input_path": "generated/tone-44khz-stereo.mp3",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "audio",
+        "extension": ".mp3",
+        "mime_type": "audio/mpeg",
+        "properties": {
+          "container": "mp3",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "mp3",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 44100
+            }
+          ],
+          "duration_millis": 250,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_audio",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp3",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "mp3",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "duration_millis": 250,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 100,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "lossy-audio",
+        "mp3-input"
+      ]
+    },
+    {
+      "id": "generated-mono-opus",
+      "title": "Generated 250ms mono Opus",
+      "input_path": "generated/tone-48khz-mono.opus",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "audio",
+        "extension": ".opus",
+        "mime_type": "audio/ogg",
+        "properties": {
+          "container": "ogg",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "opus",
+              "count": 1,
+              "channels": 1,
+              "sample_rate": 48000
+            }
+          ],
+          "duration_millis": 256,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_audio",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp3",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "mp3",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "duration_millis": 256,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 100,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "mono-audio",
+        "opus-input"
+      ]
+    },
+    {
+      "id": "generated-stereo-aac",
+      "title": "Generated 250ms stereo AAC in M4A",
+      "input_path": "generated/tone-48khz-stereo.m4a",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "audio",
+        "extension": ".m4a",
+        "mime_type": "audio/mp4",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "duration_millis": 250,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "lossless_audio",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "flac",
+          "streams": [
+            {
+              "kind": "audio",
+              "codec": "flac",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "duration_millis": 250,
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 80,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "aac-input",
+        "lossy-audio"
+      ]
+    },
+    {
+      "id": "generated-h264-aac-mp4",
+      "title": "Generated H.264 MP4 with AAC",
+      "input_path": "generated/h264-aac-32x24.mp4",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "video",
+        "extension": ".mp4",
+        "mime_type": "video/mp4",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 1,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_video",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 100,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "aac-audio",
+        "cpu-vaapi-input",
+        "h264-input"
+      ]
+    },
+    {
+      "id": "generated-h264-silent-mp4",
+      "title": "Generated silent H.264 MP4",
+      "input_path": "generated/h264-silent-32x24.mp4",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "video",
+        "extension": ".mp4",
+        "mime_type": "video/mp4",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_video",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 100,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "h264-input",
+        "no-audio"
+      ]
+    },
+    {
+      "id": "generated-h264-rotated-mp4",
+      "title": "Generated H.264 MP4 with 90-degree display rotation",
+      "input_path": "generated/h264-rotated-32x24.mp4",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "video",
+        "extension": ".mp4",
+        "mime_type": "video/mp4",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 1,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 90,
+            "mirrored": false,
+            "pixel_normalized": false
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_video",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 24,
+            "height": 32
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 100,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "display-matrix",
+        "rotation"
+      ]
+    },
+    {
+      "id": "generated-h264-odd-mkv",
+      "title": "Generated odd-dimension H.264 Matroska video",
+      "input_path": "generated/h264-odd-17x15.mkv",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "video",
+        "extension": ".mkv",
+        "mime_type": "video/x-matroska",
+        "properties": {
+          "container": "matroska",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv444p"
+            }
+          ],
+          "dimensions": {
+            "width": 17,
+            "height": 15
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_video",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            }
+          ],
+          "dimensions": {
+            "width": 16,
+            "height": 14
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 100,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "h264-input",
+        "matroska",
+        "odd-dimensions"
+      ]
+    },
+    {
+      "id": "generated-h264-aac-subtitle-mkv",
+      "title": "Generated H.264 Matroska with AAC and an extra subtitle stream",
+      "input_path": "generated/h264-aac-subtitle.mkv",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "video",
+        "extension": ".mkv",
+        "mime_type": "video/x-matroska",
+        "properties": {
+          "container": "matroska",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 1,
+              "sample_rate": 48000
+            },
+            {
+              "kind": "subtitle",
+              "codec": "subrip",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 405,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_video",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 405,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 100,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "additional-track",
+        "matroska",
+        "subtitle-drop"
+      ]
+    },
+    {
+      "id": "generated-vp9-opus-webm",
+      "title": "Generated VP9 WebM with Opus",
+      "input_path": "generated/vp9-opus-32x24.webm",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "video",
+        "extension": ".webm",
+        "mime_type": "video/webm",
+        "properties": {
+          "container": "webm",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "vp9",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "opus",
+              "count": 1,
+              "channels": 1,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 508,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "smaller_video",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 508,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 100,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "opus-audio",
+        "vp9-input",
+        "webm"
+      ]
+    },
+    {
+      "id": "generated-hevc-aac-mp4",
+      "title": "Generated HEVC MP4 with AAC",
+      "input_path": "generated/hevc-aac-32x24.mp4",
+      "representation": "media",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "video",
+        "extension": ".mp4",
+        "mime_type": "video/mp4",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "hevc",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 1,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_video",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 32,
+            "height": 24
+          },
+          "duration_millis": 500,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 100,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "aac-audio",
+        "cpu-vaapi-input",
+        "hevc-input"
+      ]
+    },
+    {
+      "id": "simulated-iphone-spatial-apac-probe",
+      "title": "Simulated ffprobe JSON for iPhone HEVC, AAC, and unsupported APAC",
+      "input_path": "generated/iphone-spatial-apac.ffprobe.json",
+      "representation": "ffprobe_json",
+      "source": {
+        "category": "generated",
+        "privacy": "synthetic",
+        "redistribution": "allowed",
+        "generator": "go run ./fixtures/generate.go",
+        "license": "CC0-1.0"
+      },
+      "input": {
+        "media_kind": "video",
+        "extension": ".mov",
+        "mime_type": "video/quicktime",
+        "properties": {
+          "container": "mov",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "hevc",
+              "count": 1,
+              "pixel_format": "yuv420p10le"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            },
+            {
+              "kind": "audio",
+              "codec": "apac",
+              "count": 1,
+              "channels": 4,
+              "sample_rate": 48000
+            },
+            {
+              "kind": "image",
+              "codec": "mjpeg",
+              "count": 1
+            },
+            {
+              "kind": "data",
+              "codec": "bin_data",
+              "count": 1
+            }
+          ],
+          "dimensions": {
+            "width": 1921,
+            "height": 1081
+          },
+          "duration_millis": 12345,
+          "orientation": {
+            "rotation_degrees": 90,
+            "mirrored": false,
+            "pixel_normalized": false
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "operation": "compatible_video",
+      "expected": {
+        "outcome": "success",
+        "properties": {
+          "container": "mp4",
+          "streams": [
+            {
+              "kind": "video",
+              "codec": "h264",
+              "count": 1,
+              "pixel_format": "yuv420p"
+            },
+            {
+              "kind": "audio",
+              "codec": "aac",
+              "count": 1,
+              "channels": 2,
+              "sample_rate": 48000
+            }
+          ],
+          "dimensions": {
+            "width": 1080,
+            "height": 1920
+          },
+          "duration_millis": 12345,
+          "orientation": {
+            "rotation_degrees": 0,
+            "mirrored": false,
+            "pixel_normalized": true
+          },
+          "alpha": "ignored",
+          "metadata": {
+            "gps": "forbidden",
+            "color_profile": "ignored",
+            "exif": "forbidden",
+            "xmp": "forbidden",
+            "gain_map": "forbidden"
+          }
+        }
+      },
+      "tolerances": {
+        "duration_millis": 1000,
+        "dimension_pixels": 0,
+        "frame_rate_millifps": 0,
+        "bitrate_percent": 0
+      },
+      "traits": [
+        "apac-simulated",
+        "attached-picture",
+        "data-stream",
+        "ffprobe-json",
+        "rotation",
+        "unsupported-audio"
+      ]
+    }
+  ]
+}

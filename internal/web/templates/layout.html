@@ -1,0 +1,27 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="same-origin">
+<meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true},{"code":"...","swap":false,"error":true}]}'>
+<title>{{.Title}}</title>
+<link rel="stylesheet" href="{{asset .Base "app.css"}}">
+<script src="{{asset .Base "htmx.min.js"}}" defer></script>
+<script src="{{asset .Base "app.js"}}" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site">
+  <h1><a class="site-title" href="{{url .Base "/"}}">Filetwist</a></h1>
+  <p>Compatibility-first conversion for phone photos, audio, and video.</p>
+</header>
+<main id="main">
+<div id="request-notice" aria-live="assertive"></div>
+{{if eq .Page "index"}}{{template "index" .}}{{else if eq .Page "job"}}{{template "jobpage" .}}{{else}}{{template "diagnosticspage" .}}{{end}}
+</main>
+<footer class="site">
+  <p>Uploads and results are removed automatically after {{.RetentionLabel}}.</p>
+</footer>
+</body>
+</html>{{end}}

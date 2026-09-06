@@ -1,0 +1,16 @@
+.git
+.github
+.idea
+.vscode
+bin
+coverage.out
+data
+dist
+.release
+fixtures/private
+reports
+*.log
+*.tmp
+**/node_modules
+**/test-results
+**/playwright-report

@@ -1,0 +1,48 @@
+{{define "index"}}
+<section class="card">
+  <h2>Upload files</h2>
+  <form id="upload-form" action="{{url .Base "/jobs"}}" method="post" enctype="multipart/form-data">
+    <div id="drop-zone" class="drop-zone" tabindex="0" role="button"
+         aria-controls="file-input"
+         aria-describedby="upload-limits">
+      <strong>Drop files here</strong>
+      <span>or activate to choose files</span>
+    </div>
+    <label class="visually-hidden" for="file-input">Files to convert</label>
+    <input id="file-input" class="visually-hidden" type="file" name="files" multiple>
+    <p id="file-list" class="file-list" role="status" aria-live="polite">No files selected.</p>
+    <p id="upload-limits" class="hint">
+      Up to {{.MaxFiles}} files and {{.MaxUploadLabel}} per upload.
+    </p>
+    <div class="actions">
+      <button id="upload-submit" type="submit" disabled>Upload</button>
+    </div>
+    <div id="upload-progress" class="progress" hidden>
+      <label class="visually-hidden" for="upload-progress-bar">Upload progress</label>
+      <progress id="upload-progress-bar" max="100" value="0"></progress>
+      <p id="upload-progress-text" role="status" aria-live="polite"></p>
+    </div>
+  </form>
+</section>
+
+<div id="job-panel" aria-live="polite">
+{{if .Job}}{{template "job" .}}{{end}}
+</div>
+
+{{if .Jobs}}
+<section class="card">
+  <h2>Recent jobs</h2>
+  <ul class="files">
+    {{range .Jobs}}
+    <li class="file">
+      <header>
+        <h3><a href="{{$.Base}}/jobs/{{.ID}}">{{.ShortID}}</a></h3>
+        <span class="badge {{.BadgeClass}}">{{.StateLabel}}</span>
+      </header>
+      <p class="meta">{{.FileCount}} file(s), created {{.CreatedLabel}}.</p>
+    </li>
+    {{end}}
+  </ul>
+</section>
+{{end}}
+{{end}}

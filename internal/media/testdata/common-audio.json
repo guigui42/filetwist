@@ -1,0 +1,55 @@
+{
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "flac",
+      "codec_type": "audio",
+      "sample_rate": "96000",
+      "channels": 2,
+      "channel_layout": "stereo",
+      "duration": "3.500000",
+      "disposition": {
+        "default": 1,
+        "attached_pic": 0
+      }
+    },
+    {
+      "index": 1,
+      "codec_name": "opus",
+      "codec_type": "audio",
+      "sample_rate": "48000",
+      "channels": 2,
+      "channel_layout": "stereo",
+      "disposition": {
+        "default": 0,
+        "attached_pic": 0
+      }
+    },
+    {
+      "index": 2,
+      "codec_name": "pcm_s24le",
+      "codec_type": "audio",
+      "sample_rate": "48000",
+      "channels": 1,
+      "channel_layout": "mono",
+      "disposition": {
+        "default": 0,
+        "attached_pic": 0
+      }
+    },
+    {
+      "index": 3,
+      "codec_name": "unknown",
+      "codec_type": "unknown",
+      "disposition": {
+        "default": 0,
+        "attached_pic": 0
+      }
+    }
+  ],
+  "format": {
+    "format_name": "flac",
+    "duration": "3.500000",
+    "size": "700000"
+  }
+}
