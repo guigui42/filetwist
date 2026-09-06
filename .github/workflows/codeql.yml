@@ -1,0 +1,85 @@
+name: CodeQL
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.event.pull_request.number }}
+  cancel-in-progress: ${{ github.event.action != 'closed' }}
+
+jobs:
+  changes:
+    name: Detect CodeQL changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      projects: ${{ steps.changes.outputs.projects }}
+      scan-required: ${{ steps.changes.outputs.scan-required }}
+    steps:
+      # This action is unofficial. Pin it to an audited commit before updating.
+      - name: Select projects with changed language files
+        id: changes
+        uses: advanced-security/monorepo-code-scanning-action/changes@a2cf78dc347b2629a30acc54d6be6e4149524f94
+        with:
+          projects-json: .github/codeql-projects.json
+          extra-globs: |
+            go:
+              - go.mod
+              - go.sum
+            javascript-typescript:
+              - internal/web/static/app.js
+            python:
+              - Pipfile
+              - Pipfile.lock
+              - pyproject.toml
+              - requirements-dev.in
+              - requirements-dev.txt
+              - requirements.in
+              - requirements.txt
+              - setup.cfg
+
+  scan:
+    name: Scan ${{ matrix.project.language }} (${{ matrix.project.name }})
+    if: github.event.action != 'closed' && needs.changes.outputs.scan-required == 'true'
+    needs: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.changes.outputs.projects).projects }}
+    steps:
+      - name: Analyze changed project
+        uses: advanced-security/monorepo-code-scanning-action/scan@a2cf78dc347b2629a30acc54d6be6e4149524f94
+
+  republish:
+    name: Preserve unchanged CodeQL results
+    needs: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Republish results
+        uses: advanced-security/monorepo-code-scanning-action/republish-sarif@a2cf78dc347b2629a30acc54d6be6e4149524f94
+        with:
+          projects: ${{ needs.changes.outputs.projects }}
