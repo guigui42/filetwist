@@ -1,0 +1,54 @@
+{
+  "go": {
+    "build-mode": "autobuild",
+    "projects": {
+      "go": {
+        "paths": [
+          "cmd",
+          "deploy",
+          "fixtures",
+          "internal",
+          "scripts"
+        ],
+        "files": [
+          "go.mod",
+          "go.sum"
+        ]
+      }
+    }
+  },
+  "javascript-typescript": {
+    "build-mode": "none",
+    "projects": {
+      "javascript-typescript": {
+        "paths": [
+          "internal/web/templates",
+          "tests/browser"
+        ],
+        "files": [
+          "internal/web/static/app.js"
+        ]
+      }
+    }
+  },
+  "python": {
+    "build-mode": "none",
+    "projects": {
+      "python": {
+        "paths": [
+          "scripts"
+        ],
+        "files": [
+          "Pipfile",
+          "Pipfile.lock",
+          "pyproject.toml",
+          "requirements-dev.in",
+          "requirements-dev.txt",
+          "requirements.in",
+          "requirements.txt",
+          "setup.cfg"
+        ]
+      }
+    }
+  }
+}
