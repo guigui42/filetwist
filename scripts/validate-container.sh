@@ -17,8 +17,9 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-mkdir "$OUTPUT"
-chmod 0777 "$OUTPUT"
+# Keep bind-mounted directories host-owned so cleanup works across runtime UIDs.
+mkdir -p "$OUTPUT/codecs"
+chmod 0777 "$OUTPUT" "$OUTPUT/codecs"
 
 run_runtime() {
   docker run --rm --platform linux/amd64 \

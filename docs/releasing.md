@@ -25,6 +25,25 @@ Adding these workflows does not publish a release or image by itself.
    who can publish release tags. Creating the workflow does not configure
    environment protection rules.
 
+## GitHub Actions dry run
+
+Use **Actions > Release > Run workflow** and select the branch to test, or run:
+
+```sh
+gh workflow run release.yml --ref YOUR_BRANCH
+```
+
+Manual runs are always non-publishing, even when selecting a tag. They run
+the same Go, container, browser, and GoReleaser snapshot checks as CI. The
+binary and container publication jobs only run for tag pushes, not manual
+dispatches, and dry-run jobs retain read-only repository permissions.
+
+Download `release-dry-run-<attempt>` from the workflow run's artifacts section
+within seven days. It contains the Linux/amd64 snapshot archive, checksums,
+and the exact source commit marker. These are workflow artifacts, not a GitHub
+release or GHCR image. A successful dry run does not exercise registry writes
+or replace the redistribution approval and corresponding-source requirements.
+
 ## Container redistribution gate
 
 Complete the [third-party redistribution review](../THIRD_PARTY_NOTICES.md)

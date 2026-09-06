@@ -28,6 +28,20 @@ The separate Linux container job builds the runtime and executes the smoke
 script with mandatory codec/conversion assertions, then the browser workflow.
 CI also creates a GoReleaser snapshot archive without publishing it.
 
+CI and release jobs share cached Go modules/build outputs, npm downloads,
+GoReleaser and Chromium binaries, and Docker build layers. Go caches track
+`go.mod` and `go.sum` when present; npm and Chromium caches track the browser
+lockfile. Binary caches use exact OS/architecture and version keys, with the
+Ubuntu release included for Chromium. Browser setup still runs `npm ci` and
+installs required OS libraries on cache hits; it does not cache `node_modules`.
+The shared setup actions live under [`.github/actions`](.github/actions).
+
+Docker builds use the GitHub Actions v2 cache in the `filetwist-runtime` scope
+with `mode=max`, including the libvips build stage. Release metadata arguments
+stay below runtime dependency installation so version changes reuse those
+layers. Caches follow GitHub's branch access rules; cache misses download or
+build normally and never bypass conversion checks or publication gates.
+
 Describe the user-visible change, affected operations, reproduction steps, and
 checks performed. Add regression coverage for changed behavior. Do not put
 private media, metadata, paths, tokens, or original filenames in an issue or
