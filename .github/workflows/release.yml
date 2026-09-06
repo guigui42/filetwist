@@ -72,6 +72,7 @@ jobs:
     needs: [validate, binaries]
     uses: ./.github/workflows/container-publish.yml
     permissions:
+      actions: read
       contents: write
       packages: write
     with:

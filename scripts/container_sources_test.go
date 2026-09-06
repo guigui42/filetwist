@@ -42,7 +42,8 @@ func TestReleasePublicationGuards(t *testing.T) {
 			"DOCKER_CONFIG=\"$PWD/.release/anonymous-docker\" docker pull --platform linux/amd64",
 			"vars.GHCR_PUBLISH_ENABLED",
 			"vars.CONTAINER_SOURCE_BASE_URL",
-			"ref: ${{ steps.release.outputs.sha }}",
+			"git merge-base --is-ancestor \"$RELEASE_SHA\" \"refs/remotes/origin/$DEFAULT_BRANCH\"",
+			"git worktree add --detach release-source \"$RELEASE_SHA\"",
 		},
 		"actions/prepare-container/action.yml": {
 			"provenance: mode=max",
@@ -93,6 +94,7 @@ func TestReleaseReusesValidatedCICandidate(t *testing.T) {
 		"needs: [validate, binaries]",
 		"candidate-artifact: ${{ needs.validate.outputs.candidate-artifact }}",
 		"candidate-revision: ${{ needs.validate.outputs.candidate-revision }}",
+		"      actions: read",
 	} {
 		if !strings.Contains(release, link) {
 			t.Errorf("release must pass validated CI outputs: %s", link)

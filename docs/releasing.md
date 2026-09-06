@@ -235,7 +235,10 @@ gh workflow run container-publish.yml --ref main -f tag=v0.1.0
 ```
 
 This runs tooling from `main`, but builds/tests the exact existing binary release
-commit. It does **not** recreate the binary release or alter any Git tag.
+commit. That commit must already be in the default branch's merged history.
+The workflow verifies this ancestry before materializing or executing historical
+code with default-branch cache access. It does **not** recreate the binary release
+or alter any Git tag.
 The same command works for any supported existing version, not just the example.
 Manual dispatch of **Release** remains a read-only dry run and cannot retry a push.
 
