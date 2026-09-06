@@ -28,6 +28,21 @@ The separate Linux container job builds the runtime and executes the smoke
 script with mandatory codec/conversion assertions, then the browser workflow.
 CI also creates a GoReleaser snapshot archive without publishing it.
 
+CI and release jobs share cached Go modules/build outputs, npm downloads,
+GoReleaser and Chromium binaries, and Docker build layers. Go caches track
+`go.mod` and `go.sum` when present; npm and Chromium headless-shell caches track
+the browser lockfile. Binary caches use exact OS/architecture and version keys,
+with the Ubuntu release included for Chromium. Browser setup still runs `npm ci` and
+installs required OS libraries on cache hits; it does not cache `node_modules`.
+CI installs only the headless shell used by the tests, not full Chromium.
+The shared setup actions live under [`.github/actions`](.github/actions).
+
+Docker builds use the GitHub Actions v2 cache in the `filetwist-runtime` scope
+with `mode=max`, including the libvips build stage. Release metadata arguments
+stay below runtime dependency installation so version changes reuse those
+layers. Caches follow GitHub's branch access rules; cache misses download or
+build normally and never bypass conversion checks or publication gates.
+
 Describe the user-visible change, affected operations, reproduction steps, and
 checks performed. Add regression coverage for changed behavior. Do not put
 private media, metadata, paths, tokens, or original filenames in an issue or
@@ -94,6 +109,9 @@ and the browser dependencies described above. The smoke script uses generated
 fixtures and a temporary container on a random loopback port;
 it does not need the deployed household service. The size tool checks the
 built image rather than relying on a previously reported measurement.
+Size measurement first uses `gzip -1`; if that archive exceeds the unchanged
+450 MiB ceiling, it retries with `gzip -9` before rejecting the image. The
+reported compression level identifies which measurement was used.
 
 On suitable Linux Intel hardware, run `make test-vaapi` after changes to the
 hardware path, FFmpeg, libva, or the driver stack. Confirm that it executes

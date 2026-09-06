@@ -128,15 +128,6 @@ RUN install --directory /opt/vips/share/licenses/libvips \
 FROM ${DEBIAN_IMAGE}
 
 ARG DEBIAN_SNAPSHOT=20260905T000000Z
-ARG VERSION=dev
-ARG REVISION=unknown
-
-LABEL org.opencontainers.image.title="Filetwist" \
-      org.opencontainers.image.description="Household media converter" \
-      org.opencontainers.image.version="${VERSION}" \
-      org.opencontainers.image.revision="${REVISION}" \
-      org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.source="https://github.com/guigui42/filetwist"
 
 RUN printf '%s\n' \
       'Types: deb' \
@@ -211,6 +202,16 @@ RUN printf '%s\n' '/opt/vips/lib' > /etc/ld.so.conf.d/libvips.conf \
     && probe-media capabilities \
     && filetwist --version \
     && filetwist-server version
+
+# Release metadata must not invalidate the dependency installation layers.
+ARG VERSION=dev
+ARG REVISION=unknown
+LABEL org.opencontainers.image.title="Filetwist" \
+      org.opencontainers.image.description="Household media converter" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/guigui42/filetwist"
 
 USER 10001:10001
 WORKDIR /data

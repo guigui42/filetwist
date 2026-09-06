@@ -88,10 +88,9 @@ jobs:
             exit 1
           fi
           echo "sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '24'
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+        with:
+          cache-binary: true
       - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         id: metadata
         with:
@@ -117,17 +116,20 @@ jobs:
           build-args: |
             VERSION=${{ steps.release.outputs.version }}
             REVISION=${{ steps.commit.outputs.sha }}
-          cache-from: type=gha,scope=filetwist-runtime
-          cache-to: type=gha,mode=max,scope=filetwist-runtime
+          cache-from: type=gha,version=2,scope=filetwist-runtime
+          cache-to: type=gha,version=2,mode=max,scope=filetwist-runtime
       - name: Exercise the candidate
         env:
           IMAGE: ${{ steps.release.outputs.image }}:${{ inputs.tag }}
         run: |
           scripts/validate-container.sh "$IMAGE"
           scripts/measure-container.sh "$IMAGE"
-          npm --prefix tests/browser ci
-          npm --prefix tests/browser exec -- playwright install --with-deps chromium
-          make test-browser IMAGE="$IMAGE"
+      - name: Prepare browser tests
+        uses: ./.github/actions/setup-browser-tests
+      - name: Exercise browser workflow
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}:${{ inputs.tag }}
+        run: make test-browser IMAGE="$IMAGE"
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ghcr.io
