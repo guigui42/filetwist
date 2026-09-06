@@ -1,6 +1,11 @@
 name: Set up cached browser tests
 description: Restore npm downloads and pinned Chromium headless shell on Ubuntu 24.04.
 
+inputs:
+  source-directory:
+    description: Checkout containing the browser tests
+    default: .
+
 runs:
   using: composite
   steps:
@@ -8,17 +13,18 @@ runs:
       with:
         node-version: '24'
         cache: npm
-        cache-dependency-path: tests/browser/package-lock.json
+        cache-dependency-path: ${{ inputs.source-directory }}/tests/browser/package-lock.json
     - name: Install browser test dependencies
       shell: bash
+      working-directory: ${{ inputs.source-directory }}
       run: npm --prefix tests/browser ci --prefer-offline
     - name: Cache Chromium headless shell
       uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-headless-v1-${{ runner.os }}-${{ runner.arch }}-ubuntu-24.04-${{ hashFiles('tests/browser/package-lock.json') }}
+        key: playwright-headless-v1-${{ runner.os }}-${{ runner.arch }}-ubuntu-24.04-${{ hashFiles(format('{0}/tests/browser/package-lock.json', inputs.source-directory)) }}
     # Always install OS libraries; Playwright skips browser downloads on a cache hit.
     - name: Install Chromium headless shell and system dependencies
       shell: bash
-      working-directory: tests/browser
+      working-directory: ${{ inputs.source-directory }}/tests/browser
       run: npx playwright install --with-deps --only-shell chromium

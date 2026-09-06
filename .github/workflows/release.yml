@@ -17,15 +17,17 @@ jobs:
   tag:
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        if: github.event_name == 'push'
+        with:
+          persist-credentials: false
       - name: Require a version tag
         if: github.event_name == 'push'
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::Use a version tag such as v0.1.0 or v0.1.0-rc.1."
-            exit 1
-          fi
+          python3 scripts/container-sources.py metadata \
+            --repository "$GITHUB_REPOSITORY" --tag "$TAG" --revision "$(git rev-parse HEAD)"
       - name: Describe dry run
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -37,6 +39,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
     with:
       upload-release-artifacts: ${{ github.event_name == 'workflow_dispatch' }}
+      release-tag: ${{ github.event_name == 'push' && github.ref_name || '' }}
 
   binaries:
     if: github.event_name == 'push'
@@ -66,10 +69,13 @@ jobs:
 
   container:
     if: github.event_name == 'push'
-    needs: binaries
+    needs: [validate, binaries]
     uses: ./.github/workflows/container-publish.yml
     permissions:
-      contents: read
+      actions: read
+      contents: write
       packages: write
     with:
       tag: ${{ github.ref_name }}
+      candidate-artifact: ${{ needs.validate.outputs.candidate-artifact }}
+      candidate-revision: ${{ needs.validate.outputs.candidate-revision }}

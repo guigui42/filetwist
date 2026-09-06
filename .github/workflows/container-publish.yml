@@ -1,4 +1,5 @@
 name: Publish container
+run-name: "Publish container: ${{ inputs.tag }}"
 
 on:
   workflow_call:
@@ -7,6 +8,14 @@ on:
         description: Existing version tag to build and publish
         required: true
         type: string
+      candidate-artifact:
+        description: Validated OCI artifact from this run's reused CI workflow
+        type: string
+        default: ''
+      candidate-revision:
+        description: Exact source commit validated by that CI artifact
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       tag:
@@ -16,152 +25,280 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: ghcr-${{ inputs.tag }}
   cancel-in-progress: false
 
 jobs:
-  publish:
+  prepare:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    environment: ghcr
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: read
+      actions: read
+    outputs:
+      image: ${{ steps.release.outputs.image }}
+      sha: ${{ steps.release.outputs.sha }}
+      candidate-artifact: ${{ inputs.candidate-artifact || steps.candidate.outputs.artifact-id }}
+      source-artifact: ${{ steps.source-artifact.outputs.artifact-id }}
     steps:
-      - name: Require publication approval and corresponding source
+      - name: Check out this workflow's release tooling
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require an existing published binary release
         id: release
-        env:
-          TAG: ${{ inputs.tag }}
-          PUBLISH_ENABLED: ${{ vars.GHCR_PUBLISH_ENABLED }}
-          SOURCE_BASE_URL: ${{ vars.CONTAINER_SOURCE_BASE_URL }}
-        run: |
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ || ${#TAG} -gt 128 ]]; then
-            echo "::error::Expected a version tag supported by Docker, such as v0.1.0 or v0.1.0-rc.1."
-            exit 1
-          fi
-          if [[ "$PUBLISH_ENABLED" != "true" ]]; then
-            echo "::error::Complete the redistribution review and set GHCR_PUBLISH_ENABLED=true before publishing."
-            exit 1
-          fi
-          if [[ "$SOURCE_BASE_URL" != https://* || "$SOURCE_BASE_URL" =~ [[:space:]?#] ]]; then
-            echo "::error::Set CONTAINER_SOURCE_BASE_URL to the HTTPS directory hosting versioned corresponding source."
-            exit 1
-          fi
-          source_url="${SOURCE_BASE_URL%/}/${TAG}/"
-          curl --fail --location --silent --show-error \
-            --proto '=https' --proto-redir '=https' \
-            --connect-timeout 10 --max-time 60 --output /dev/null "$source_url"
-          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-          echo "source_url=$source_url" >> "$GITHUB_OUTPUT"
-      - name: Require an existing published release
-        id: github-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
         run: |
-          draft=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')
-          if [[ "$draft" != "false" ]]; then
-            echo "::error::Publish the GitHub release for this tag before publishing its image."
-            exit 1
-          fi
-          revision=$(gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
-            --pattern filetwist-source-commit.txt --output -)
-          if [[ ! "$revision" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::The release must include the source commit recorded by GoReleaser."
-            exit 1
-          fi
-          echo "sha=$revision" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          ref: ${{ steps.github-release.outputs.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Record the tagged commit
-        id: commit
+          python3 scripts/container-sources.py resolve \
+            --repository "$GITHUB_REPOSITORY" --tag "$TAG"
+      - name: Require merged release history before executing candidate code
         env:
           TAG: ${{ inputs.tag }}
-          RELEASE_SHA: ${{ steps.github-release.outputs.sha }}
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          if [[ "$(git rev-parse "refs/tags/${TAG}^{commit}")" != "$RELEASE_SHA" ]]; then
-            echo "::error::The version tag no longer points at the commit recorded in the release."
+          test "$(git rev-parse "refs/tags/${TAG}^{commit}")" = "$RELEASE_SHA" || {
+            echo "::error::The version tag moved from the commit recorded by the binary release."
             exit 1
-          fi
-          echo "sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+          }
+          git merge-base --is-ancestor "$RELEASE_SHA" "refs/remotes/origin/$DEFAULT_BRANCH" || {
+            echo "::error::Release code must already be merged into the default branch. Unreviewed branch code cannot execute with default-branch cache access."
+            exit 1
+          }
+          git worktree add --detach release-source "$RELEASE_SHA"
+          mkdir -p "$GITHUB_WORKSPACE/.release/assets"
+      - name: Download the candidate already validated by CI
+        if: inputs.candidate-artifact != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          cache-binary: true
-      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
-        id: metadata
-        with:
-          images: ${{ steps.release.outputs.image }}
-          flavor: latest=false
-          tags: type=raw,value=${{ inputs.tag }}
-          labels: |
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
-            org.opencontainers.image.version=${{ steps.release.outputs.version }}
-            io.github.filetwist.corresponding-source=${{ steps.release.outputs.source_url }}
-      - name: Build candidate without pushing
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
-        with:
-          context: .
-          file: deploy/Dockerfile
-          platforms: linux/amd64
-          load: true
-          push: false
-          provenance: false
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
-          build-args: |
-            VERSION=${{ steps.release.outputs.version }}
-            REVISION=${{ steps.commit.outputs.sha }}
-          cache-from: type=gha,version=2,scope=filetwist-runtime
-          cache-to: type=gha,version=2,mode=max,scope=filetwist-runtime
-      - name: Exercise the candidate
-        env:
-          IMAGE: ${{ steps.release.outputs.image }}:${{ inputs.tag }}
-        run: |
-          scripts/validate-container.sh "$IMAGE"
-          scripts/measure-container.sh "$IMAGE"
-      - name: Prepare browser tests
-        uses: ./.github/actions/setup-browser-tests
-      - name: Exercise browser workflow
-        env:
-          IMAGE: ${{ steps.release.outputs.image }}:${{ inputs.tag }}
-        run: make test-browser IMAGE="$IMAGE"
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish tested build with attestations
-        id: push
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
-        with:
-          context: .
-          file: deploy/Dockerfile
-          platforms: linux/amd64
-          push: true
-          provenance: mode=max
-          sbom: true
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
-          build-args: |
-            VERSION=${{ steps.release.outputs.version }}
-            REVISION=${{ steps.commit.outputs.sha }}
-      - name: Record published digest
+          artifact-ids: ${{ inputs.candidate-artifact }}
+          merge-multiple: true
+          path: .release
+      - name: Verify CI evidence before reusing its candidate
+        if: inputs.candidate-artifact != ''
         env:
           IMAGE: ${{ steps.release.outputs.image }}
-          DIGEST: ${{ steps.push.outputs.digest }}
-          SOURCE_URL: ${{ steps.release.outputs.source_url }}
+          TAG: ${{ inputs.tag }}
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          CI_SHA: ${{ inputs.candidate-revision }}
         run: |
-          printf '## Published container\n\n`%s@%s`\n\nCorresponding source: %s\n' \
-            "$IMAGE" "$DIGEST" "$SOURCE_URL" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: failure()
+          test "$CI_SHA" = "$RELEASE_SHA" || {
+            echo "::error::The CI candidate was built from a different binary release commit."
+            exit 1
+          }
+          python3 scripts/container-image.py verify-validation \
+            --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG" \
+            --revision "$RELEASE_SHA"
+          python3 scripts/container-image.py load \
+            --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG"
+          echo 'Reusing this run’s exact CI-validated OCI archive. Conversion, size and browser checks are not repeated.' \
+            >> "$GITHUB_STEP_SUMMARY"
+      - name: Reuse an already published image without rebuilding it
+        id: existing
+        if: inputs.candidate-artifact == '' && steps.release.outputs.runtime != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.release.outputs.image }}
+          TAG: ${{ inputs.tag }}
+          EXPECTED_RUNTIME: ${{ steps.release.outputs.runtime }}
+          EXPECTED_INDEX: ${{ steps.release.outputs.index }}
+        run: |
+          python3 scripts/container-image.py fetch \
+            --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG" \
+            --expected-runtime "$EXPECTED_RUNTIME" --expected-index "$EXPECTED_INDEX"
+      - name: Locate the original candidate after an interrupted first push
+        id: recovery
+        if: inputs.candidate-artifact == '' && steps.release.outputs.runtime != '' && steps.existing.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_ID: ${{ steps.release.outputs.candidate-artifact }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" \
+            --jq 'if .expired or .workflow_run.id == null then error("The original candidate artifact is unavailable. Restore the exact archive or use a new version; do not rebuild this recorded version.") else "run-id=" + (.workflow_run.id | tostring) end' \
+            >> "$GITHUB_OUTPUT"
+      - name: Recover the immutable candidate from its original workflow
+        if: steps.recovery.outputs.run-id != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: container-browser-failure-artifacts
-          path: tests/browser/test-results/
+          artifact-ids: ${{ steps.release.outputs.candidate-artifact }}
+          run-id: ${{ steps.recovery.outputs.run-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-multiple: true
+          path: .release
+      - name: Verify recovery against the published source manifest
+        if: steps.recovery.outputs.run-id != ''
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          TAG: ${{ inputs.tag }}
+          EXPECTED_RUNTIME: ${{ steps.release.outputs.runtime }}
+          EXPECTED_INDEX: ${{ steps.release.outputs.index }}
+        run: |
+          python3 scripts/container-image.py verify-index \
+            --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG" \
+            --expected-runtime "$EXPECTED_RUNTIME" --expected-index "$EXPECTED_INDEX"
+      - name: Validate an image-only retry with the shared CI checks
+        id: candidate
+        if: inputs.candidate-artifact == ''
+        uses: ./.github/actions/prepare-container
+        with:
+          source-directory: release-source
+          image: ${{ steps.release.outputs.image }}
+          tag: ${{ inputs.tag }}
+          version: ${{ steps.release.outputs.version }}
+          revision: ${{ steps.release.outputs.sha }}
+          source-url: ${{ steps.release.outputs.source_url }}
+          reuse-archive: ${{ steps.existing.outputs.exists == 'true' || steps.recovery.outputs.run-id != '' }}
+          upload-candidate: true
+      - name: Capture actual notices and authenticated exact source metadata
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}:${{ inputs.tag }}
+        run: |
+          docker run --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/scripts/container-notices.sh,dst=/notices.sh,readonly" \
+            --entrypoint sh "$IMAGE" /notices.sh \
+            > .release/inventory.tar
+          python3 scripts/container-sources.py requests \
+            --inventory .release/inventory.tar --output .release/source-requests.txt
+          docker run --rm --user 0:0 --workdir / --cap-drop ALL --cap-add DAC_OVERRIDE --security-opt no-new-privileges:true \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/scripts/container-source-uris.sh,dst=/source-uris.sh,readonly" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/.release/source-requests.txt,dst=/source-requests.txt,readonly" \
+            --entrypoint sh "$IMAGE" /source-uris.sh /source-requests.txt > .release/source-uris.txt
+      - name: Prepare reviewed exact source assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          CANDIDATE_ARTIFACT: ${{ inputs.candidate-artifact || steps.candidate.outputs.artifact-id }}
+        run: |
+          python3 scripts/container-sources.py prepare \
+            --repository "$GITHUB_REPOSITORY" --tag "$TAG" --revision "$RELEASE_SHA" \
+            --checkout release-source --inventory .release/inventory.tar \
+            --uris .release/source-uris.txt --policy .github/container-source-policy.json \
+            --candidate-artifact "$CANDIDATE_ARTIFACT" \
+            --candidate .release/candidate.oci.tar --output .release/assets
+          printf '## Source review ready\n\nReview the source assets before approving the ghcr job.\n\nExact application commit: `%s`\n' \
+            "$RELEASE_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve reviewable source assets
+        id: source-artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: container-sources-${{ inputs.tag }}-${{ github.run_attempt }}
+          path: .release/assets/filetwist_*
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: container-source-evidence-${{ inputs.tag }}-${{ github.run_attempt }}
+          path: |
+            .release/inventory.tar
+            .release/source-requests.txt
+            .release/source-uris.txt
           retention-days: 7
           if-no-files-found: ignore
+
+  sources:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.source-artifact }}
+          merge-multiple: true
+          path: .release/assets
+      - name: Append source assets without replacing existing files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          python3 scripts/container-sources.py publish \
+            --repository "$GITHUB_REPOSITORY" --tag "$TAG" --directory .release/assets
+          printf '## Published corresponding source\n\nhttps://github.com/%s/releases/tag/%s/\n\nExisting assets were compared byte-for-byte and never replaced.\n' \
+            "$GITHUB_REPOSITORY" "$TAG" >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: [prepare, sources]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: ghcr
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Require redistribution approval and the prepared source location
+        env:
+          PUBLISH_ENABLED: ${{ vars.GHCR_PUBLISH_ENABLED }}
+          SOURCE_BASE_URL: ${{ vars.CONTAINER_SOURCE_BASE_URL }}
+        run: |
+          test "$PUBLISH_ENABLED" = true || {
+            echo "::error::Complete redistribution review and set GHCR_PUBLISH_ENABLED=true."
+            exit 1
+          }
+          test "${SOURCE_BASE_URL%/}" = "https://github.com/$GITHUB_REPOSITORY/releases/tag" || {
+            echo "::error::Set CONTAINER_SOURCE_BASE_URL=https://github.com/$GITHUB_REPOSITORY/releases/tag to the prepared, versioned release sources."
+            exit 1
+          }
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.candidate-artifact }}
+          merge-multiple: true
+          path: .release
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.source-artifact }}
+          merge-multiple: true
+          path: .release/assets
+      - name: Recheck the immutable tag and public source assets after approval
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+          IMAGE: ${{ needs.prepare.outputs.image }}
+          RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          python3 scripts/container-image.py verify-validation \
+            --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG" \
+            --revision "$RELEASE_SHA"
+          python3 scripts/container-sources.py verify \
+            --repository "$GITHUB_REPOSITORY" --tag "$TAG" --directory .release/assets
+      - name: Publish the tested OCI archive, retaining SBOM and provenance
+        id: push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ needs.prepare.outputs.image }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          python3 scripts/container-image.py push \
+            --archive .release/candidate.oci.tar --image "$IMAGE" --tag "$TAG" \
+            --source-manifest ".release/assets/filetwist_${TAG#v}_sources.json"
+      - name: Verify anonymous access to the exact published digest
+        env:
+          IMAGE: ${{ needs.prepare.outputs.image }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          mkdir -p .release/anonymous-docker
+          printf '{"auths":{}}\n' > .release/anonymous-docker/config.json
+          if ! DOCKER_CONFIG="$PWD/.release/anonymous-docker" docker pull --platform linux/amd64 "$IMAGE@$DIGEST"; then
+            printf '## Container stored, public access not verified\n\n`%s@%s`\n\nAnonymous pull failed. Check package visibility and repository Actions access, then rerun the failed job.\n' \
+              "$IMAGE" "$DIGEST" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Anonymous pull failed. A successful push does not make a GHCR package public. Open the package Settings, set visibility to Public, grant this repository Actions access if needed, then rerun Publish container for the same tag. Never move or overwrite the tag."
+            exit 1
+          fi
+          printf '## Public container verified\n\n`%s@%s`\n\nAnonymous Linux/amd64 pull succeeded. No latest tag was created.\n' \
+            "$IMAGE" "$DIGEST" >> "$GITHUB_STEP_SUMMARY"

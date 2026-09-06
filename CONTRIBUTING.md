@@ -36,6 +36,12 @@ with the Ubuntu release included for Chromium. Browser setup still runs `npm ci`
 installs required OS libraries on cache hits; it does not cache `node_modules`.
 CI installs only the headless shell used by the tests, not full Chromium.
 The shared setup actions live under [`.github/actions`](.github/actions).
+The [shared container preparation action](.github/actions/prepare-container/action.yml)
+owns the CI and image-only retry build/test sequence. New-tag releases pass its
+validated OCI artifact through the existing CI → binary → container workflow
+chain instead of rebuilding or repeating container tests. A receipt binds the
+archive hash, OCI digests, exact commit, tag, run and completed checks; publication
+verifies it again after environment approval.
 
 Docker builds use the GitHub Actions v2 cache in the `filetwist-runtime` scope
 with `mode=max`, including the libvips build stage. Release metadata arguments
@@ -128,6 +134,11 @@ phone compatibility.
 Follow the [publishing procedure](docs/releasing.md) before creating a public
 release. Image redistribution additionally requires the
 [third-party licence and corresponding-source review](THIRD_PARTY_NOTICES.md).
+For changes to release tooling, run `go test ./scripts ./deploy`. The Go runner
+also executes Python-stdlib regression cases for source identities, notice-policy
+gates, complete descriptors, deterministic archives, immutable release assets and
+OCI image retry behavior. These cases do not publish anything. A live release
+still requires the protected environment and successful anonymous image pull.
 
 Unless explicitly marked otherwise, contributions intentionally submitted for
 inclusion are accepted under [Apache-2.0](LICENSE), consistent with Section 5.
