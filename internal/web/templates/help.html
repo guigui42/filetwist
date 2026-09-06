@@ -1,0 +1,38 @@
+{{define "help"}}
+<article class="card help-page">
+  <h2>Help &amp; file handling</h2>
+  <p>Upload your images, audio, or video, review the detected files and selected outputs, then choose Convert. Download successful results individually or together as a ZIP.</p>
+  <p><strong>Keep your originals.</strong> These presets create converted copies, not archival backups. Check important results before sharing them.</p>
+
+  <h3 id="privacy">Shared workspace</h3>
+  <p>Everyone who can access Filetwist can view, download, cancel, and delete every job. There are no private user accounts. Authentication at a reverse proxy limits access to the workspace; it does not separate users' files.</p>
+  <p>Uploads and results expire after {{.RetentionLabel}}. Active work and downloads can postpone cleanup. Cancel stops conversion but keeps stored files. Delete removes the job, its originals, and its results; retry if a download is still holding the job open.</p>
+  <p>Image presets strip capture metadata such as EXIF and GPS while retaining supported ICC color profiles. Audio and video presets strip container/stream metadata and chapters. This is not an anonymization guarantee: filenames, visible content, and other data can still identify you.</p>
+
+  <h3 id="profiles">Choose a conversion preset</h3>
+  <p>The available choices depend on the detected content. A recommendation is a starting point, not a guarantee that every codec or device supports the conversion.</p>
+  <dl class="profile-guide">
+    {{range .Operations}}
+    <dt id="profile-{{.Value}}">{{.Label}} ({{.Format}})</dt>
+    <dd>{{.Description}}</dd>
+    {{end}}
+  </dl>
+  <p>Video presets keep the first usable video stream and first supported audio track. Unsupported audio can be omitted with a warning; subtitles, extra tracks, attachments, and chapters are dropped. Supported PQ/HLG HDR video is converted to SDR; the original HDR presentation and Dolby Vision metadata are not preserved.</p>
+  <p>Animated or multipage images and HDR still-image tone mapping are unsupported. PNG and FLAC cannot recover information already lost in the source.</p>
+
+  <h3 id="batch">Work with several files</h3>
+  <p>Open "Apply a preset to several files" during review to change eligible files together. "Keep individual choices" preserves presets you changed separately. Files that do not support the batch preset stay unchanged.</p>
+  <p>Remove unwanted files before conversion starts. Removing the last file deletes the empty job. Once a job starts, use Cancel to stop work or Delete job to remove it.</p>
+
+  <h3 id="recovery">When something goes wrong</h3>
+  <p>If the queue is full or a request fails, your selections stay available so you can retry. An unsupported or failed file reports its own message; other successful results remain downloadable.</p>
+  <p>After a server restart, unfinished jobs are marked interrupted and do not resume. Upload your originals again to retry a failed, canceled, or interrupted conversion. A job that has expired or been deleted cannot be recovered here.</p>
+
+  <h3>For self-hosting users</h3>
+  <p>The local CLI uses the same conversion profiles, one file at a time. Unlike the web form, it rejects an unavailable default rather than recommending a different operation; choose an eligible alternative explicitly.</p>
+  <p>See the <a href="https://github.com/guigui42/filetwist/blob/main/docs/cli.md">CLI guide</a>,
+    <a href="https://github.com/guigui42/filetwist/blob/main/docs/packaging.md">deployment guide</a>, and
+    <a href="https://github.com/guigui42/filetwist/blob/main/docs/web.md">full profile specifications</a>.</p>
+  <p><a class="button" href="{{url .Base "/"}}">Upload files</a></p>
+</article>
+{{end}}

@@ -11,6 +11,7 @@
   --warn: #8a5b00;
   --error: #b3261e;
   --radius: 8px;
+  --control-size: 44px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,6 +31,15 @@
 
 * {
   box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.15em;
 }
 
 body {
@@ -75,6 +85,30 @@ header.site p {
   font-size: 0.9rem;
 }
 
+header.site nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+header.site nav,
+header.site > p {
+  max-width: 56rem;
+  margin-inline: auto;
+}
+
+header.site nav > a,
+.recent-jobs h3 a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-size);
+}
+
+header.site nav > a {
+  font-size: 0.9rem;
+}
+
 main {
   display: block;
   margin: 0 auto;
@@ -97,8 +131,95 @@ footer.site {
 }
 
 .card h2 {
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   margin-top: 0;
+}
+
+summary {
+  cursor: pointer;
+  min-height: var(--control-size);
+  padding-block: 0.6rem;
+}
+
+.upload-panel > summary h2 {
+  display: inline;
+}
+
+.upload-panel:not([open]) {
+  padding-block: 0.4rem;
+}
+
+.privacy-note,
+.operation-help,
+.help-page p,
+.profile-guide {
+  max-width: 72ch;
+}
+
+.privacy-note {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0.5rem 0 1rem;
+}
+
+.operation-help {
+  margin: 0.6rem 0;
+  font-size: 0.95rem;
+}
+
+.job-panel > header {
+  margin-bottom: 1rem;
+}
+
+.job-panel > header h2 {
+  margin-bottom: 0.5rem;
+}
+
+#job-status {
+  margin: 0 0 0.5rem;
+}
+
+.job-reference {
+  margin-bottom: 0;
+}
+
+.download-actions {
+  margin-bottom: 1rem;
+}
+
+.job-form > .actions {
+  padding-block: 0.75rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.batch-tools {
+  border-block: 1px solid var(--border);
+  margin-block: 1rem;
+  padding-block: 0.35rem;
+}
+
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--control-size);
+  width: fit-content;
+  cursor: pointer;
+}
+
+.conversion-details {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.request-notice:empty {
+  display: none;
+}
+
+.request-notice {
+  margin-block: 0.75rem;
+  scroll-margin-block: 1rem;
 }
 
 .drop-zone {
@@ -148,6 +269,25 @@ footer.site {
   word-break: break-word;
 }
 
+.selected-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.selected-files li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.selected-files span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -164,8 +304,27 @@ button,
   cursor: pointer;
   display: inline-block;
   font: inherit;
+  min-height: var(--control-size);
+  min-width: var(--control-size);
   padding: 0.5rem 1rem;
   text-decoration: none;
+}
+
+button:not(:disabled):hover,
+.button:hover {
+  filter: brightness(0.94);
+}
+
+button.text-button {
+  background: transparent;
+  color: var(--accent);
+  padding-inline: 0.5rem;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+button.text-button:hover {
+  background: var(--surface-alt);
 }
 
 button.secondary,
@@ -189,7 +348,10 @@ button:disabled {
 button:focus-visible,
 .button:focus-visible,
 select:focus-visible,
-a:focus-visible {
+a:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+[tabindex="-1"]:focus {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -211,17 +373,20 @@ progress {
 
 .files {
   display: grid;
-  gap: 0.75rem;
+  gap: 0;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .file {
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 0;
+  min-width: 0;
+}
+
+.file:last-child {
+  border-bottom: 0;
 }
 
 .file header {
@@ -235,12 +400,12 @@ progress {
 .file h3 {
   font-size: 0.98rem;
   margin: 0;
-  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .meta {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   margin: 0.35rem 0 0;
 }
 
@@ -262,7 +427,33 @@ select {
   border-radius: var(--radius);
   color: var(--text);
   font: inherit;
+  min-height: var(--control-size);
+  max-width: 100%;
   padding: 0.35rem 0.5rem;
+}
+
+.output-name,
+.meta,
+.job-reference {
+  overflow-wrap: anywhere;
+}
+
+.download-file {
+  margin-block: 0.75rem 0;
+}
+
+.help-page h3 {
+  margin: 2rem 0 0.5rem;
+  scroll-margin-block: 1rem;
+}
+
+.profile-guide dt {
+  font-weight: 600;
+  margin-top: 1.25rem;
+}
+
+.profile-guide dd {
+  margin: 0.35rem 0 0;
 }
 
 .badge {
@@ -325,6 +516,11 @@ dl.summary dd {
 
 .hx-request {
   opacity: 0.6;
+}
+
+.htmx-request button,
+.htmx-request select {
+  cursor: progress;
 }
 
 table.diagnostics {

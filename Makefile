@@ -1,8 +1,9 @@
 .PHONY: packaging packaging-build packaging-compose-config packaging-smoke
 .PHONY: packaging-measure packaging-validate packaging-up packaging-down
-.PHONY: test-vaapi test-browser
+.PHONY: dev test-vaapi test-browser
 
 IMAGE ?= filetwist:prototype
+DEV_PORT ?= 18769
 VERSION ?= $(shell git rev-parse --short=12 HEAD)
 REVISION ?= $(shell git rev-parse HEAD)
 RENDER_DEVICE ?= /dev/dri/renderD128
@@ -17,6 +18,16 @@ packaging-build:
 		--build-arg VERSION=$(VERSION) \
 		--build-arg REVISION=$(REVISION) \
 		--tag $(IMAGE) .
+
+dev: IMAGE = filetwist:dev
+dev: packaging-build
+	@echo "Open http://127.0.0.1:$(DEV_PORT)/"
+	@echo "Press Ctrl+C to stop. Uploaded files and results are temporary."
+	docker run --rm --init \
+		--platform linux/amd64 \
+		--publish 127.0.0.1:$(DEV_PORT):8080 \
+		--env ACCELERATION=cpu \
+		$(IMAGE)
 
 packaging-compose-config:
 	$(COMPOSE) config --quiet

@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -19,6 +20,8 @@ type pageData struct {
 	RetentionLabel string
 	MaxFiles       int
 	MaxUploadLabel string
+	MaxUploadBytes int64
+	Operations     []optionView
 	Job            *jobView
 	Jobs           []jobSummary
 	Diagnostics    *diagnosticsView
@@ -33,6 +36,7 @@ type noticeData struct {
 // jobSummary is the compact recent-jobs list entry.
 type jobSummary struct {
 	ID           string
+	Title        string
 	ShortID      string
 	StateLabel   string
 	BadgeClass   string
@@ -43,6 +47,10 @@ type jobSummary struct {
 // jobView is the full job fragment context.
 type jobView struct {
 	ID               string
+	Heading          string
+	StatusMessage    string
+	CompletedCount   int
+	FinishedCount    int
 	ShortID          string
 	State            string
 	StateLabel       string
@@ -57,6 +65,7 @@ type jobView struct {
 	HasOutputs       bool
 	ConvertibleCount int
 	Files            []fileView
+	BatchOptions     []optionView
 }
 
 // fileView is one uploaded file inside a job fragment.
@@ -69,6 +78,9 @@ type fileView struct {
 	BadgeClass       string
 	MediaSummary     string
 	CanSelect        bool
+	CanRemove        bool
+	OperationHelp    string
+	ProbeFormat      string
 	Options          []optionView
 	RecommendedLabel string
 	SelectedLabel    string
@@ -83,9 +95,11 @@ type fileView struct {
 
 // optionView is one selectable named operation.
 type optionView struct {
-	Value    string
-	Label    string
-	Selected bool
+	Value       string
+	Label       string
+	Format      string
+	Description string
+	Selected    bool
 }
 
 // diagnosticsView is the privacy-safe diagnostics payload.
@@ -126,6 +140,7 @@ func (app *App) newPageData(title, page string) pageData {
 		RetentionLabel: humanDuration(app.retention),
 		MaxFiles:       app.manager.MaxFilesPerJob(),
 		MaxUploadLabel: humanBytes(app.manager.MaxUploadSize()),
+		MaxUploadBytes: app.manager.MaxUploadSize(),
 	}
 }
 
@@ -148,15 +163,49 @@ func (app *App) buildJobView(manifest storage.Manifest, now time.Time) *jobView 
 	}
 
 	for _, file := range manifest.Files {
-		view.Files = append(view.Files, app.buildFileView(manifest.ID, file))
+		fileView := app.buildFileView(manifest.ID, file)
+		fileView.CanRemove = manifest.State == storage.JobPending
+		fileView.CanSelect = fileView.CanSelect && manifest.State == storage.JobPending
+		view.Files = append(view.Files, fileView)
 		if file.State == storage.FileInspected {
 			view.ConvertibleCount++
 		}
 		if file.State == storage.FileCompleted && file.Output != nil {
 			view.HasOutputs = true
+			view.CompletedCount++
+		}
+		if file.State.Terminal() {
+			view.FinishedCount++
 		}
 	}
 	view.CanStart = manifest.State == storage.JobPending && view.ConvertibleCount > 0
+	if view.CanStart {
+		for _, operation := range conversion.AllOperations() {
+			for _, file := range manifest.Files {
+				if file.State == storage.FileInspected && slices.Contains(file.Compatible, operation) {
+					view.BatchOptions = append(view.BatchOptions, operationOption(operation))
+					break
+				}
+			}
+		}
+	}
+	switch {
+	case view.CanStart:
+		view.Heading = "Review your files"
+		view.StatusMessage = "Choose your outputs, then convert. You can remove files before starting."
+	case view.Poll:
+		view.Heading = "Converting your files"
+		view.StatusMessage = fmt.Sprintf("%d of %d files finished. %s. You can return to this job while it runs.", view.FinishedCount, view.FileCount, view.StateLabel)
+	case view.HasOutputs:
+		view.Heading = "Your downloads are ready"
+		if view.CompletedCount < view.FileCount {
+			view.Heading = "Some downloads are ready"
+		}
+		view.StatusMessage = fmt.Sprintf("%d of %d file%s converted. Download the results you want to keep before they expire.", view.CompletedCount, view.FileCount, plural(view.FileCount))
+	default:
+		view.Heading = "This job needs your attention"
+		view.StatusMessage = "No downloads are available. Review the messages below and upload your originals again to retry."
+	}
 	return view
 }
 
@@ -175,6 +224,7 @@ func (app *App) buildFileView(jobID string, file storage.File) fileView {
 	}
 	if file.Media != nil {
 		view.MediaSummary = mediaSummary(*file.Media)
+		view.ProbeFormat = file.Media.Format
 	}
 	if file.Recommended != "" {
 		view.RecommendedLabel = conversion.OperationLabel(file.Recommended)
@@ -183,12 +233,11 @@ func (app *App) buildFileView(jobID string, file storage.File) fileView {
 		view.SelectedLabel = conversion.OperationLabel(file.Selected)
 	}
 	for _, operation := range file.Compatible {
-		view.Options = append(view.Options, optionView{
-			Value:    string(operation),
-			Label:    conversion.OperationLabel(operation),
-			Selected: operation == selectedOrRecommended(file),
-		})
+		option := operationOption(operation)
+		option.Selected = operation == selectedOrRecommended(file)
+		view.Options = append(view.Options, option)
 	}
+	view.OperationHelp = operationOption(selectedOrRecommended(file)).Description
 	if file.Validation.Status != "" && file.Validation.Status != "not_run" {
 		view.ValidationLabel = file.Validation.Status
 		for _, issue := range file.Validation.Issues {
@@ -234,10 +283,7 @@ func selectedOrRecommended(file storage.File) corpus.Operation {
 }
 
 func mediaSummary(media conversion.DetectedMedia) string {
-	parts := []string{string(media.Kind)}
-	if media.Format != "" {
-		parts = append(parts, media.Format)
-	}
+	parts := []string{strings.TrimSpace(friendlyFormat(media.Format) + " " + string(media.Kind))}
 	if media.Width > 0 && media.Height > 0 {
 		parts = append(parts, fmt.Sprintf("%dx%d", media.Width, media.Height))
 	}
@@ -245,6 +291,41 @@ func mediaSummary(media conversion.DetectedMedia) string {
 		parts = append(parts, humanDuration(time.Duration(media.DurationMillis)*time.Millisecond))
 	}
 	return strings.Join(parts, ", ")
+}
+
+func friendlyFormat(format string) string {
+	switch strings.ToLower(strings.Split(format, ",")[0]) {
+	case "jpeg", "mjpeg":
+		return "JPEG"
+	case "png":
+		return "PNG"
+	case "webp":
+		return "WebP"
+	case "heif", "heic":
+		return "HEIF / HEIC"
+	case "avif":
+		return "AVIF"
+	case "mov", "mp4", "m4a":
+		return "QuickTime / MP4"
+	case "matroska", "webm":
+		return "Matroska / WebM"
+	default:
+		return strings.ToUpper(strings.Split(format, ",")[0])
+	}
+}
+
+func jobTitle(manifest storage.Manifest) string {
+	if len(manifest.Files) == 0 {
+		return "Empty job"
+	}
+	title := manifest.Files[0].OriginalName
+	if title == "" {
+		title = manifest.Files[0].Name
+	}
+	if len(manifest.Files) > 1 {
+		title += fmt.Sprintf(" + %d more", len(manifest.Files)-1)
+	}
+	return title
 }
 
 func jobStateLabel(state storage.JobState) string {

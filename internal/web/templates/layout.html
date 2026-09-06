@@ -10,15 +10,18 @@
 <script src="{{asset .Base "htmx.min.js"}}" defer></script>
 <script src="{{asset .Base "app.js"}}" defer></script>
 </head>
-<body>
+<body data-home-url="{{url .Base "/"}}">
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site">
+  <nav aria-label="Main navigation">
   <h1><a class="site-title" href="{{url .Base "/"}}">Filetwist</a></h1>
+  <a href="{{url .Base "/help"}}">Help &amp; file handling</a>
+  </nav>
   <p>Compatibility-first conversion for phone photos, audio, and video.</p>
 </header>
 <main id="main">
-<div id="request-notice" aria-live="assertive"></div>
-{{if eq .Page "index"}}{{template "index" .}}{{else if eq .Page "job"}}{{template "jobpage" .}}{{else}}{{template "diagnosticspage" .}}{{end}}
+<div id="request-notice" class="request-notice" tabindex="-1"></div>
+{{if eq .Page "index"}}{{template "index" .}}{{else if eq .Page "job"}}{{template "jobpage" .}}{{else if eq .Page "help"}}{{template "help" .}}{{else}}{{template "diagnosticspage" .}}{{end}}
 </main>
 <footer class="site">
   <p>Uploads and results are removed automatically after {{.RetentionLabel}}.</p>
