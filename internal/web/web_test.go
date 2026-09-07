@@ -400,6 +400,9 @@ func TestJobStatusFragmentPollsWhileActiveAndStopsWhenTerminal(t *testing.T) {
 	if strings.Contains(finalBody, `hx-trigger="every 2s"`) {
 		t.Error("terminal fragment still polls")
 	}
+	if !strings.Contains(finalBody, `data-job-state="completed"`) {
+		t.Errorf("terminal fragment has no machine-readable completed state\n%s", finalBody)
+	}
 	if !strings.Contains(finalBody, "Download all as ZIP") {
 		t.Errorf("terminal fragment has no archive link\n%s", finalBody)
 	}

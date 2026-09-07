@@ -168,17 +168,18 @@ attempt=0
 while test "$attempt" -lt 60; do
   curl --fail --silent --show-error \
     "$server_url/jobs/$job_id/status" >"$WORK/status.html"
-  if grep -q '>Completed<' "$WORK/status.html"; then
+  if grep -q 'data-job-state="completed"' "$WORK/status.html"; then
     break
   fi
-  if grep -Eq '>Failed<|>Canceled<|>Interrupted<' "$WORK/status.html"; then
+  if grep -Eq 'data-job-state="(failed|canceled|interrupted)"' "$WORK/status.html"; then
     cat "$WORK/status.html" >&2
     exit 1
   fi
   attempt=$((attempt + 1))
   sleep 1
 done
-grep -q '>Completed<' "$WORK/status.html" || {
+grep -q 'data-job-state="completed"' "$WORK/status.html" || {
+  cat "$WORK/status.html" >&2
   echo "ERROR: web conversion did not complete" >&2
   exit 1
 }

@@ -69,3 +69,22 @@ esac
 		t.Fatalf("smoke-test work directories survived cleanup: %v", remaining)
 	}
 }
+
+func TestValidateContainerUsesMachineReadableJobState(t *testing.T) {
+	script, err := os.ReadFile("validate-container.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(script)
+	for _, marker := range []string{
+		`data-job-state="completed"`,
+		`data-job-state="(failed|canceled|interrupted)"`,
+	} {
+		if !strings.Contains(content, marker) {
+			t.Errorf("container smoke test does not recognize job state marker %q", marker)
+		}
+	}
+	if strings.Contains(content, ">Completed<") {
+		t.Error("container smoke test depends on presentation text instead of the job state attribute")
+	}
+}
