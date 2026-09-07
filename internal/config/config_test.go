@@ -238,6 +238,11 @@ func TestNormalizeWebRoot(t *testing.T) {
 	if _, err := config.NormalizeWebRoot("/a?b"); err == nil {
 		t.Error("NormalizeWebRoot accepted a query character")
 	}
+	for _, input := range []string{"//example.com", `/\example.com`} {
+		if _, err := config.NormalizeWebRoot(input); err == nil {
+			t.Errorf("NormalizeWebRoot(%q) accepted an absolute redirect prefix", input)
+		}
+	}
 }
 
 func TestLoadErrorsNameTheVariable(t *testing.T) {
