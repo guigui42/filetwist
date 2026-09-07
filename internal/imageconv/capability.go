@@ -34,21 +34,23 @@ func decodeProbeSpec(name, executable, inputPath, outputPath string) (probe.Func
 
 // ProbeHEIF performs a real HEIF decode through the shared functional prober.
 func ProbeHEIF(ctx context.Context, prober *probe.Prober, executable, inputPath, tempDir string) (Capabilities, error) {
-	return probeDecode(ctx, prober, executable, inputPath, tempDir, FormatHEIF)
+	return probeDecodeWithFS(ctx, prober, executable, inputPath, tempDir, FormatHEIF, os.MkdirTemp, os.RemoveAll)
 }
 
 // ProbeAVIF performs a real AVIF decode through the shared functional prober.
 func ProbeAVIF(ctx context.Context, prober *probe.Prober, executable, inputPath, tempDir string) (Capabilities, error) {
-	return probeDecode(ctx, prober, executable, inputPath, tempDir, FormatAVIF)
+	return probeDecodeWithFS(ctx, prober, executable, inputPath, tempDir, FormatAVIF, os.MkdirTemp, os.RemoveAll)
 }
 
-func probeDecode(
+func probeDecodeWithFS(
 	ctx context.Context,
 	prober *probe.Prober,
 	executable string,
 	inputPath string,
 	tempDir string,
 	format Format,
+	mkdirTemp func(string, string) (string, error),
+	removeAll func(string) error,
 ) (capabilities Capabilities, returnErr error) {
 	if prober == nil {
 		return capabilities, imageError(CodeInvalidRequest, "probe image decode", errors.New("prober must not be nil"))
@@ -56,19 +58,20 @@ func probeDecode(
 	if tempDir == "" {
 		return capabilities, imageError(CodeInvalidRequest, "probe image decode", errors.New("temporary directory is required"))
 	}
-	workDir, err := os.MkdirTemp(tempDir, ".filetwist-image-probe-")
+	if mkdirTemp == nil || removeAll == nil {
+		return capabilities, imageError(CodeInvalidRequest, "probe image decode", errors.New("filesystem helpers are required"))
+	}
+	workDir, err := mkdirTemp(tempDir, ".filetwist-image-probe-")
 	if err != nil {
 		return capabilities, imageError(CodeProbeFailed, "create image decode probe directory", err)
 	}
 	outputPath := filepath.Join(workDir, "decoded.v")
 	defer func() {
-		if cleanupErr := os.RemoveAll(workDir); cleanupErr != nil {
+		if cleanupErr := removeAll(workDir); cleanupErr != nil {
 			err := imageError(CodeCleanupFailed, "clean image decode probe directory", cleanupErr)
-			if returnErr == nil {
-				returnErr = err
-				return
+			if returnErr != nil {
+				returnErr = errors.Join(returnErr, err)
 			}
-			returnErr = errors.Join(returnErr, err)
 		}
 	}()
 

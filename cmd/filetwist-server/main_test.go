@@ -119,6 +119,84 @@ func TestRunVersionAndInvalidCommand(t *testing.T) {
 	}
 }
 
+func TestStartHTTPServerRejectsBindFailure(t *testing.T) {
+	occupied, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("occupy listener: %v", err)
+	}
+	defer func() {
+		if err := occupied.Close(); err != nil {
+			t.Errorf("close occupied listener: %v", err)
+		}
+	}()
+
+	server := &http.Server{
+		Addr:    occupied.Addr().String(),
+		Handler: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+	}
+
+	var stdout bytes.Buffer
+	listener, errCh, err := startHTTPServer(server, &stdout, "ready\n")
+	if err == nil {
+		t.Fatal("startHTTPServer succeeded; want bind error")
+	}
+	if listener != nil {
+		t.Fatalf("listener = %v; want nil", listener)
+	}
+	if errCh != nil {
+		t.Fatal("errCh was created on bind failure")
+	}
+	var opErr *net.OpError
+	if !errors.As(err, &opErr) || opErr.Op != "listen" {
+		t.Fatalf("error = %v; want listen op error", err)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("stdout = %q; want no banner", stdout.String())
+	}
+}
+
+func TestStartHTTPServerServesAfterBinding(t *testing.T) {
+	server := &http.Server{
+		Addr: "127.0.0.1:0",
+		Handler: http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+			writer.WriteHeader(http.StatusNoContent)
+		}),
+	}
+
+	var stdout bytes.Buffer
+	listener, errCh, err := startHTTPServer(server, &stdout, "ready\n")
+	if err != nil {
+		t.Fatalf("startHTTPServer: %v", err)
+	}
+	t.Cleanup(func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		if shutdownErr := shutdownHTTPServer(shutdownCtx, server); shutdownErr != nil &&
+			!errors.Is(shutdownErr, http.ErrServerClosed) {
+			t.Errorf("shutdownHTTPServer: %v", shutdownErr)
+		}
+		if serveErr := <-errCh; serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			t.Errorf("Serve returned: %v", serveErr)
+		}
+	})
+
+	if stdout.String() != "ready\n" {
+		t.Fatalf("stdout = %q; want ready banner", stdout.String())
+	}
+
+	client := &http.Client{Timeout: time.Second}
+	response, err := client.Get("http://" + listener.Addr().String())
+	if err != nil {
+		t.Fatalf("GET: %v", err)
+	}
+	if err := response.Body.Close(); err != nil {
+		t.Fatalf("close response body: %v", err)
+	}
+	if response.StatusCode != http.StatusNoContent {
+		t.Fatalf("status = %d; want %d", response.StatusCode, http.StatusNoContent)
+	}
+}
+
 func TestServeRejectsInvalidConfiguration(t *testing.T) {
 	t.Setenv(config.JobTTLEnv, "not-a-duration")
 	var stdout bytes.Buffer

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -76,6 +77,16 @@ type testServer struct {
 
 func newServer(t *testing.T, mutate func(*config.Config), converter jobs.Converter) *testServer {
 	t.Helper()
+	return newServerWithLogger(t, mutate, converter, nil)
+}
+
+func newServerWithLogger(
+	t *testing.T,
+	mutate func(*config.Config),
+	converter jobs.Converter,
+	logger *slog.Logger,
+) *testServer {
+	t.Helper()
 	settings, err := config.Load(func(name string) (string, bool) {
 		if name == config.DataDirEnv {
 			return t.TempDir(), true
@@ -100,6 +111,9 @@ func newServer(t *testing.T, mutate func(*config.Config), converter jobs.Convert
 		converter = &stubConverter{}
 	}
 	discard := slog.New(slog.NewTextHandler(io.Discard, nil))
+	if logger == nil {
+		logger = discard
+	}
 	manager, err := jobs.NewManager(jobs.Options{
 		Store:                  store,
 		Converter:              converter,
@@ -109,7 +123,7 @@ func newServer(t *testing.T, mutate func(*config.Config), converter jobs.Convert
 		MinFreeSpace:           settings.MinFreeSpace,
 		JobTTL:                 settings.JobTTL,
 		CommandTimeout:         settings.CommandTimeout,
-		Logger:                 discard,
+		Logger:                 logger,
 	})
 	if err != nil {
 		t.Fatalf("NewManager: %v", err)
@@ -125,7 +139,7 @@ func newServer(t *testing.T, mutate func(*config.Config), converter jobs.Convert
 	app, err := web.NewApp(web.Options{
 		Manager:    manager,
 		Config:     settings,
-		Logger:     discard,
+		Logger:     logger,
 		LookupTool: func(string) bool { return true },
 	})
 	if err != nil {
@@ -610,6 +624,98 @@ func TestDeleteRemovesEveryStoredFile(t *testing.T) {
 	missing := server.do(t, httptest.NewRequest(http.MethodGet, "/jobs/"+manifest.ID+"/status", nil))
 	if missing.Code != http.StatusNotFound {
 		t.Fatalf("status after delete = %d; want 404", missing.Code)
+	}
+}
+
+func TestDeleteContinuesAfterRequestCancellation(t *testing.T) {
+	server := newServer(t, nil, nil)
+	manifest := server.upload(t, []string{"a.jpg"})
+	jobDir, err := server.manager.Store().JobDir(manifest.ID)
+	if err != nil {
+		t.Fatalf("JobDir: %v", err)
+	}
+	release, err := server.manager.Lease(manifest.ID)
+	if err != nil {
+		t.Fatalf("Lease: %v", err)
+	}
+
+	request := httptest.NewRequest(http.MethodPost, "/jobs/"+manifest.ID+"/delete", nil)
+	ctx, cancel := context.WithCancel(request.Context())
+	request = request.WithContext(ctx)
+	recorder := httptest.NewRecorder()
+
+	responseDone := make(chan struct{})
+	go func() {
+		server.handler.ServeHTTP(recorder, request)
+		close(responseDone)
+	}()
+
+	time.Sleep(30 * time.Millisecond)
+	cancel()
+	time.Sleep(30 * time.Millisecond)
+	release()
+
+	select {
+	case <-responseDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("delete request did not finish")
+	}
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d; want 200", recorder.Code)
+	}
+	if _, err := os.Stat(jobDir); !os.IsNotExist(err) {
+		t.Fatalf("job directory survived deletion: %v", err)
+	}
+	if _, err := server.manager.Get(manifest.ID); !errors.Is(err, jobs.ErrNotFound) {
+		t.Fatalf("job survived delete after request cancellation: %v", err)
+	}
+}
+
+func TestRemoveFileLogsStableFieldsWithoutPaths(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logs, nil))
+	server := newServerWithLogger(t, nil, nil, logger)
+	manifest := server.upload(t, []string{"private-upload-name.jpg"})
+
+	inputDir, err := server.manager.Store().InputDir(manifest.ID)
+	if err != nil {
+		t.Fatalf("InputDir: %v", err)
+	}
+	inputPath, err := storage.Resolve(inputDir, manifest.Files[0].Name)
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if err := os.Remove(inputPath); err != nil {
+		t.Fatalf("Remove: %v", err)
+	}
+	if err := os.Mkdir(inputPath, 0o750); err != nil {
+		t.Fatalf("Mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(inputPath, "child"), []byte("x"), 0o640); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	target := server.path("/jobs/" + manifest.ID + "/files/" + manifest.Files[0].ID + "/remove")
+	response := server.do(t, httptest.NewRequest(http.MethodPost, target, nil))
+	if response.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d; want 500", response.Code)
+	}
+
+	output := logs.String()
+	if !strings.Contains(output, "file removal failed") {
+		t.Fatalf("log = %q; want file removal failure", output)
+	}
+	if !strings.Contains(output, manifest.ID) {
+		t.Fatalf("log = %q; want job id", output)
+	}
+	if !strings.Contains(output, "category=filesystem") {
+		t.Fatalf("log = %q; want filesystem category", output)
+	}
+	if !strings.Contains(output, "fs_op=remove") {
+		t.Fatalf("log = %q; want remove operation", output)
+	}
+	if strings.Contains(output, inputPath) || strings.Contains(output, manifest.Files[0].Name) {
+		t.Fatalf("log leaked file path details: %q", output)
 	}
 }
 

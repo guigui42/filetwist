@@ -650,6 +650,84 @@ func TestConversionFailureIsRecordedPerFile(t *testing.T) {
 	}
 }
 
+func TestSuccessfulConversionRequiresRegularOutput(t *testing.T) {
+	tests := []struct {
+		name    string
+		convert func(context.Context, conversion.Request) (conversion.Result, error)
+		want    string
+	}{
+		{
+			name: "missing output",
+			convert: func(ctx context.Context, request conversion.Request) (conversion.Result, error) {
+				return conversion.Result{
+					SchemaVersion:     conversion.SchemaVersion,
+					Status:            "success",
+					SelectedOperation: request.Operation,
+					OutputPath:        filepath.Join(request.Output, "missing.jpg"),
+					Validation:        conversion.ValidationResult{Status: "passed"},
+					Execution:         conversion.ExecutionResult{Requested: "cpu", Initial: "cpu", Final: "cpu", AttemptCount: 1},
+				}, nil
+			},
+			want: "output_missing",
+		},
+		{
+			name: "non regular output",
+			convert: func(ctx context.Context, request conversion.Request) (conversion.Result, error) {
+				outputPath := filepath.Join(request.Output, "directory-output")
+				if err := os.Mkdir(outputPath, 0o750); err != nil {
+					return conversion.Result{}, err
+				}
+				return conversion.Result{
+					SchemaVersion:     conversion.SchemaVersion,
+					Status:            "success",
+					SelectedOperation: request.Operation,
+					OutputPath:        outputPath,
+					Validation:        conversion.ValidationResult{Status: "passed"},
+					Execution:         conversion.ExecutionResult{Requested: "cpu", Initial: "cpu", Final: "cpu", AttemptCount: 1},
+				}, nil
+			},
+			want: "output_not_regular",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			manager := newManager(t, &fakeConverter{convert: test.convert})
+			manifest, err := upload(t, manager, []uploadFile{{name: "a.jpg", content: []byte("a")}})
+			if err != nil {
+				t.Fatalf("Accept: %v", err)
+			}
+			if _, err := manager.Start(manifest.ID, nil); err != nil {
+				t.Fatalf("Start: %v", err)
+			}
+
+			final := waitForState(t, manager, manifest.ID, storage.JobFailed)
+			file := final.Files[0]
+			if file.State != storage.FileFailed {
+				t.Fatalf("file state = %q; want failed", file.State)
+			}
+			if file.Output != nil {
+				t.Fatalf("output = %+v; want nil", file.Output)
+			}
+			if len(final.CompletedOutputs()) != 0 {
+				t.Fatalf("completed outputs = %d; want 0", len(final.CompletedOutputs()))
+			}
+			if file.Error == nil || file.Error.Code != test.want {
+				t.Fatalf("error = %+v; want code %q", file.Error, test.want)
+			}
+			if file.Error.Kind != string(conversion.FailureConversion) {
+				t.Fatalf("kind = %q; want %q", file.Error.Kind, conversion.FailureConversion)
+			}
+			if file.Validation.Status != "passed" {
+				t.Fatalf("validation = %+v; want preserved successful validation", file.Validation)
+			}
+			if file.Execution.AttemptCount != 1 {
+				t.Fatalf("execution = %+v; want attempt count 1", file.Execution)
+			}
+		})
+	}
+}
+
 func TestProbeFailureMarksTheFileWithoutFailingTheUpload(t *testing.T) {
 	manager := newManager(t, &fakeConverter{
 		inspect: func(ctx context.Context, path string) (conversion.Inspection, error) {
@@ -909,15 +987,69 @@ func TestDeleteRefusesWhileLeased(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Lease: %v", err)
 	}
-	if err := manager.Delete(manifest.ID); !errors.Is(err, jobs.ErrLeased) {
+	if err := manager.Delete(context.Background(), manifest.ID); !errors.Is(err, jobs.ErrLeased) {
 		t.Fatalf("Delete = %v; want ErrLeased", err)
 	}
 	release()
-	if err := manager.Delete(manifest.ID); err != nil {
+	if err := manager.Delete(context.Background(), manifest.ID); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 	if _, err := manager.Get(manifest.ID); !errors.Is(err, jobs.ErrNotFound) {
 		t.Fatalf("job survived delete: %v", err)
+	}
+}
+
+func TestDeleteRejectsNilContext(t *testing.T) {
+	manager := newManager(t, &fakeConverter{})
+	manifest, err := upload(t, manager, []uploadFile{{name: "a.jpg", content: []byte("a")}})
+	if err != nil {
+		t.Fatalf("Accept: %v", err)
+	}
+
+	if err := manager.Delete(nil, manifest.ID); err == nil || err.Error() != "jobs: context must not be nil" { //nolint:staticcheck // nil context is the case under test
+		t.Fatalf("Delete = %v; want nil-context rejection", err)
+	}
+	if _, err := manager.Get(manifest.ID); err != nil {
+		t.Fatalf("job should remain after nil-context rejection: %v", err)
+	}
+}
+
+func TestDeleteWaitHonorsContextCancellation(t *testing.T) {
+	manager := newManager(t, &fakeConverter{})
+	manifest, err := upload(t, manager, []uploadFile{{name: "private-name.jpg", content: []byte("a")}})
+	if err != nil {
+		t.Fatalf("Accept: %v", err)
+	}
+	release, err := manager.Lease(manifest.ID)
+	if err != nil {
+		t.Fatalf("Lease: %v", err)
+	}
+	defer release()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		done <- manager.Delete(ctx, manifest.ID)
+	}()
+
+	time.Sleep(30 * time.Millisecond)
+	cancel()
+
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Delete = %v; want context.Canceled", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Delete did not return after context cancellation")
+	}
+	if _, err := manager.Get(manifest.ID); err != nil {
+		t.Fatalf("job should still exist after canceled delete: %v", err)
+	}
+
+	release()
+	if err := manager.Delete(context.Background(), manifest.ID); err != nil {
+		t.Fatalf("Delete after release: %v", err)
 	}
 }
 
@@ -1084,7 +1216,7 @@ func TestDeleteCancelsRunningWorkThenRemovesTheJob(t *testing.T) {
 		t.Fatal("conversion never started")
 	}
 
-	if err := manager.Delete(manifest.ID); err != nil {
+	if err := manager.Delete(context.Background(), manifest.ID); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 	if _, err := manager.Get(manifest.ID); !errors.Is(err, jobs.ErrNotFound) {
@@ -1096,5 +1228,50 @@ func TestDeleteCancelsRunningWorkThenRemovesTheJob(t *testing.T) {
 	}
 	if _, err := os.Stat(dir); !os.IsNotExist(err) {
 		t.Fatalf("job directory survived delete: %v", err)
+	}
+}
+
+func TestRunCleanupLogsWithoutFilesystemPaths(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logs, nil))
+	manager := newManager(t, &fakeConverter{}, func(options *jobs.Options) {
+		options.Logger = logger
+	})
+
+	jobsDir := filepath.Join(manager.Store().Root(), "jobs")
+	if err := os.RemoveAll(jobsDir); err != nil {
+		t.Fatalf("RemoveAll: %v", err)
+	}
+	if err := os.WriteFile(jobsDir, []byte("not a directory"), 0o640); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		manager.RunCleanup(ctx, time.Millisecond)
+		close(done)
+	}()
+	time.Sleep(30 * time.Millisecond)
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("RunCleanup did not stop")
+	}
+
+	output := logs.String()
+	if !strings.Contains(output, "expired job sweep failed") {
+		t.Fatalf("cleanup log = %q; want sweep failure entry", output)
+	}
+	if !strings.Contains(output, "category=filesystem") {
+		t.Fatalf("cleanup log = %q; want filesystem category", output)
+	}
+	if !strings.Contains(output, "fs_op=open") {
+		t.Fatalf("cleanup log = %q; want filesystem operation", output)
+	}
+	if strings.Contains(output, jobsDir) || strings.Contains(output, manager.Store().Root()) {
+		t.Fatalf("cleanup log leaked filesystem paths: %q", output)
 	}
 }

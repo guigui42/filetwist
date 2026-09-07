@@ -437,8 +437,12 @@ func (manager *Manager) Cancel(id string) (storage.Manifest, error) {
 }
 
 // Delete cancels any active work and removes the job directory. It refuses
-// while a download lease is held.
-func (manager *Manager) Delete(id string) error {
+// while a download lease is held. ctx only bounds the lease wait so an
+// explicit delete still cancels in-flight work before returning.
+func (manager *Manager) Delete(ctx context.Context, id string) error {
+	if ctx == nil {
+		return errors.New("jobs: context must not be nil")
+	}
 	if err := storage.ValidateID(id); err != nil {
 		return err
 	}
@@ -454,8 +458,8 @@ func (manager *Manager) Delete(id string) error {
 		control.cancel()
 	}
 	unlock()
-	if !manager.waitForLeaseRelease(id, deleteLeaseGrace) {
-		return ErrLeased
+	if err := manager.waitForLeaseRelease(ctx, id, deleteLeaseGrace); err != nil {
+		return err
 	}
 
 	unlock = manager.lockJob(id)
@@ -477,19 +481,35 @@ func (manager *Manager) Delete(id string) error {
 	return nil
 }
 
-// waitForLeaseRelease polls until no lease remains on a job or the grace
-// period elapses. It bounds the wait so a delete request never blocks on a
-// long download.
-func (manager *Manager) waitForLeaseRelease(id string, grace time.Duration) bool {
-	deadline := time.Now().Add(grace)
+// waitForLeaseRelease polls until no lease remains on a job, the caller
+// cancels, or the grace period elapses. It bounds the wait so a delete request
+// never blocks on a long download.
+func (manager *Manager) waitForLeaseRelease(
+	ctx context.Context,
+	id string,
+	grace time.Duration,
+) error {
+	if !manager.Leased(id) {
+		return nil
+	}
+	ticker := time.NewTicker(20 * time.Millisecond)
+	defer ticker.Stop()
+	timer := time.NewTimer(grace)
+	defer timer.Stop()
 	for {
-		if !manager.Leased(id) {
-			return true
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			if !manager.Leased(id) {
+				return nil
+			}
+		case <-timer.C:
+			if manager.Leased(id) {
+				return ErrLeased
+			}
+			return nil
 		}
-		if time.Now().After(deadline) {
-			return false
-		}
-		time.Sleep(20 * time.Millisecond)
 	}
 }
 
@@ -563,14 +583,20 @@ func (manager *Manager) CleanupExpired(now time.Time) ([]string, error) {
 			current.State.Active() || manager.Leased(manifest.ID) {
 			unlock()
 			if loadErr != nil && !errors.Is(loadErr, storage.ErrNotFound) {
-				manager.logger.Warn("job cleanup could not read manifest", slog.String("job", manifest.ID))
+				manager.logger.Warn("job cleanup could not read manifest", append(
+					[]any{slog.String("job", manifest.ID)},
+					SafeLogFields(loadErr)...,
+				)...)
 			}
 			continue
 		}
 		deleteErr := manager.store.Delete(manifest.ID)
 		if deleteErr != nil && !errors.Is(deleteErr, storage.ErrNotFound) {
 			unlock()
-			manager.logger.Warn("job cleanup failed", slog.String("job", manifest.ID))
+			manager.logger.Warn("job cleanup failed", append(
+				[]any{slog.String("job", manifest.ID)},
+				SafeLogFields(deleteErr)...,
+			)...)
 			continue
 		}
 		manager.mutex.Lock()
@@ -596,7 +622,7 @@ func (manager *Manager) RunCleanup(ctx context.Context, interval time.Duration) 
 		case <-ticker.C:
 			removed, err := manager.CleanupExpired(manager.now())
 			if err != nil {
-				manager.logger.Warn("expired job sweep failed", slog.String("error", err.Error()))
+				manager.logger.Warn("expired job sweep failed", SafeLogFields(err)...)
 				continue
 			}
 			if len(removed) > 0 {
@@ -755,6 +781,10 @@ func (manager *Manager) convertFile(ctx context.Context, id string, file storage
 		Operation:    file.Selected,
 		OperationSet: true,
 	})
+	var outputInfo os.FileInfo
+	if convertErr == nil {
+		outputInfo, convertErr = successfulOutputInfo(result.OutputPath)
+	}
 
 	finished := manager.now().UTC()
 	if _, err := manager.update(id, func(manifest *storage.Manifest) error {
@@ -778,14 +808,10 @@ func (manager *Manager) convertFile(ctx context.Context, id string, file storage
 			return nil
 		}
 		name := filepath.Base(result.OutputPath)
-		size := int64(0)
-		if info, statErr := os.Stat(result.OutputPath); statErr == nil {
-			size = info.Size()
-		}
 		target.State = storage.FileCompleted
 		target.Output = &storage.Output{
 			Name:     name,
-			Size:     size,
+			Size:     outputInfo.Size(),
 			MIMEType: storage.ContentType(name),
 		}
 		return nil
@@ -880,6 +906,26 @@ func containsOperation(operations []corpus.Operation, candidate corpus.Operation
 		}
 	}
 	return false
+}
+
+func successfulOutputInfo(path string) (os.FileInfo, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, &conversion.Error{
+			Kind:    conversion.FailureConversion,
+			Code:    "output_missing",
+			Message: "converted output is unavailable",
+			Cause:   err,
+		}
+	}
+	if !info.Mode().IsRegular() {
+		return nil, &conversion.Error{
+			Kind:    conversion.FailureConversion,
+			Code:    "output_not_regular",
+			Message: "converted output is not a regular file",
+		}
+	}
+	return info, nil
 }
 
 func failureFrom(err error) *storage.Failure {

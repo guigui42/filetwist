@@ -418,6 +418,40 @@ func TestServiceDoesNotTreatStillImageAsVideoWhenImageToolingFails(t *testing.T)
 	}
 }
 
+func TestServiceTreatsMissingFFprobeAsConfigurationFailure(t *testing.T) {
+	temp := t.TempDir()
+	input := filepath.Join(temp, "clip.mov")
+	if err := os.WriteFile(input, []byte("fixture"), 0o600); err != nil {
+		t.Fatalf("write input: %v", err)
+	}
+	service, err := conversion.New(
+		&fakeImageEngine{probeErr: errors.New("not image")},
+		&fakeMediaEngine{probeErr: &probe.Error{
+			Stage:      probe.StagePresence,
+			Executable: "ffprobe",
+			Cause:      errors.New("not found"),
+		}},
+	)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	result, err := service.Convert(context.Background(), conversion.Request{
+		InputPath: input,
+		Output:    filepath.Join(temp, "output"),
+	})
+	var conversionErr *conversion.Error
+	if !errors.As(err, &conversionErr) || conversionErr.Kind != conversion.FailureConfiguration {
+		t.Fatalf("Convert() error = %v; want configuration failure", err)
+	}
+	if conversionErr.Code != "converter_unavailable" {
+		t.Errorf("error code = %q; want converter_unavailable", conversionErr.Code)
+	}
+	if result.DetectedMedia != nil {
+		t.Errorf("detected media = %+v; want none", result.DetectedMedia)
+	}
+}
+
 func TestServiceTreatsUnsupportedAudioAsClearRejection(t *testing.T) {
 	temp := t.TempDir()
 	input := filepath.Join(temp, "spatial.mov")

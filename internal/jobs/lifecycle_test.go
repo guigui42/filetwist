@@ -137,7 +137,7 @@ func TestLeaseSerializesWithCleanup(t *testing.T) {
 		if err != nil {
 			t.Fatalf("cleanup deleted a leased job: %v", err)
 		}
-		if err := manager.Delete(manifest.ID); err != nil {
+		if err := manager.Delete(context.Background(), manifest.ID); err != nil {
 			t.Fatal(err)
 		}
 	}

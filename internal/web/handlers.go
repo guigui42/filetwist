@@ -33,7 +33,7 @@ func (app *App) handleIndex(writer http.ResponseWriter, request *http.Request) {
 	data := app.newPageData("Filetwist", "index")
 	manifests, err := app.manager.List()
 	if err != nil {
-		app.logger.Warn("job listing failed", slog.String("error", err.Error()))
+		app.logger.Warn("job listing failed", jobs.SafeLogFields(err)...)
 	}
 	now := app.now()
 	for index, manifest := range manifests {
@@ -78,7 +78,10 @@ func (app *App) handleRemoveFile(writer http.ResponseWriter, request *http.Reque
 		case errors.Is(err, jobs.ErrLeased):
 			app.renderNotice(writer, http.StatusConflict, "error", "The job is still in use. Try removing the file again in a moment.")
 		default:
-			app.logger.Error("file removal failed", slog.String("job", id), slog.String("error", err.Error()))
+			app.logger.Error("file removal failed", append(
+				[]any{slog.String("job", id)},
+				jobs.SafeLogFields(err)...,
+			)...)
 			app.renderNotice(writer, http.StatusInternalServerError, "error", "The file could not be removed. Reload the job before trying again.")
 		}
 		return
@@ -262,7 +265,8 @@ func (app *App) handleDelete(writer http.ResponseWriter, request *http.Request) 
 		app.renderNotice(writer, http.StatusNotFound, "hint", "This job is no longer available.")
 		return
 	}
-	switch err := app.manager.Delete(id); {
+	deleteCtx := context.WithoutCancel(request.Context())
+	switch err := app.manager.Delete(deleteCtx, id); {
 	case err == nil:
 		app.renderNotice(writer, http.StatusOK, "hint", "The job and all of its files were deleted.")
 	case errors.Is(err, jobs.ErrNotFound):

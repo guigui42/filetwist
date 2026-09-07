@@ -224,8 +224,18 @@ func TestAcceptBoundsTheWaitForAProcessSlot(t *testing.T) {
 		if len(manifest.Files) != 1 {
 			t.Fatalf("files = %d; want 1", len(manifest.Files))
 		}
-		if manifest.Files[0].State != storage.FileFailed {
-			t.Fatalf("state = %q; want %q", manifest.Files[0].State, storage.FileFailed)
+		file := manifest.Files[0]
+		if file.State != storage.FileFailed {
+			t.Fatalf("state = %q; want %q", file.State, storage.FileFailed)
+		}
+		if file.Error == nil {
+			t.Fatal("slot timeout did not persist a failure")
+		}
+		if file.Error.Kind != string(conversion.FailureProbe) {
+			t.Fatalf("failure kind = %q; want %q", file.Error.Kind, conversion.FailureProbe)
+		}
+		if file.Error.Code != "probe_backpressure" {
+			t.Fatalf("failure code = %q; want probe_backpressure", file.Error.Code)
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatal("intake waited for a process slot without a bound")
@@ -289,45 +299,94 @@ func TestAcceptClassifiesATransportTimeout(t *testing.T) {
 	}
 }
 
-func TestAcceptRejectsFileLimitsWithoutDraining(t *testing.T) {
-	for _, reason := range []string{"size", "count"} {
-		t.Run(reason, func(t *testing.T) {
-			manager := newManager(t, &fakeConverter{}, func(options *jobs.Options) {
+func TestAcceptRejectsAdmissionLimitsWithoutDraining(t *testing.T) {
+	writeFirstFile := func(t *testing.T, writer *multipart.Writer) {
+		t.Helper()
+		part, err := writer.CreateFormFile("files", "first.jpg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := io.WriteString(part, "first"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeOversizedFile := func(t *testing.T, writer *multipart.Writer) {
+		t.Helper()
+		part, err := writer.CreateFormFile("files", "oversized.jpg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := part.Write(bytes.Repeat([]byte("x"), 4<<20)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	tests := []struct {
+		name      string
+		configure func(*jobs.Options)
+		buildBody func(*testing.T, *multipart.Writer)
+		want      error
+	}{
+		{
+			name: "configured size limit",
+			configure: func(options *jobs.Options) {
+				options.MaxUploadSize = 8
+			},
+			buildBody: writeOversizedFile,
+			want:      jobs.ErrUploadTooLarge,
+		},
+		{
+			name: "disk headroom limit",
+			configure: func(options *jobs.Options) {
+				options.MaxUploadSize = 64
+				options.MinFreeSpace = 10
+				options.FreeSpace = func(string) (int64, error) {
+					return 18, nil
+				}
+			},
+			buildBody: writeOversizedFile,
+			want:      jobs.ErrInsufficientSpace,
+		},
+		{
+			name: "file count limit",
+			configure: func(options *jobs.Options) {
 				options.MaxFilesPerJob = 1
 				options.MaxUploadSize = 8
-			})
+			},
+			buildBody: func(t *testing.T, writer *multipart.Writer) {
+				t.Helper()
+				writeFirstFile(t, writer)
+				writeOversizedFile(t, writer)
+			},
+			want: jobs.ErrTooManyFiles,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			manager := newManager(t, &fakeConverter{}, test.configure)
 			var body bytes.Buffer
 			writer := multipart.NewWriter(&body)
-			if reason == "count" {
-				part, err := writer.CreateFormFile("files", "first.jpg")
-				if err != nil {
-					t.Fatal(err)
-				}
-				if _, err := io.WriteString(part, "first"); err != nil {
-					t.Fatal(err)
-				}
-			}
-			part, err := writer.CreateFormFile("files", "oversized.jpg")
-			if err != nil {
-				t.Fatal(err)
-			}
-			if _, err := part.Write(bytes.Repeat([]byte("x"), 4<<20)); err != nil {
-				t.Fatal(err)
-			}
+			test.buildBody(t, writer)
 			if err := writer.Close(); err != nil {
 				t.Fatal(err)
 			}
+
 			source := &countingReader{reader: bytes.NewReader(body.Bytes())}
-			_, err = manager.Accept(context.Background(), multipart.NewReader(source, writer.Boundary()))
-			want := jobs.ErrUploadTooLarge
-			if reason == "count" {
-				want = jobs.ErrTooManyFiles
-			}
-			if !errors.Is(err, want) {
-				t.Fatalf("Accept = %v; want %v", err, want)
+			_, err := manager.Accept(context.Background(), multipart.NewReader(source, writer.Boundary()))
+			if !errors.Is(err, test.want) {
+				t.Fatalf("Accept = %v; want %v", err, test.want)
 			}
 			if source.read > 64<<10 {
 				t.Fatalf("read %d rejected bytes; want a bounded prefix", source.read)
+			}
+
+			manifests, err := manager.List()
+			if err != nil {
+				t.Fatalf("List: %v", err)
+			}
+			if len(manifests) != 0 {
+				t.Fatalf("rejected upload left %d job(s) behind", len(manifests))
 			}
 		})
 	}

@@ -179,6 +179,30 @@ func TestConvertPropagatesFilterProbeCancellation(t *testing.T) {
 	}
 }
 
+func TestConvertDoesNotClassifyFilterProbeExecutionFailureAsUnsupportedHDR(t *testing.T) {
+	plan := media.Plan{
+		RequiredFilters: []string{"zscale", "tonemap"},
+	}
+
+	_, err := media.Convert(
+		context.Background(),
+		func(context.Context, runner.Command) (runner.Result, error) {
+			return runner.Result{}, errors.New("filters probe failed")
+		},
+		"/tools/ffmpeg",
+		"/tools/ffprobe",
+		plan,
+	)
+	var conversionErr *media.ConversionError
+	if !errors.As(err, &conversionErr) || conversionErr.Stage != media.ConversionStageCapability {
+		t.Fatalf("Convert() error = %v; want capability-stage conversion failure", err)
+	}
+	var planErr *media.PlanError
+	if errors.As(err, &planErr) {
+		t.Fatalf("Convert() error = %v; filter probe execution failure must not be unsupported HDR", err)
+	}
+}
+
 func TestConvertDoesNotOverwriteExistingOutput(t *testing.T) {
 	input := readProbeFixture(t, "common-audio.json")
 	outputPath := filepath.Join(t.TempDir(), "output.mp3")
