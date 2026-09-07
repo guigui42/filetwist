@@ -52,8 +52,10 @@ gh workflow run release.yml --ref YOUR_BRANCH
 
 Manual runs are always non-publishing, even when selecting a tag. They run
 the same Go, container, browser, and GoReleaser snapshot checks as CI. The
-binary and container publication jobs only run for tag pushes, not manual
-dispatches, and dry-run jobs retain read-only repository permissions.
+binary and container publication jobs run for tag pushes or when the
+**Create release** workflow calls the release workflow with the tag and exact
+commit it created. They never run for a direct manual dispatch of the
+**Release** workflow, and dry-run jobs retain read-only repository permissions.
 
 Download `release-dry-run-<attempt>` from the workflow run's artifacts section
 within seven days. It contains the Linux/amd64 snapshot archive, checksums,
@@ -153,7 +155,26 @@ release can still succeed because it does not include the media/driver stack.
 
 ## Publish a version
 
-Push a new tag on the intended commit after merging the release configuration:
+Run **Actions > Create release > Run workflow** from `main`, then choose the
+version component to increment. The workflow finds the highest stable `vMAJOR.MINOR.PATCH`
+tag reachable from `main`, creates the next annotated tag, and calls the same
+protected release workflow used by tag pushes. For example, `patch` advances
+`v0.0.3` to `v0.0.4`, `minor` advances it to `v0.1.0`, and `major` advances it
+to `v1.0.0`.
+
+The equivalent single command is:
+
+```sh
+gh workflow run create-release.yml --ref main -f bump=patch
+```
+
+Use `minor` or `major` instead of `patch` when appropriate. A retry of the same
+workflow run reuses the tag it already created rather than incrementing the
+version again. The workflow refuses to create a release from any branch other
+than `main`. If release tag rules restrict creation, allow this repository's
+GitHub Actions workflow to create `v*` tags.
+
+You can still push a new tag manually on the intended commit:
 
 ```sh
 git tag -a v0.1.0 -m "Filetwist v0.1.0"

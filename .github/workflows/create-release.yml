@@ -1,0 +1,97 @@
+name: Create release
+run-name: "Create ${{ inputs.bump }} release from ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version component to increment
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions: {}
+
+concurrency:
+  group: create-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      release-tag: ${{ steps.tag.outputs.release-tag }}
+      release-sha: ${{ steps.tag.outputs.release-sha }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Create the next version tag
+        id: tag
+        env:
+          BUMP: ${{ inputs.bump }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          test "$GITHUB_REF_TYPE" = branch
+          test "$GITHUB_REF_NAME" = "$DEFAULT_BRANCH" || {
+            echo "::error::Create releases from the default branch only"
+            exit 1
+          }
+          git fetch --force --tags origin \
+            "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
+          git merge-base --is-ancestor "$GITHUB_SHA" "refs/remotes/origin/$DEFAULT_BRANCH" || {
+            echo "::error::The selected commit is no longer on the default branch"
+            exit 1
+          }
+
+          subject="Filetwist release created by workflow run $GITHUB_RUN_ID"
+          existing=$(
+            git tag --merged HEAD --list 'v*' \
+              --format='%(refname:short)%09%(contents:subject)' |
+              awk -F '\t' -v subject="$subject" '$2 == subject { print $1 }'
+          )
+          test "$(printf '%s\n' "$existing" | sed '/^$/d' | wc -l)" -le 1 || {
+            echo "::error::More than one release tag belongs to this workflow run"
+            exit 1
+          }
+
+          if test -n "$existing"; then
+            tag=$existing
+            test "$(git rev-list -n 1 "$tag")" = "$GITHUB_SHA" || {
+              echo "::error::$tag no longer identifies the selected commit"
+              exit 1
+            }
+          else
+            tag=$(
+              git tag --merged HEAD --list 'v*' |
+                python3 scripts/next-release-version.py "$BUMP"
+            )
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git tag -a "$tag" -m "$subject" "$GITHUB_SHA"
+            git push origin "refs/tags/$tag"
+          fi
+
+          echo "release-tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "release-sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "Created release tag \`$tag\` from \`$GITHUB_SHA\`." >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    needs: tag
+    uses: ./.github/workflows/release.yml
+    permissions:
+      actions: read
+      contents: write
+      packages: write
+    with:
+      release-tag: ${{ needs.tag.outputs.release-tag }}
+      release-sha: ${{ needs.tag.outputs.release-sha }}
+
