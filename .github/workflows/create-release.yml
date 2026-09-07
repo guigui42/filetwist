@@ -40,7 +40,10 @@ jobs:
           BUMP: ${{ inputs.bump }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          test "$GITHUB_REF_TYPE" = branch
+          test "$GITHUB_REF_TYPE" = branch || {
+            echo "::error::Create releases from the default branch, not a tag"
+            exit 1
+          }
           test "$GITHUB_REF_NAME" = "$DEFAULT_BRANCH" || {
             echo "::error::Create releases from the default branch only"
             exit 1
@@ -94,4 +97,3 @@ jobs:
     with:
       release-tag: ${{ needs.tag.outputs.release-tag }}
       release-sha: ${{ needs.tag.outputs.release-sha }}
-

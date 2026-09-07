@@ -91,6 +91,7 @@ func TestReleasePublicationGuards(t *testing.T) {
 		"workflows/create-release.yml": {
 			"permissions: {}",
 			"      contents: write",
+			"::error::Create releases from the default branch, not a tag",
 			"test \"$GITHUB_REF_NAME\" = \"$DEFAULT_BRANCH\"",
 			"git merge-base --is-ancestor \"$GITHUB_SHA\"",
 			"python3 scripts/next-release-version.py \"$BUMP\"",
