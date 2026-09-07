@@ -1,6 +1,7 @@
 package scripts
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"strings"
@@ -48,6 +49,33 @@ func workflowText(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return string(content)
+}
+
+func TestCodeQLProjectFilesExist(t *testing.T) {
+	content, err := os.ReadFile("../.github/codeql-projects.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config map[string]struct {
+		Projects map[string]struct {
+			Files []string `json:"files"`
+		} `json:"projects"`
+	}
+	if err := json.Unmarshal(content, &config); err != nil {
+		t.Fatal(err)
+	}
+	for language, languageConfig := range config {
+		for project, projectConfig := range languageConfig.Projects {
+			for _, file := range projectConfig.Files {
+				if strings.ContainsAny(file, "*?[") {
+					continue
+				}
+				if _, err := os.Stat("../" + file); err != nil {
+					t.Errorf("%s/%s CodeQL file %q is unavailable: %v", language, project, file, err)
+				}
+			}
+		}
+	}
 }
 
 func TestReleasePublicationGuards(t *testing.T) {
