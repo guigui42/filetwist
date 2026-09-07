@@ -593,6 +593,10 @@ func NormalizeWebRoot(value string) (string, error) {
 	if !strings.HasPrefix(trimmed, "/") {
 		trimmed = "/" + trimmed
 	}
+	if len(trimmed) > 1 && trimmed[0] == '/' &&
+		(trimmed[1] == '/' || trimmed[1] == '\\') {
+		return "", fmt.Errorf("config: %s must not start with a second slash or backslash", WebRootEnv)
+	}
 	for _, segment := range strings.Split(trimmed, "/") {
 		if segment == ".." {
 			return "", fmt.Errorf("config: %s must not contain parent directory segments", WebRootEnv)

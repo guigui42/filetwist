@@ -161,7 +161,11 @@ func staticHeaders(next http.Handler) http.Handler {
 
 // joinURL prefixes an application path with the configured web root.
 func joinURL(base, target string) string {
-	if !strings.HasPrefix(target, "/") {
+	if target == "" || target[0] == '\\' ||
+		(strings.HasPrefix(target, "/") && len(target) > 1 &&
+			(target[1] == '/' || target[1] == '\\')) {
+		target = "/"
+	} else if !strings.HasPrefix(target, "/") {
 		target = "/" + target
 	}
 	if base == "" {
