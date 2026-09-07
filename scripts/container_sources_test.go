@@ -1,6 +1,7 @@
 package scripts
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"strings"
@@ -14,6 +15,33 @@ func TestContainerSources(t *testing.T) {
 	}
 }
 
+func TestNextReleaseVersion(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		bump string
+		tags string
+		want string
+	}{
+		{name: "first patch", bump: "patch", want: "v0.0.1"},
+		{name: "patch", bump: "patch", tags: "v0.0.1\nv0.0.3\n", want: "v0.0.4"},
+		{name: "minor", bump: "minor", tags: "v1.2.9\n", want: "v1.3.0"},
+		{name: "major", bump: "major", tags: "v1.9.9\n", want: "v2.0.0"},
+		{name: "ignore non-stable tags", bump: "patch", tags: "v1.2.3\nv9.0.0-rc.1\nmedia-v4.0.0\n", want: "v1.2.4"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := exec.CommandContext(t.Context(), "python3", "next-release-version.py", test.bump)
+			cmd.Stdin = strings.NewReader(test.tags)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("next version: %v\n%s", err, output)
+			}
+			if got := strings.TrimSpace(string(output)); got != test.want {
+				t.Fatalf("next version = %q; want %q", got, test.want)
+			}
+		})
+	}
+}
+
 func workflowText(t *testing.T, path string) string {
 	t.Helper()
 	content, err := os.ReadFile("../.github/" + path)
@@ -23,14 +51,55 @@ func workflowText(t *testing.T, path string) string {
 	return string(content)
 }
 
+func TestCodeQLProjectFilesExist(t *testing.T) {
+	content, err := os.ReadFile("../.github/codeql-projects.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config map[string]struct {
+		Projects map[string]struct {
+			Files []string `json:"files"`
+		} `json:"projects"`
+	}
+	if err := json.Unmarshal(content, &config); err != nil {
+		t.Fatal(err)
+	}
+	for language, languageConfig := range config {
+		for project, projectConfig := range languageConfig.Projects {
+			for _, file := range projectConfig.Files {
+				if strings.ContainsAny(file, "*?[") {
+					continue
+				}
+				if _, err := os.Stat("../" + file); err != nil {
+					t.Errorf("%s/%s CodeQL file %q is unavailable: %v", language, project, file, err)
+				}
+			}
+		}
+	}
+}
+
 func TestReleasePublicationGuards(t *testing.T) {
 	for path, guards := range map[string][]string{
 		"workflows/release.yml": {
 			"permissions:\n  contents: read",
-			"  binaries:\n    if: github.event_name == 'push'",
-			"  container:\n    if: github.event_name == 'push'",
-			"upload-release-artifacts: ${{ github.event_name == 'workflow_dispatch' }}",
-			"release-tag: ${{ github.event_name == 'push' && github.ref_name || '' }}",
+			"  workflow_call:",
+			"  binaries:\n    if: needs.tag.outputs.publish == 'true'",
+			"  container:\n    if: needs.tag.outputs.publish == 'true'",
+			"upload-release-artifacts: ${{ needs.tag.outputs.publish != 'true' }}",
+			"release-tag: ${{ needs.tag.outputs.release-tag }}",
+		},
+		"workflows/create-release.yml": {
+			"permissions: {}",
+			"      contents: write",
+			"::error::Create releases from the default branch, not a tag",
+			"test \"$GITHUB_REF_NAME\" = \"$DEFAULT_BRANCH\"",
+			"git merge-base --is-ancestor \"$GITHUB_SHA\"",
+			"python3 scripts/next-release-version.py \"$BUMP\"",
+			"git tag -a \"$tag\"",
+			"git push origin \"refs/tags/$tag\"",
+			"uses: ./.github/workflows/release.yml",
+			"release-tag: ${{ needs.tag.outputs.release-tag }}",
+			"release-sha: ${{ needs.tag.outputs.release-sha }}",
 		},
 		"workflows/media-runtime.yml": {
 			"permissions:\n  contents: read",
@@ -134,7 +203,7 @@ func TestReleaseReusesValidatedCICandidate(t *testing.T) {
 		}
 	}
 	for _, link := range []string{
-		"needs: [validate, binaries]",
+		"needs: [tag, validate, binaries]",
 		"candidate-artifact: ${{ needs.validate.outputs.candidate-artifact }}",
 		"candidate-revision: ${{ needs.validate.outputs.candidate-revision }}",
 		"      actions: read",

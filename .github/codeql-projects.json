@@ -11,8 +11,7 @@
           "scripts"
         ],
         "files": [
-          "go.mod",
-          "go.sum"
+          "go.mod"
         ]
       }
     }
@@ -37,16 +36,6 @@
       "python": {
         "paths": [
           "scripts"
-        ],
-        "files": [
-          "Pipfile",
-          "Pipfile.lock",
-          "pyproject.toml",
-          "requirements-dev.in",
-          "requirements-dev.txt",
-          "requirements.in",
-          "requirements.txt",
-          "setup.cfg"
         ]
       }
     }
