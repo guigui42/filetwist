@@ -59,11 +59,34 @@ func New(run probe.RunFunc, prober *probe.Prober, config Config) (*Converter, er
 
 // Convert executes one named operation and publishes only a validated output.
 func (converter *Converter) Convert(ctx context.Context, request Request) (conversion Result, returnErr error) {
+	return converter.convertWithFS(ctx, request, imageFilesystem{
+		mkdirTemp: os.MkdirTemp,
+		removeAll: os.RemoveAll,
+		link:      os.Link,
+		remove:    os.Remove,
+	})
+}
+
+type imageFilesystem struct {
+	mkdirTemp func(string, string) (string, error)
+	removeAll func(string) error
+	link      func(string, string) error
+	remove    func(string) error
+}
+
+func (converter *Converter) convertWithFS(
+	ctx context.Context,
+	request Request,
+	fs imageFilesystem,
+) (conversion Result, returnErr error) {
 	if ctx == nil {
 		return conversion, imageError(CodeInvalidRequest, "convert", errors.New("context must not be nil"))
 	}
 	if request.InputPath == "" || request.OutputDir == "" {
 		return conversion, imageError(CodeInvalidRequest, "convert", errors.New("input and output paths are required"))
+	}
+	if fs.mkdirTemp == nil || fs.removeAll == nil || fs.link == nil || fs.remove == nil {
+		return conversion, imageError(CodeInvalidRequest, "convert", errors.New("filesystem helpers are required"))
 	}
 	if err := os.MkdirAll(request.OutputDir, 0o755); err != nil {
 		return conversion, imageError(CodeInvalidRequest, "prepare output directory", err)
@@ -98,18 +121,16 @@ func (converter *Converter) Convert(ctx context.Context, request Request) (conve
 		return conversion, imageError(CodeOutputExists, "prepare output", err)
 	}
 
-	workDir, err := os.MkdirTemp(request.OutputDir, ".filetwist-image-")
+	workDir, err := fs.mkdirTemp(request.OutputDir, ".filetwist-image-")
 	if err != nil {
 		return conversion, imageError(CodeInvalidRequest, "prepare work directory", err)
 	}
 	defer func() {
-		if cleanupErr := os.RemoveAll(workDir); cleanupErr != nil {
+		if cleanupErr := fs.removeAll(workDir); cleanupErr != nil {
 			err := imageError(CodeCleanupFailed, "clean temporary files", cleanupErr)
-			if returnErr == nil {
-				returnErr = err
-				return
+			if returnErr != nil {
+				returnErr = errors.Join(returnErr, err)
 			}
-			returnErr = errors.Join(returnErr, err)
 		}
 	}()
 
@@ -158,7 +179,7 @@ func (converter *Converter) Convert(ctx context.Context, request Request) (conve
 	if err := ctx.Err(); err != nil {
 		return conversion, imageError(CodePublishFailed, "publish output", err)
 	}
-	if err := publishNoReplace(plan.TemporaryOutput, finalPath); err != nil {
+	if err := publishNoReplaceWith(plan.TemporaryOutput, finalPath, fs.link, fs.remove); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return conversion, imageError(CodeOutputExists, "publish output", err)
 		}
@@ -204,13 +225,19 @@ func (converter *Converter) probeTransparency(
 	return transparent, results, nil
 }
 
-func publishNoReplace(temporaryPath, finalPath string) error {
-	if err := os.Link(temporaryPath, finalPath); err != nil {
+func publishNoReplaceWith(
+	temporaryPath string,
+	finalPath string,
+	link func(string, string) error,
+	remove func(string) error,
+) error {
+	if link == nil || remove == nil {
+		return errors.New("filesystem helpers are required")
+	}
+	if err := link(temporaryPath, finalPath); err != nil {
 		return err
 	}
-	if err := os.Remove(temporaryPath); err != nil {
-		return fmt.Errorf("remove temporary output after publish: %w", err)
-	}
+	_ = remove(temporaryPath)
 	return nil
 }
 

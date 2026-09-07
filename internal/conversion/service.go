@@ -160,23 +160,19 @@ func (service *Service) detect(
 	if err := probeContextFailure(mediaErr); err != nil {
 		return DetectedMedia{}, imageconv.Info{}, media.Probe{}, err
 	}
-
-	kind := FailureProbe
-	code := "content_probe_failed"
-	message := "input content could not be identified"
-	var probeErr *probe.Error
-	if errors.As(imageErr, &probeErr) && probeErr.Stage == probe.StagePresence {
-		var mediaProbeErr *probe.Error
-		if errors.As(mediaErr, &mediaProbeErr) && mediaProbeErr.Stage == probe.StagePresence {
-			kind = FailureConfiguration
-			code = "converter_unavailable"
-			message = "required media probe executables are unavailable"
-		}
+	var mediaProbeErr *probe.Error
+	if errors.As(mediaErr, &mediaProbeErr) && mediaProbeErr.Stage == probe.StagePresence {
+		return DetectedMedia{}, imageconv.Info{}, media.Probe{}, failure(
+			FailureConfiguration,
+			"converter_unavailable",
+			"required media probe executables are unavailable",
+			errors.Join(imageErr, mediaErr),
+		)
 	}
 	return DetectedMedia{}, imageconv.Info{}, media.Probe{}, failure(
-		kind,
-		code,
-		message,
+		FailureProbe,
+		"content_probe_failed",
+		"input content could not be identified",
 		errors.Join(imageErr, mediaErr),
 	)
 }
@@ -485,12 +481,22 @@ func sanitizeStem(stem string) string {
 }
 
 func publishNoReplace(source, target string) error {
-	if err := os.Link(source, target); err != nil {
+	return publishNoReplaceWith(source, target, os.Link, os.Remove)
+}
+
+func publishNoReplaceWith(
+	source string,
+	target string,
+	link func(string, string) error,
+	remove func(string) error,
+) error {
+	if link == nil || remove == nil {
+		return errors.New("filesystem helpers are required")
+	}
+	if err := link(source, target); err != nil {
 		return err
 	}
-	if err := os.Remove(source); err != nil {
-		return fmt.Errorf("remove staged output after publish: %w", err)
-	}
+	_ = remove(source)
 	return nil
 }
 
@@ -674,8 +680,14 @@ func classifyImageError(err error) *Error {
 		imageconv.CodeDimensionsExceeded:
 		return failure(FailureRejection, imageErr.Code, "image input is not supported by the selected operation", err)
 	case imageconv.CodeInvalidRequest:
+		if isImageOutputPreparationFailure(imageErr) {
+			return failure(FailureConfiguration, "invalid_output", "output directory is not writable", err)
+		}
 		return failure(FailureConfiguration, imageErr.Code, "image conversion request is invalid", err)
 	case imageconv.CodeProbeFailed:
+		if isImageOutputPreparationFailure(imageErr) {
+			return failure(FailureConfiguration, "invalid_output", "output directory is not writable", err)
+		}
 		return failure(FailureProbe, imageErr.Code, "image probing failed", err)
 	case imageconv.CodeOutputExists:
 		return failure(FailureRejection, "output_exists", "output already exists", err)
@@ -690,6 +702,12 @@ func classifyImageError(err error) *Error {
 	default:
 		return failure(FailureConversion, imageErr.Code, "image conversion failed", err)
 	}
+}
+
+func isImageOutputPreparationFailure(err *imageconv.Error) bool {
+	return err.Stage == "prepare output directory" ||
+		err.Stage == "prepare work directory" ||
+		err.Stage == "create image decode probe directory"
 }
 
 func classifyMediaError(err error) *Error {

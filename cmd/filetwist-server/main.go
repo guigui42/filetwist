@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -130,18 +131,28 @@ func runServer(ctx context.Context, args []string, stdout, stderr io.Writer) int
 		// deadlines instead, bounded by READ_STALL_TIMEOUT,
 		// WRITE_STALL_TIMEOUT, and MIN_UPLOAD_RATE.
 	}
-	errCh := make(chan error, 1)
-	go func() {
-		errCh <- server.ListenAndServe()
-	}()
-	_, _ = fmt.Fprintf(
+	_, errCh, err := startHTTPServer(
+		server,
 		stdout,
-		"filetwist-server %s listening on %s (data %s, %d concurrent processes)\n",
-		version,
-		settings.ListenAddress,
-		settings.DataDir,
-		settings.MaxConcurrentProcesses,
+		fmt.Sprintf(
+			"filetwist-server %s listening on %s (data %s, %d concurrent processes)\n",
+			version,
+			settings.ListenAddress,
+			settings.DataDir,
+			settings.MaxConcurrentProcesses,
+		),
 	)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "filetwist-server: %v\n", err)
+		stopCleanup()
+		<-cleanupDone
+		drainCtx, cancelDrain := context.WithTimeout(context.Background(), drainGrace)
+		defer cancelDrain()
+		if shutdownErr := application.manager.Shutdown(drainCtx); shutdownErr != nil {
+			_, _ = fmt.Fprintf(stderr, "filetwist-server: %v\n", shutdownErr)
+		}
+		return 1
+	}
 
 	exitCode := 0
 	select {
@@ -173,6 +184,24 @@ func runServer(ctx context.Context, args []string, stdout, stderr io.Writer) int
 		exitCode = 1
 	}
 	return exitCode
+}
+
+func startHTTPServer(
+	server *http.Server,
+	stdout io.Writer,
+	banner string,
+) (net.Listener, <-chan error, error) {
+	listener, err := net.Listen("tcp", server.Addr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- server.Serve(listener)
+	}()
+	_, _ = io.WriteString(stdout, banner)
+	return listener, errCh, nil
 }
 
 func shutdownHTTPServer(ctx context.Context, server *http.Server) error {

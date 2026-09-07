@@ -18,6 +18,8 @@ type ConversionStage string
 const (
 	// ConversionStagePrepare identifies temporary output preparation.
 	ConversionStagePrepare ConversionStage = "prepare"
+	// ConversionStageCapability identifies required converter capability checks.
+	ConversionStageCapability ConversionStage = "capability"
 	// ConversionStageEncode identifies the FFmpeg command.
 	ConversionStageEncode ConversionStage = "encode"
 	// ConversionStageProgress identifies FFmpeg progress parsing.
@@ -166,9 +168,15 @@ func requireFFmpegFilters(
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		}
-		return &PlanError{
-			Code:    ErrorUnsupportedHDR,
-			Message: "HDR conversion requires FFmpeg filter capability detection",
+		return &ConversionError{
+			Stage: ConversionStageCapability,
+			Cause: fmt.Errorf("list FFmpeg filters: %w", err),
+		}
+	}
+	if result.ExitCode != 0 {
+		return &ConversionError{
+			Stage: ConversionStageCapability,
+			Cause: fmt.Errorf("list FFmpeg filters: unexpected exit code %d", result.ExitCode),
 		}
 	}
 	available := make(map[string]bool)
@@ -298,15 +306,25 @@ func convertOnce(
 }
 
 func publishNoReplace(temporaryPath, finalPath string) error {
-	if err := os.Link(temporaryPath, finalPath); err != nil {
+	return publishNoReplaceWith(temporaryPath, finalPath, os.Link, os.Remove)
+}
+
+func publishNoReplaceWith(
+	temporaryPath string,
+	finalPath string,
+	link func(string, string) error,
+	remove func(string) error,
+) error {
+	if link == nil || remove == nil {
+		return errors.New("filesystem helpers are required")
+	}
+	if err := link(temporaryPath, finalPath); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return ErrOutputExists
 		}
 		return err
 	}
-	if err := os.Remove(temporaryPath); err != nil {
-		return fmt.Errorf("remove temporary output after publish: %w", err)
-	}
+	_ = remove(temporaryPath)
 	return nil
 }
 

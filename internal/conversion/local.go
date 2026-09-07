@@ -3,7 +3,6 @@ package conversion
 import (
 	"context"
 	"errors"
-	"os"
 	"time"
 
 	"github.com/guigui42/filetwist/internal/corpus"
@@ -43,9 +42,6 @@ func NewLocal(config LocalConfig) (*Service, error) {
 	}
 	if config.ProbeTimeout == 0 {
 		config.ProbeTimeout = 30 * time.Second
-	}
-	if config.TemporaryRoot == "" {
-		config.TemporaryRoot = os.TempDir()
 	}
 	if config.VipsExecutable == "" {
 		config.VipsExecutable = "vips"
@@ -111,14 +107,10 @@ func (engine *localImageEngine) Convert(
 			engine.config.Prober,
 			vipsPath,
 			request.InputPath,
-			engine.config.TemporaryRoot,
+			engine.temporaryRoot(request.OutputDir),
 		)
 		if err != nil {
-			return imageconv.Result{}, &imageconv.Error{
-				Code:  imageconv.CodeHEIFUnavailable,
-				Stage: "probe HEIF decode",
-				Cause: err,
-			}
+			return imageconv.Result{}, classifyDecodeProbeError(err, imageconv.CodeHEIFUnavailable, "probe HEIF decode")
 		}
 	case imageconv.FormatAVIF:
 		capabilities, err = imageconv.ProbeAVIF(
@@ -126,14 +118,10 @@ func (engine *localImageEngine) Convert(
 			engine.config.Prober,
 			vipsPath,
 			request.InputPath,
-			engine.config.TemporaryRoot,
+			engine.temporaryRoot(request.OutputDir),
 		)
 		if err != nil {
-			return imageconv.Result{}, &imageconv.Error{
-				Code:  imageconv.CodeAVIFUnavailable,
-				Stage: "probe AVIF decode",
-				Cause: err,
-			}
+			return imageconv.Result{}, classifyDecodeProbeError(err, imageconv.CodeAVIFUnavailable, "probe AVIF decode")
 		}
 	}
 	cancelProbe()
@@ -163,6 +151,25 @@ func (engine *localImageEngine) executable(name string) (string, error) {
 	} else {
 		return "", err
 	}
+}
+
+func (engine *localImageEngine) temporaryRoot(outputDir string) string {
+	if engine.config.TemporaryRoot != "" {
+		return engine.config.TemporaryRoot
+	}
+	return outputDir
+}
+
+func classifyDecodeProbeError(err error, unavailableCode, stage string) error {
+	var probeErr *probe.Error
+	if errors.As(err, &probeErr) {
+		return &imageconv.Error{
+			Code:  unavailableCode,
+			Stage: stage,
+			Cause: err,
+		}
+	}
+	return err
 }
 
 type localMediaEngine struct {

@@ -52,6 +52,11 @@ const (
 	maxFormFieldBytes = 64 << 10
 )
 
+type uploadBudget struct {
+	bytes    int64
+	limitErr error
+}
+
 // Accept streams one multipart upload directly into a new isolated job
 // directory, probes every stored file, and returns the persisted manifest.
 //
@@ -140,33 +145,37 @@ func (manager *Manager) Accept(ctx context.Context, reader *multipart.Reader) (s
 // reserveUploadBudget reserves the maximum aggregate bytes this upload may
 // store. Concurrent requests share the same accounting so they cannot each
 // consume the same free-space headroom.
-func (manager *Manager) reserveUploadBudget() (int64, func(), error) {
+func (manager *Manager) reserveUploadBudget() (uploadBudget, func(), error) {
 	manager.mutex.Lock()
 	defer manager.mutex.Unlock()
 
 	if !manager.accepting {
-		return 0, nil, ErrShuttingDown
+		return uploadBudget{}, nil, ErrShuttingDown
 	}
 	free, err := manager.freeSpace(manager.store.Root())
 	if err != nil {
-		return 0, nil, err
+		return uploadBudget{}, nil, err
 	}
 	if free <= manager.minFreeSpace || free-manager.minFreeSpace <= manager.uploads {
-		return 0, nil, ErrInsufficientSpace
+		return uploadBudget{}, nil, ErrInsufficientSpace
 	}
 	usable := free - manager.minFreeSpace - manager.uploads
-	budget := manager.maxUploadSize
-	if usable < manager.maxUploadSize {
-		budget = usable
+	budget := uploadBudget{
+		bytes:    manager.maxUploadSize,
+		limitErr: ErrUploadTooLarge,
 	}
-	manager.uploads += budget
+	if usable < manager.maxUploadSize {
+		budget.bytes = usable
+		budget.limitErr = ErrInsufficientSpace
+	}
+	manager.uploads += budget.bytes
 	manager.workers.Add(1)
 
 	var once sync.Once
 	release := func() {
 		once.Do(func() {
 			manager.mutex.Lock()
-			manager.uploads -= budget
+			manager.uploads -= budget.bytes
 			manager.mutex.Unlock()
 			manager.workers.Done()
 		})
@@ -178,7 +187,7 @@ func (manager *Manager) receive(
 	ctx context.Context,
 	reader *multipart.Reader,
 	manifest *storage.Manifest,
-	budget int64,
+	budget uploadBudget,
 ) error {
 	inputDir, err := manager.store.InputDir(manifest.ID)
 	if err != nil {
@@ -190,7 +199,7 @@ func (manager *Manager) receive(
 	}
 
 	taken := make(map[string]bool)
-	remaining := budget
+	remaining := budget.bytes
 	count := 0
 	fields := 0
 
@@ -236,7 +245,7 @@ func (manager *Manager) receive(
 			return fmt.Errorf("%w: %s", ErrInvalidUpload, "temporary name is not usable")
 		}
 
-		written, err := writePart(part, tempPath, remaining)
+		written, err := writePart(part, tempPath, remaining, budget.limitErr)
 		if err != nil {
 			_ = os.Remove(tempPath)
 			return err
@@ -278,10 +287,14 @@ func (manager *Manager) receive(
 }
 
 // writePart copies at most remaining bytes from part into path and reports the
-// number of bytes written. Exceeding remaining is an ErrUploadTooLarge.
-func writePart(part *multipart.Part, path string, remaining int64) (int64, error) {
+// number of bytes written. Exceeding remaining returns limitErr so callers can
+// distinguish configured size ceilings from disk-headroom admission failures.
+func writePart(part *multipart.Part, path string, remaining int64, limitErr error) (int64, error) {
+	if limitErr == nil {
+		limitErr = ErrUploadTooLarge
+	}
 	if remaining <= 0 {
-		return 0, ErrUploadTooLarge
+		return 0, limitErr
 	}
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o640)
 	if err != nil {
@@ -294,7 +307,7 @@ func writePart(part *multipart.Part, path string, remaining int64) (int64, error
 		read, err := part.Read(overflow[:])
 		if read > 0 {
 			_ = file.Close()
-			return written, ErrUploadTooLarge
+			return written, limitErr
 		}
 		if err != nil && !errors.Is(err, io.EOF) {
 			copyErr = err
@@ -360,6 +373,17 @@ func uploadLimitError(err error) error {
 	return nil
 }
 
+func probeWaitFailure(err error) *storage.Failure {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return &storage.Failure{
+			Kind:    string(conversion.FailureProbe),
+			Code:    "probe_backpressure",
+			Message: "content probing timed out while waiting for capacity",
+		}
+	}
+	return failureFrom(err)
+}
+
 // inspect probes every uploaded file and records the recommendation and the
 // compatible alternatives. Probe failures mark the file failed without
 // stopping the rest of the job.
@@ -400,11 +424,7 @@ func (manager *Manager) inspect(ctx context.Context, manifest *storage.Manifest)
 			file.State = storage.FileFailed
 			finished := manager.now().UTC()
 			file.FinishedAt = &finished
-			file.Error = &storage.Failure{
-				Kind:    string(conversion.FailureCanceled),
-				Code:    "canceled",
-				Message: "probing did not get a process slot in time",
-			}
+			file.Error = probeWaitFailure(waitCtx.Err())
 			continue
 		}
 		probeCtx, cancel := context.WithTimeout(ctx, timeout)
