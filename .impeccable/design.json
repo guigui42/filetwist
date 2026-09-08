@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-08T18:57:17Z",
+  "title": "Design System: Filetwist",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Control Blue",
+        "canonical": "oklch(54.6% 0.197 259.2)",
+        "light": "#1769e0",
+        "dark": "#6daaff",
+        "tonalRamp": ["#0b005d", "#000687", "#003aae", "#0a61d7", "#3887ff", "#5eaeff", "#7ecfff", "#9beeff"]
+      },
+      "ok": {
+        "role": "primary",
+        "displayName": "Validation Green",
+        "canonical": "oklch(50.8% 0.109 159.7)",
+        "light": "#14784f",
+        "dark": "#70d8a8",
+        "tonalRamp": ["#001600", "#003714", "#005932", "#1a7c52", "#47a075", "#6ec699", "#8fe7b8", "#acffd5"]
+      },
+      "warn": {
+        "role": "secondary",
+        "displayName": "Warning Amber Ink",
+        "canonical": "oklch(47.1% 0.100 73.9)",
+        "light": "#7c5100",
+        "dark": "#f2c15f",
+        "tonalRamp": ["#210000", "#441d00", "#673d00", "#8b5f19", "#b08241", "#d7a766", "#f9c786", "#ffe5a2"]
+      },
+      "error": {
+        "role": "secondary",
+        "displayName": "Failure Red",
+        "canonical": "oklch(49.4% 0.169 28.5)",
+        "light": "#ad2a22",
+        "dark": "#ff918a",
+        "tonalRamp": ["#380000", "#640000", "#8d0000", "#b6332a", "#e05b4d", "#ff8271", "#ffa290", "#ffc0ad"]
+      },
+      "bench": {
+        "role": "neutral",
+        "displayName": "Bench Surface",
+        "canonical": "oklch(91.2% 0.010 238.5)",
+        "light": "#dce3e8",
+        "dark": "#141a21",
+        "tonalRamp": ["#070c0f", "#242a2d", "#43494d", "#646a6e", "#878d92", "#abb2b7", "#cbd2d7", "#e9f0f5"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Inspection Sheet",
+        "canonical": "oklch(98.1% 0.003 128.5)",
+        "light": "#f8f9f7",
+        "dark": "#1c242d"
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(20.6% 0.019 252.1)",
+        "light": "#111820",
+        "dark": "#f1f4f6"
+      }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Instrument panel titles (Media intake, job heading, Recent work orders)." },
+      "title": { "displayName": "Title", "purpose": "Work-order file names and diagnostic block headings." },
+      "body": { "displayName": "Body", "purpose": "Running copy and lede paragraphs, max-width 72ch." },
+      "brand": { "displayName": "Brand", "purpose": "The 1.08rem Filetwist wordmark." },
+      "subheading": { "displayName": "Subheading", "purpose": "The 1.1rem help-section heading." },
+      "emphasis": { "displayName": "Emphasis", "purpose": "The 1.05rem drop-zone action." },
+      "small": { "displayName": "Small body", "purpose": "Dense supporting copy at 0.9rem." },
+      "label": { "displayName": "Label", "purpose": "Uppercase field captions: job facts, route labels, technical readout keys." },
+      "data": { "displayName": "Data", "purpose": "Job codes and technical readout values at 0.8rem in tabular-nums monospace." },
+      "caption": { "displayName": "Caption", "purpose": "Recommendations and compact metadata at 0.78rem." },
+      "badge": { "displayName": "Badge", "purpose": "Uppercase state stamps at 0.68rem." },
+      "stage": { "displayName": "Stage", "purpose": "The responsive 0.63rem to 0.76rem five-step path label." }
+    },
+    "shadows": [
+      { "name": "panel-lift", "value": "0 9px 24px var(--shadow)", "purpose": "Separates instrument panels and cards from the bench background." },
+      { "name": "control-lift", "value": "0 3px 8px var(--shadow)", "purpose": "Resting shadow on buttons and the brand/drop-zone marks; deepens on hover, flattens on active press." },
+      { "name": "control-lift-hover", "value": "0 5px 13px var(--shadow)", "purpose": "Hover state for control-lift; pairs with a 1px upward translateY." },
+      { "name": "control-lift-active", "value": "0 2px 5px var(--shadow)", "purpose": "Active/pressed state for control-lift; pairs with a 1px downward translateY." },
+      { "name": "state-glow", "value": "0 0 0 4px var(--accent-soft)", "purpose": "Halo around the current stage dot in the job-path tracker (error variant uses --error-soft)." }
+    ],
+    "motion": [
+      { "name": "control-transition", "value": "160ms ease-out", "purpose": "Default transition for background-color, border-color, box-shadow, and transform on buttons and controls." },
+      { "name": "surface-transition", "value": "180ms ease-out", "purpose": "Drop-zone and hover-row background/border transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "34rem" },
+      { "name": "md", "value": "46rem" },
+      { "name": "lg", "value": "62rem" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid control-blue action button; the only fully-filled interactive surface in the system.",
+      "html": "<button class=\"ds-btn-primary\">Convert 3 files</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0.58rem 1rem; background: #1769e0; border: 1px solid #1769e0; border-radius: 7px; box-shadow: 0 3px 8px rgba(26,39,52,0.18); color: #ffffff; font-weight: 700; cursor: pointer; transition: background-color 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out, transform 160ms ease-out; } .ds-btn-primary:hover { background: #0e4fae; border-color: #0e4fae; box-shadow: 0 5px 13px rgba(26,39,52,0.18); transform: translateY(-1px); } .ds-btn-primary:active { box-shadow: 0 2px 5px rgba(26,39,52,0.18); transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 3px solid #1769e0; outline-offset: 3px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined button for non-destructive secondary actions (Cancel, Download all files).",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0.58rem 1rem; background: #ffffff; border: 1px solid #788592; border-radius: 7px; color: #111820; font-weight: 700; cursor: pointer; transition: background-color 160ms ease-out, border-color 160ms ease-out; } .ds-btn-secondary:hover { background: #e9eef1; border-color: #1769e0; } .ds-btn-secondary:focus-visible { outline: 3px solid #1769e0; outline-offset: 3px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Transparent, red-outlined button reserved for destructive actions (Delete job).",
+      "html": "<button class=\"ds-btn-danger\">Delete job</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0.58rem 1rem; background: transparent; border: 1px solid #ad2a22; border-radius: 7px; box-shadow: none; color: #ad2a22; font-weight: 700; cursor: pointer; transition: background-color 160ms ease-out; } .ds-btn-danger:hover { background: #ffebe8; } .ds-btn-danger:focus-visible { outline: 3px solid #1769e0; outline-offset: 3px; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge-ok",
+      "description": "Small uppercase state chip on work-order cards and job headers; ok/error/busy are the only three states.",
+      "html": "<span class=\"ds-badge ds-badge--ok\">Converted</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; justify-content: center; width: fit-content; min-height: 1.7rem; padding: 0.2rem 0.58rem; border: 1px solid #788592; border-radius: 3px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.055em; line-height: 1; text-transform: uppercase; white-space: nowrap; } .ds-badge--ok { background: #e3f4eb; border-color: #14784f; color: #14784f; } .ds-badge--error { background: #ffebe8; border-color: #ad2a22; color: #ad2a22; } .ds-badge--busy { background: #e4efff; border-color: #1769e0; color: #0e4fae; }"
+    },
+    {
+      "name": "Instrument Panel",
+      "kind": "card",
+      "refersTo": "instrument-panel",
+      "description": "The base panel shell: a pale inspection-sheet surface lifted off the bench with a static accent rule across its top edge.",
+      "html": "<section class=\"ds-panel\"><h2>Media intake</h2><p>Add photos, audio, or video.</p></section>",
+      "css": ".ds-panel { position: relative; padding: clamp(1rem, 3vw, 1.65rem); background: #f8f9f7; border: 1px solid #788592; border-radius: 7px; box-shadow: 0 9px 24px rgba(26,39,52,0.18); } .ds-panel::before { content: \"\"; position: absolute; inset-block-start: -1px; inset-inline: 1.25rem; height: 3px; background: #1769e0; border-radius: 0 0 3px 3px; } .ds-panel h2 { margin: 0; font-size: clamp(1.35rem, 1.1rem + 1vw, 2rem); letter-spacing: -0.035em; }"
+    },
+    {
+      "name": "Job Path Stage Tracker",
+      "kind": "custom",
+      "refersTo": "job-path",
+      "description": "Signature component: a fixed 5-stage horizontal tracker with a connecting line, reporting the literal Inspect, Configure, Convert, Validate, and Download path.",
+      "html": "<ol class=\"ds-job-path\" aria-label=\"Conversion progress\"><li class=\"ds-stage ds-stage--complete\"><span class=\"ds-stage-mark\"></span><span>Inspect</span></li><li class=\"ds-stage ds-stage--complete\"><span class=\"ds-stage-mark\"></span><span>Configure</span></li><li class=\"ds-stage ds-stage--current\" aria-current=\"step\"><span class=\"ds-stage-mark\"></span><span>Convert</span></li><li class=\"ds-stage\"><span class=\"ds-stage-mark\"></span><span>Validate</span></li><li class=\"ds-stage\"><span class=\"ds-stage-mark\"></span><span>Download</span></li></ol>",
+      "css": ".ds-job-path { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; list-style: none; margin: 1.25rem 0; padding: 0; } .ds-stage { position: relative; display: grid; justify-items: center; gap: 0.35rem; color: #52616f; font-size: clamp(0.63rem, 2.4vw, 0.76rem); font-weight: 700; text-align: center; } .ds-stage::before, .ds-stage::after { content: \"\"; position: absolute; inset-block-start: 0.42rem; height: 2px; background: #c8d0d6; } .ds-stage::before { inset-inline: 0 50%; } .ds-stage::after { inset-inline: 50% 0; } .ds-stage:first-child::before, .ds-stage:last-child::after { display: none; } .ds-stage-mark { position: relative; z-index: 1; width: 0.95rem; height: 0.95rem; background: #f8f9f7; border: 2px solid #788592; border-radius: 50%; } .ds-stage--complete { color: #111820; } .ds-stage--complete::before, .ds-stage--complete::after { background: #14784f; } .ds-stage--complete .ds-stage-mark { background: #14784f; border-color: #14784f; } .ds-stage--current { color: #0e4fae !important; } .ds-stage--current .ds-stage-mark { background: #1769e0; border-color: #1769e0; box-shadow: 0 0 0 4px #e4efff; }"
+    },
+    {
+      "name": "Work Order File Route",
+      "kind": "card",
+      "refersTo": "work-order-card",
+      "description": "Per-file card showing the Original / Profile / Output route; the structural unit that turns an uploaded file into a tracked conversion job.",
+      "html": "<li class=\"ds-work-order\"><header class=\"ds-file-header\"><h3>vacation.heic</h3><span class=\"ds-badge ds-badge--busy\">Converting</span></header><div class=\"ds-file-route\"><section><p class=\"ds-route-label\">Original</p><p class=\"ds-route-value\">4.2 MB</p></section><section><p class=\"ds-route-label\">Profile</p><p class=\"ds-route-value\">Compatible photo (JPEG)</p></section><section><p class=\"ds-route-label\">Output</p><p class=\"ds-route-detail\">Created after conversion</p></section></div></li>",
+      "css": ".ds-work-order { list-style: none; background: #ffffff; border: 1px solid #c8d0d6; border-radius: 4px; } .ds-file-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 1rem; background: #e9eef1; border-block-end: 1px solid #c8d0d6; } .ds-file-header h3 { margin: 0; font-size: 1rem; } .ds-file-route { display: grid; gap: 0; } .ds-file-route section { padding: 1rem; border-block-end: 1px solid #c8d0d6; } .ds-route-label { margin: 0; color: #52616f; font-size: 0.72rem; font-weight: 750; letter-spacing: 0.055em; text-transform: uppercase; } .ds-route-value { margin: 0.32rem 0 0; font-weight: 760; } .ds-route-detail { margin: 0.28rem 0 0; color: #52616f; font-size: 0.84rem; } @media (min-width: 46rem) { .ds-file-route { grid-template-columns: minmax(0, 0.85fr) minmax(15rem, 1.45fr) minmax(0, 1fr); } .ds-file-route section { border-block-end: 0; border-inline-end: 1px solid #c8d0d6; } .ds-file-route section:last-child { border-inline-end: 0; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Home Media Service Bench",
+    "overview": "Filetwist reads as a service bench, not an upload card: household media arrives as a work order, gets routed through a visible three-stage path (Original → Profile → Output), and leaves with a stamped, validated result. The instrument header up top always frames what the current work order is and what state it's in, before anything else competes for attention. Panels sit on a deeper \"bench\" background like tools laid out on a counter, each stamped with a thin accent rule across its top edge, the closest thing this system has to a signature mark.\n\nThe palette carries the metaphor: graphite-toned bench surfaces hold pale inspection-sheet panels, blue is reserved for controls and the thing currently happening, amber flags a processing note worth a second look, and green is the seal a file only earns once its output validates. Nothing here is decorative; every color, badge, and stage dot reports a real state from the conversion pipeline. Light and dark are both first-class: the bench darkens to true graphite and panels lighten only relative to it, rather than the whole page inverting to a generic dark theme.",
+    "keyCharacteristics": [
+      "Compact instrument header first; work-order state is visible before scrolling.",
+      "A five-stage horizontal path (.job-path) shows literal conversion progress, not a spinner.",
+      "Every file becomes a \"work order\" card with an explicit Original / Profile / Output route.",
+      "Color is a state report (blue = active/control, amber = warning, green = validated, red = failed), never mood decoration.",
+      "Flat panels lifted by a single soft ambient shadow; buttons press down on click rather than glow."
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Amber (--warn) means \"read this before you trust the output\"; it never appears on an error. Red (--error) means the operation failed; it never appears on a warning. Green (--ok) is earned only by a passed validation check, a completed stage, or the retention indicator — never a generic \"success\" toast.", "section": "colors" },
+      { "name": "The Tabular-Nums Rule", "body": "Any number that represents a measured fact (byte size, file count, queue depth) uses font-variant-numeric: tabular-nums so a work order's figures don't visually jitter as they update over HTMX polling.", "section": "typography" },
+      { "name": "The Press-Down Rule", "body": "Every clickable button lifts 1px on hover and drops 1px on :active. A control that doesn't physically respond to a click doesn't belong in this system.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do treat blue as the only accent for controls, links, and \"this is active right now\" states (The One Signal Rule).",
+      "Do put a 3px accent rule across the top of every instrument panel; it is the system's one recurring signature mark, and it stays static.",
+      "Do use monospace tabular-nums for job codes and technical readouts (The Tabular-Nums Rule); use system-font tabular-nums for plain numeric facts like file counts.",
+      "Do keep every interactive control at a 44px minimum touch target (--control-size).",
+      "Do show conversion progress with the literal 5-stage .job-path tracker rather than an indeterminate spinner whenever a file's route can be described in stages."
+    ],
+    "donts": [
+      "Don't use amber (--warn) for a failed operation, or red (--error) for a non-fatal note — the two vocabularies never swap roles.",
+      "Don't award a green validation seal for anything short of a passed output check; it is not a generic \"done\" color.",
+      "Don't collapse the three-column Original/Profile/Output route into an unstructured list on desktop; the columns are the story (\"bring media in, choose what changes, take the result home\") made visible, not a layout convenience.",
+      "Don't add a second, heavier elevation style (large drop shadows, glassmorphism, gradients); every surface uses the same flat-with-one-ambient-shadow model (The Press-Down Rule for controls, Panel lift for containers).",
+      "Don't open the first viewport with hero imagery, marketing copy, or a generic upload card; the instrument header and current work order state come first, because this is a service bench, not a landing page."
+    ]
+  }
+}

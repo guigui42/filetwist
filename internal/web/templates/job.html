@@ -1,18 +1,33 @@
 {{define "job"}}
-<section id="job" class="card job-panel" data-job-state="{{.Job.State}}" data-job-id="{{.Job.ID}}" data-job-url="{{url .Base (printf "/jobs/%s" .Job.ID)}}"
+<section id="job" class="instrument-panel job-panel" data-job-state="{{.Job.State}}" data-job-id="{{.Job.ID}}" data-job-url="{{url .Base (printf "/jobs/%s" .Job.ID)}}"
   {{if .Job.Poll}}hx-get="{{url .Base (printf "/jobs/%s/status" .Job.ID)}}" hx-trigger="every 2s" hx-target="this" hx-swap="outerHTML"{{end}}>
-  <header>
-    <h2 id="job-heading" tabindex="-1">{{.Job.Heading}}</h2>
-    <p id="job-status" role="status" aria-live="polite">{{.Job.StatusMessage}}</p>
-    <p class="meta">{{.Job.FileCount}} file{{plural .Job.FileCount}} &middot; {{.Job.TotalBytesLabel}} uploaded &middot; Expires {{.Job.ExpiresLabel}}</p>
+  <header class="job-header">
+    <div class="job-title-row">
+      <div>
+        <h2 id="job-heading" tabindex="-1">{{.Job.Heading}}</h2>
+        <p id="job-status" role="status" aria-live="polite">{{.Job.StatusMessage}}</p>
+      </div>
+      <span class="badge job-state {{.Job.BadgeClass}}">{{.Job.StateLabel}}</span>
+    </div>
+    <dl class="job-facts">
+      <div><dt>Files</dt><dd>{{.Job.FileCount}}</dd></div>
+      <div><dt>Intake size</dt><dd>{{.Job.TotalBytesLabel}}</dd></div>
+      <div><dt>Retention</dt><dd>Expires {{.Job.ExpiresLabel}}</dd></div>
+    </dl>
   </header>
+  <ol class="job-path" aria-label="Conversion progress">
+    {{range .Job.Stages}}
+    <li class="{{.Class}}"{{if .Current}} aria-current="step"{{end}}>
+      <span class="stage-mark" aria-hidden="true"></span>
+      <span>{{.Label}}</span>
+    </li>
+    {{end}}
+  </ol>
   {{if .Job.Poll}}<progress aria-label="Files finished" max="{{.Job.FileCount}}" value="{{.Job.FinishedCount}}"></progress>{{end}}
   {{if and .Job.HasOutputs (not .Job.Poll)}}
   <div class="actions download-actions">
     <a class="button primary-download" href="{{url .Base (printf "/jobs/%s/download" .Job.ID)}}">Download all as ZIP</a>
-    {{if gt .Job.CompletedCount 1}}
     <button type="button" class="secondary" data-download-all hidden>Download all files</button>
-    {{end}}
   </div>
   {{end}}
   <div id="job-notice" class="request-notice" tabindex="-1"></div>
@@ -39,36 +54,61 @@
     {{end}}{{end}}
     <ul class="files">
       {{range .Job.Files}}
-      <li class="file" data-file-id="{{.ID}}">
-        <header>
-          <h3>{{.Name}}</h3>
+      <li class="file work-order" data-file-id="{{.ID}}">
+        <header class="file-header">
+          <div>
+            <h3>{{.Name}}</h3>
+          </div>
           <span class="badge {{.BadgeClass}}">{{.StateLabel}}</span>
         </header>
-        <p class="meta">{{.SizeLabel}}{{if .MediaSummary}} &middot; {{.MediaSummary}}{{end}}</p>
-        {{if .CanSelect}}
-        <div class="operation">
-          <label for="op-{{.ID}}">Operation</label>
-          <select id="op-{{.ID}}" name="operation.{{.ID}}" data-operation aria-describedby="help-{{.ID}}">
-            {{range .Options}}<option value="{{.Value}}"{{if .Selected}} selected{{end}} data-description="{{.Description}}">{{.Label}} ({{.Format}})</option>{{end}}
-          </select>
-          <span class="hint">Recommended: {{.RecommendedLabel}}</span>
+        <div class="file-route">
+          <section class="route-stage route-source" aria-label="Original file">
+            <p class="route-label">Original</p>
+            <p class="route-value">{{.SizeLabel}}</p>
+            {{if .MediaSummary}}<p class="route-detail">{{.MediaSummary}}</p>{{end}}
+          </section>
+          <section class="route-stage route-profile" aria-label="Conversion profile">
+            <p class="route-label">Profile</p>
+            {{if .CanSelect}}
+            <div class="operation">
+              <label class="visually-hidden" for="op-{{.ID}}">Operation</label>
+              <select id="op-{{.ID}}" name="operation.{{.ID}}" data-operation aria-describedby="help-{{.ID}}">
+                {{range .Options}}<option value="{{.Value}}"{{if .Selected}} selected{{end}} data-description="{{.Description}}" data-format="{{.Format}}">{{.Label}} ({{.Format}})</option>{{end}}
+              </select>
+              <span class="recommendation">Recommended: {{.RecommendedLabel}}</span>
+            </div>
+            {{else if .SelectedLabel}}
+            <p class="route-value">{{.SelectedLabel}}</p>
+            {{end}}
+            {{if .OperationHelp}}<p id="help-{{.ID}}" class="operation-help">{{.OperationHelp}}</p>{{end}}
+          </section>
+          <section class="route-stage route-output" aria-label="Conversion output">
+            <p class="route-label">Output</p>
+            {{if .OutputName}}
+            <p class="route-value output-name">{{.OutputName}}</p>
+            <p class="route-detail">{{.OutputSizeLabel}}{{if .OperationFormat}} &middot; {{.OperationFormat}}{{end}}</p>
+            {{else if .OperationFormat}}
+            <p class="route-value" data-output-format>{{.OperationFormat}}</p>
+            <p class="route-detail">Created after conversion</p>
+            {{else}}
+            <p class="route-detail">No output available</p>
+            {{end}}
+            {{if .DownloadURL}}
+            <p class="download-file"><a class="button secondary file-download" href="{{.DownloadURL}}" download="{{.OutputName}}" data-download-file aria-label="Download {{.OutputName}}">Download file</a></p>
+            {{end}}
+          </section>
         </div>
-        <p id="help-{{.ID}}" class="operation-help">{{.OperationHelp}}</p>
-        {{else if .SelectedLabel}}
-        <p class="meta">Operation: {{.SelectedLabel}}</p>
-        {{end}}
-        {{range .Warnings}}<p class="warning">Warning: {{.}}</p>{{end}}
-        {{if .ErrorMessage}}<p class="error" role="alert">{{.ErrorMessage}}</p>{{end}}
-        {{if .DownloadURL}}
-        <p class="download-file"><a class="button secondary" href="{{.DownloadURL}}" download="{{.OutputName}}" data-download-file aria-label="Download {{.OutputName}}">Download file ({{.OutputSizeLabel}})</a></p>
-        {{end}}
+        {{range .Warnings}}<p class="message warning" role="status"><strong>Processing note:</strong> {{.}}</p>{{end}}
+        {{if .ValidationSummary}}<p class="validation-result {{.ValidationClass}}"><span class="validation-mark" aria-hidden="true"></span>{{.ValidationSummary}}</p>{{end}}
+        {{if .ErrorMessage}}<p class="message error" role="alert"><strong>Conversion failed:</strong> {{.ErrorMessage}}</p>{{end}}
         <details class="conversion-details" id="details-{{.ID}}" data-file-details>
           <summary id="details-summary-{{.ID}}">Conversion details<span class="visually-hidden"> for {{.Name}}</span></summary>
-          <p class="meta">Detected format: {{.ProbeFormat}}</p>
-          {{if .ValidationLabel}}<p class="meta">Validation: {{.ValidationLabel}}</p>{{end}}
-          {{if .ExecutionLabel}}<p class="meta">Execution: {{.ExecutionLabel}}</p>{{end}}
-          {{if .OutputName}}<p class="meta output-name">Output: {{.OutputName}}</p>{{end}}
-          {{if .OperationHelp}}<p class="hint">{{.OperationHelp}}</p>{{end}}
+          <dl class="technical-readout">
+            <div><dt>Detected format</dt><dd>{{.ProbeFormat}}</dd></div>
+            {{if .ValidationLabel}}<div><dt>Validation</dt><dd>{{.ValidationLabel}}</dd></div>{{end}}
+            {{if .ExecutionLabel}}<div><dt>Execution</dt><dd>{{.ExecutionLabel}}</dd></div>{{end}}
+            {{if .OutputName}}<div><dt>Output</dt><dd class="output-name">{{.OutputName}}</dd></div>{{end}}
+          </dl>
         </details>
         {{if .CanRemove}}
         <button type="button" id="remove-{{.ID}}" class="text-button" data-remove-file
@@ -81,7 +121,7 @@
       {{end}}
     </ul>
 
-    <div class="actions">
+    <div class="actions job-controls">
       {{if .Job.CanStart}}<button type="submit">Convert {{.Job.ConvertibleCount}} file{{plural .Job.ConvertibleCount}}</button>{{end}}
       {{if .Job.CanCancel}}
       <button type="button" class="secondary"
@@ -94,7 +134,7 @@
         hx-confirm="Delete this job and every uploaded and converted file?">Delete job</button>
     </div>
   </form>
-  <p class="hint job-reference">Job {{.Job.ShortID}} &middot; <a href="{{url .Base (printf "/jobs/%s" .Job.ID)}}">Link to this job</a> &middot; <a href="{{url .Base "/help#profiles"}}">About conversion presets</a></p>
+  <p class="job-reference"><span class="job-code">Job {{.Job.ShortID}}</span><a href="{{url .Base (printf "/jobs/%s" .Job.ID)}}">Copyable job link</a><a href="{{url .Base "/help#profiles"}}">About conversion presets</a></p>
 </section>
 {{end}}
 
@@ -102,7 +142,7 @@
 <div id="job-panel">
 {{if .Job}}{{template "job" .}}{{else}}<p class="error" role="alert">This job is no longer available.</p>{{end}}
 </div>
-<p><a class="button secondary" href="{{url .Base "/"}}">Upload more files</a></p>
+<p class="return-action"><a class="button secondary" href="{{url .Base "/"}}">Upload more files</a></p>
 {{end}}
 
 {{define "notice"}}<p class="{{.Class}}" role="alert" tabindex="-1">{{.Message}}</p>{{end}}

@@ -55,7 +55,9 @@ func TestWorkflowReviewAndRecentJobs(t *testing.T) {
 	for _, want := range []string{
 		"Review your files", "Convert 2 files", "JPEG", "flattens transparency",
 		"Apply to compatible files", "Keep individual choices", "data-operation",
-		`aria-describedby="help-`, "/remove", "Conversion details",
+		`aria-describedby="help-`, `data-format="JPEG"`, "data-output-format",
+		"/remove", "Conversion details",
+		`aria-label="Conversion progress"`, "route-profile", "route-output",
 		`data-job-url="/jobs/` + manifest.ID,
 	} {
 		if !strings.Contains(body, want) {
@@ -82,7 +84,9 @@ func TestWorkflowCompletedDownloadIsPrimary(t *testing.T) {
 	for _, want := range []string{
 		"Your downloads are ready", "1 of 1 file converted",
 		`class="button primary-download"`, "Download all as ZIP",
+		"Download all files", "data-download-all",
 		`<details`, "Conversion details", "Upload more files",
+		"Output passed profile validation", `aria-current="step"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("completed page missing %q", want)
@@ -91,11 +95,41 @@ func TestWorkflowCompletedDownloadIsPrimary(t *testing.T) {
 	if strings.Contains(body, "/remove") {
 		t.Error("completed job exposes pre-conversion removal")
 	}
-	if strings.Contains(body, "Download all files") {
-		t.Error("single-output job exposes batch file downloads")
-	}
 	if strings.Index(body, "Download all as ZIP") > strings.Index(body, "Conversion details") {
 		t.Error("primary download appears after technical details")
+	}
+}
+
+func TestWorkflowWarningsPrecedeValidation(t *testing.T) {
+	defaultConverter := &stubConverter{}
+	converter := &stubConverter{convert: func(
+		ctx context.Context,
+		request conversion.Request,
+	) (conversion.Result, error) {
+		result, err := defaultConverter.Convert(ctx, request)
+		if err != nil {
+			return conversion.Result{}, err
+		}
+		result.Warnings = []conversion.Warning{{
+			Code:    "test_warning",
+			Message: "A secondary stream was dropped.",
+		}}
+		return result, nil
+	}}
+	server := newServer(t, nil, converter)
+	manifest := server.upload(t, []string{"photo.jpg"})
+	if _, err := server.manager.Start(manifest.ID, nil); err != nil {
+		t.Fatal(err)
+	}
+	server.waitForState(t, manifest.ID, storage.JobCompleted)
+	body := server.do(t, httptest.NewRequest(http.MethodGet, "/jobs/"+manifest.ID, nil)).Body.String()
+	warningIndex := strings.Index(body, "Processing note:")
+	validationIndex := strings.Index(body, "Output passed profile validation")
+	if warningIndex < 0 || validationIndex < 0 {
+		t.Fatalf("completed page missing warning or validation result")
+	}
+	if warningIndex > validationIndex {
+		t.Error("validation appears before the processing warning")
 	}
 }
 

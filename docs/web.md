@@ -1,9 +1,16 @@
 # Web workflow and conversion behavior
 
-Upload files, review their detected type and recommended operation, then select
-**Convert**. Each file reports its result, warnings, and execution path.
+Use **Media intake** to upload files, review their detected type and recommended
+operation, then select **Convert**. The job path shows **Inspect**, **Configure**,
+**Convert**, **Validate**, and **Download** as the work progresses. Each file is
+presented as a work order that separates the original, selected profile, and
+output.
+
+Processing warnings appear before the output-validation result so consequences
+that need attention are visible before a successful validation seal. Probe and
+execution information stays optional under **Conversion details**.
 Download successful results individually, as a streamed ZIP, or start every
-successful output as a separate browser download when at least two are ready.
+successful output as a separate browser download.
 
 The upload form identifies this as a shared workspace before you send any files.
 It checks file-count and total-size limits before sending, while the server
@@ -17,11 +24,12 @@ an external documentation service.
 
 After upload, review takes focus and the uploader collapses to **Upload more
 files**. The browser URL points to the job so it can be revisited. Each preset
-shows its output format and a short explanation before conversion. Technical
-probe and execution information remains available under **Conversion details**;
-warnings and errors stay visible. Successful jobs put **Download all as ZIP**
-before the per-file results. When at least two outputs are available,
+shows its output format and a short explanation before conversion. Changing an
+individual or batch preset updates the output-format preview immediately.
+Warnings and errors stay visible. Successful jobs put **Download all as ZIP**
+before the per-file results. For every successful job,
 **Download all files** starts each output as a separate browser download. The
+same action is available for a single output, without requiring a ZIP. The
 browser may ask you to allow multiple downloads for the site; this permission
 cannot be granted by Filetwist. Individual links and ZIP downloads remain
 available if the browser blocks the batch.

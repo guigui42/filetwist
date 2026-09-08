@@ -1,25 +1,29 @@
 {{define "index"}}
-<details id="upload-section" class="card upload-panel" open>
-  <summary><h2 id="upload-heading">Upload files</h2></summary>
-  <p class="privacy-note"><strong>Shared workspace.</strong> Everyone with access can view, download, cancel, and delete these files.
-    <a href="{{url .Base "/help#privacy"}}">How your files are handled</a></p>
+<details id="upload-section" class="instrument-panel upload-panel" open>
+  <summary><h2 id="upload-heading">Media intake</h2></summary>
+  <div class="intake-intro">
+    <p class="panel-lede">Add photos, audio, or video. Filetwist will inspect each file before you choose what to create.</p>
+    <p class="privacy-note"><strong>Shared workspace.</strong> Everyone with access can view, download, cancel, and delete these files.
+      <a href="{{url .Base "/help#privacy"}}">How your files are handled</a></p>
+  </div>
   <form id="upload-form" action="{{url .Base "/jobs"}}" method="post" enctype="multipart/form-data"
     data-max-files="{{.MaxFiles}}" data-max-bytes="{{.MaxUploadBytes}}">
     <div id="drop-zone" class="drop-zone" tabindex="0" role="button"
          aria-controls="file-input"
          aria-describedby="upload-limits">
-      <strong>Drop files here</strong>
-      <span>or choose files from your device</span>
+      <span class="drop-zone-mark" aria-hidden="true"></span>
+      <strong>Add media to the bench</strong>
+      <span>Drop files here or choose them from your device</span>
     </div>
     <label class="visually-hidden" for="file-input">Files to convert</label>
     <input id="file-input" class="visually-hidden" type="file" name="files" multiple>
     <p id="file-list" class="file-list" role="status" aria-live="polite">No files selected.</p>
     <ul id="selected-files" class="selected-files"></ul>
     <p id="upload-limits" class="hint">
-      Up to {{.MaxFiles}} files and {{.MaxUploadLabel}} per upload.
+      Images, audio, and video. Up to {{.MaxFiles}} files and {{.MaxUploadLabel}} per intake.
     </p>
     <div id="upload-notice" class="request-notice" tabindex="-1"></div>
-    <div class="actions">
+    <div class="actions upload-actions">
       <button id="upload-submit" type="submit" disabled>Upload</button>
       <button id="upload-cancel" type="button" class="secondary" hidden>Cancel upload</button>
     </div>
@@ -36,16 +40,26 @@
 </div>
 
 {{if .Jobs}}
-<section class="card">
-  <h2>Recent jobs</h2>
-  <ul class="files recent-jobs">
+<section class="instrument-panel recent-jobs-panel">
+  <header class="section-heading">
+    <div>
+      <h2>Recent work orders</h2>
+      <p>Continue a conversion or collect results that have not expired.</p>
+    </div>
+  </header>
+  <ul class="recent-jobs">
     {{range .Jobs}}
-    <li class="file">
-      <header>
-        <h3><a href="{{$.Base}}/jobs/{{.ID}}">{{.Title}}</a></h3>
-        <span class="badge {{.BadgeClass}}">{{.StateLabel}}</span>
-      </header>
-      <p class="meta">{{.FileCount}} file{{plural .FileCount}}, created {{.CreatedLabel}}. Job {{.ShortID}}.</p>
+    <li class="recent-job">
+      <a class="recent-job-link" href="{{$.Base}}/jobs/{{.ID}}">
+        <span class="recent-job-main">
+          <strong>{{.Title}}</strong>
+          <span>{{.FileCount}} file{{plural .FileCount}} &middot; created {{.CreatedLabel}}</span>
+        </span>
+        <span class="recent-job-state">
+          <span class="badge {{.BadgeClass}}">{{.StateLabel}}</span>
+          <span class="job-code">Job {{.ShortID}}</span>
+        </span>
+      </a>
     </li>
     {{end}}
   </ul>

@@ -69,9 +69,15 @@
   }
 
   function updateOperationHelp(select) {
+    var selected = select.selectedOptions[0];
     var help = document.getElementById(select.getAttribute("aria-describedby"));
     if (help) {
-      help.textContent = select.selectedOptions[0].dataset.description;
+      help.textContent = selected.dataset.description;
+    }
+    var workOrder = select.closest(".work-order");
+    var outputFormat = workOrder && workOrder.querySelector("[data-output-format]");
+    if (outputFormat) {
+      outputFormat.textContent = selected.dataset.format;
     }
   }
 
@@ -138,7 +144,7 @@
       if (!job || focus) {
         uploadSection.open = !job;
       }
-      document.getElementById("upload-heading").textContent = job ? "Upload more files" : "Upload files";
+      document.getElementById("upload-heading").textContent = job ? "Upload more files" : "Media intake";
     }
     if (!job) {
       if (!uploadSection && previous && focus) {
