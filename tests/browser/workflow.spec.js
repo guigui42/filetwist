@@ -1,6 +1,7 @@
-import { test as base, expect } from "@playwright/test";
+import { chromium, test as base, expect } from "@playwright/test";
 import { fileURLToPath } from "node:url";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const photo = fileURLToPath(new URL("../../fixtures/generated/rgba-2x2.png", import.meta.url));
 const video = fileURLToPath(new URL("../../fixtures/generated/h264-aac-32x24.mp4", import.meta.url));
@@ -73,7 +74,26 @@ test("upload, choose a profile, convert, download, and delete", async ({ page, j
   jobs.delete(id);
 });
 
-test("download all files starts each browser download", async ({ page, jobs }) => {
+test("download all files starts each browser download", async ({ jobs }, testInfo) => {
+  const profile = testInfo.outputPath("chromium-profile");
+  await mkdir(join(profile, "Default"), { recursive: true });
+  await writeFile(join(profile, "Default", "Preferences"), JSON.stringify({
+    profile: {
+      default_content_setting_values: {
+        automatic_downloads: 1,
+      },
+    },
+  }));
+  const context = await chromium.launchPersistentContext(profile, {
+    acceptDownloads: true,
+    baseURL: testInfo.project.use.baseURL,
+    headless: true,
+  });
+  const pages = context.pages();
+  const page = pages.length > 0 ? pages[0] : await context.newPage();
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+
   const photoBytes = await readFile(photo);
   const firstPhoto = {
     name: "rgba-2x2.png",
@@ -92,30 +112,27 @@ test("download all files starts each browser download", async ({ page, jobs }) =
   await page.getByRole("button", { name: "Convert 2 files", exact: true }).click();
   await expect(page.locator("#job")).toHaveAttribute("data-job-state", "completed");
 
-  const links = page.locator("[data-download-file]");
-  const targets = await links.evaluateAll((nodes) => nodes.map((node) => node.href));
-  expect(targets).toHaveLength(2);
-  await links.evaluateAll((nodes) => {
-    window.batchDownloads = [];
-    nodes.forEach((node) => node.addEventListener("click", (event) => {
-      event.preventDefault();
-      window.batchDownloads.push(node.href);
-    }, { once: true }));
-  });
+  const targets = await page.locator("[data-download-file]").evaluateAll(
+    (links) => links.map((link) => link.href).sort()
+  );
+  const downloads = [];
+  page.on("download", (download) => downloads.push(download));
   await page.getByRole("button", { name: "Download all files", exact: true }).click();
-  await expect.poll(async () => page.evaluate(() => window.batchDownloads.length)).toBe(2);
-  expect(await page.evaluate(() => window.batchDownloads)).toEqual(targets);
+  await expect.poll(() => downloads.length).toBe(2);
   await expect(page.locator("#job-notice")).toContainText("allow multiple downloads");
+  expect(downloads.map((download) => download.url()).sort()).toEqual(targets);
 
-  const outputs = await Promise.all(targets.map(async (target) => {
-    const response = await page.request.get(target);
-    expect(response.ok()).toBe(true);
-    return await response.body();
-  }));
-  for (const bytes of outputs) {
-    expect(bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  const outputs = await Promise.all(downloads.map(readDownload));
+  expect(outputs.map((output) => output.name).sort()).toEqual([
+    "rgba-2x2-lossless.png",
+    "second-lossless.png",
+  ]);
+  for (const output of outputs) {
+    expect(output.bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
   }
   await expect(page.getByRole("link", { name: "Download all as ZIP", exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+  await context.close();
 });
 
 test("failed start keeps the selection and supports retry", async ({ page, jobs }) => {

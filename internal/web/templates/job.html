@@ -7,7 +7,7 @@
     <p class="meta">{{.Job.FileCount}} file{{plural .Job.FileCount}} &middot; {{.Job.TotalBytesLabel}} uploaded &middot; Expires {{.Job.ExpiresLabel}}</p>
   </header>
   {{if .Job.Poll}}<progress aria-label="Files finished" max="{{.Job.FileCount}}" value="{{.Job.FinishedCount}}"></progress>{{end}}
-  {{if .Job.HasOutputs}}
+  {{if and .Job.HasOutputs (not .Job.Poll)}}
   <div class="actions download-actions">
     <a class="button primary-download" href="{{url .Base (printf "/jobs/%s/download" .Job.ID)}}">Download all as ZIP</a>
     {{if gt .Job.CompletedCount 1}}

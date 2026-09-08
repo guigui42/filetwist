@@ -167,6 +167,38 @@ func TestWorkflowCompletedBatchDownloadsAreSeparate(t *testing.T) {
 	}
 }
 
+func TestWorkflowActiveJobHidesBatchDownloads(t *testing.T) {
+	server := newServer(t, nil, nil)
+	manifest := server.upload(t, []string{"first.jpg", "second.jpg", "third.jpg"})
+	if _, err := server.manager.Store().Update(manifest.ID, time.Now(), func(current *storage.Manifest) error {
+		current.State = storage.JobRunning
+		for index := range 2 {
+			current.Files[index].State = storage.FileCompleted
+			current.Files[index].Output = &storage.Output{
+				Name:     current.Files[index].Name,
+				Size:     5,
+				MIMEType: "image/jpeg",
+			}
+		}
+		current.Files[2].State = storage.FileRunning
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	body := server.do(t, httptest.NewRequest(
+		http.MethodGet,
+		"/jobs/"+manifest.ID+"/status",
+		nil,
+	)).Body.String()
+	if strings.Contains(body, "Download all") {
+		t.Error("active job exposes batch downloads while polling")
+	}
+	if got := strings.Count(body, "data-download-file"); got != 2 {
+		t.Errorf("completed file links = %d; want 2", got)
+	}
+}
+
 func TestRemoveFileHTTP(t *testing.T) {
 	for _, base := range []string{"", "/convert"} {
 		t.Run(base, func(t *testing.T) {
