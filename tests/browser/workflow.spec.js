@@ -1,6 +1,7 @@
-import { test as base, expect } from "@playwright/test";
+import { chromium, test as base, expect } from "@playwright/test";
 import { fileURLToPath } from "node:url";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const photo = fileURLToPath(new URL("../../fixtures/generated/rgba-2x2.png", import.meta.url));
 const video = fileURLToPath(new URL("../../fixtures/generated/h264-aac-32x24.mp4", import.meta.url));
@@ -35,10 +36,7 @@ async function upload(page, jobs, files = photo) {
   return id;
 }
 
-async function downloadBytes(page, link) {
-  const pending = page.waitForEvent("download");
-  await link.click();
-  const download = await pending;
+async function readDownload(download) {
   expect(await download.failure()).toBeNull();
   const stream = await download.createReadStream();
   const chunks = [];
@@ -46,6 +44,12 @@ async function downloadBytes(page, link) {
     chunks.push(chunk);
   }
   return { name: download.suggestedFilename(), bytes: Buffer.concat(chunks) };
+}
+
+async function downloadBytes(page, link) {
+  const pending = page.waitForEvent("download");
+  await link.click();
+  return readDownload(await pending);
 }
 
 test("upload, choose a profile, convert, download, and delete", async ({ page, jobs }) => {
@@ -62,11 +66,73 @@ test("upload, choose a profile, convert, download, and delete", async ({ page, j
   expect(archive.name).toMatch(/\.zip$/);
   expect(archive.bytes.subarray(0, 4)).toEqual(Buffer.from([80, 75, 3, 4]));
   expect(archive.bytes.includes(Buffer.from(output.name))).toBe(true);
+  await expect(page.getByRole("button", { name: "Download all files", exact: true })).toHaveCount(0);
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete job", exact: true }).click();
   await expect(page.getByText("The job and all of its files were deleted.", { exact: true })).toBeVisible();
   jobs.delete(id);
+});
+
+test("download all files starts each browser download", async ({ jobs }, testInfo) => {
+  const profile = testInfo.outputPath("chromium-profile");
+  await mkdir(join(profile, "Default"), { recursive: true });
+  await writeFile(join(profile, "Default", "Preferences"), JSON.stringify({
+    profile: {
+      default_content_setting_values: {
+        automatic_downloads: 1,
+      },
+    },
+  }));
+  const context = await chromium.launchPersistentContext(profile, {
+    acceptDownloads: true,
+    baseURL: testInfo.project.use.baseURL,
+    headless: true,
+  });
+  const pages = context.pages();
+  const page = pages.length > 0 ? pages[0] : await context.newPage();
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+
+  const photoBytes = await readFile(photo);
+  const firstPhoto = {
+    name: "rgba-2x2.png",
+    mimeType: "image/png",
+    buffer: photoBytes,
+  };
+  const secondPhoto = {
+    name: "second.png",
+    mimeType: "image/png",
+    buffer: photoBytes,
+  };
+  await upload(page, jobs, [firstPhoto, secondPhoto]);
+  const operations = page.getByLabel("Operation", { exact: true });
+  await operations.nth(0).selectOption("lossless_image");
+  await operations.nth(1).selectOption("lossless_image");
+  await page.getByRole("button", { name: "Convert 2 files", exact: true }).click();
+  await expect(page.locator("#job")).toHaveAttribute("data-job-state", "completed");
+
+  const targets = await page.locator("[data-download-file]").evaluateAll(
+    (links) => links.map((link) => link.href).sort()
+  );
+  const downloads = [];
+  page.on("download", (download) => downloads.push(download));
+  await page.getByRole("button", { name: "Download all files", exact: true }).click();
+  await expect.poll(() => downloads.length).toBe(2);
+  await expect(page.locator("#job-notice")).toContainText("allow multiple downloads");
+  expect(downloads.map((download) => download.url()).sort()).toEqual(targets);
+
+  const outputs = await Promise.all(downloads.map(readDownload));
+  expect(outputs.map((output) => output.name).sort()).toEqual([
+    "rgba-2x2-lossless.png",
+    "second-lossless.png",
+  ]);
+  for (const output of outputs) {
+    expect(output.bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  }
+  await expect(page.getByRole("link", { name: "Download all as ZIP", exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+  await context.close();
 });
 
 test("failed start keeps the selection and supports retry", async ({ page, jobs }) => {

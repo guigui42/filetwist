@@ -39,6 +39,16 @@
     }
   }
 
+  function showStatus(message, target) {
+    if (target.textContent !== message) {
+      var paragraph = document.createElement("p");
+      paragraph.className = "hint";
+      paragraph.setAttribute("role", "status");
+      paragraph.textContent = message;
+      target.replaceChildren(paragraph);
+    }
+  }
+
   function clearNotices() {
     document.querySelectorAll(".request-notice").forEach(function (target) {
       target.replaceChildren();
@@ -63,6 +73,40 @@
     if (help) {
       help.textContent = select.selectedOptions[0].dataset.description;
     }
+  }
+
+  function enableBatchDownloads(job) {
+    var button = job && job.querySelector("[data-download-all]");
+    if (button) {
+      button.hidden = false;
+    }
+  }
+
+  function startBatchDownloads(button) {
+    var links = Array.from(button.closest("#job").querySelectorAll("[data-download-file]"));
+    var target = noticeFor(button);
+    var label = button.textContent;
+    var index = 0;
+    button.disabled = true;
+    button.textContent = "Starting...";
+
+    function startNext() {
+      if (index < links.length) {
+        showStatus("Starting download " + (index + 1) + " of " + links.length + "...", target);
+        links[index].click();
+        index++;
+        window.setTimeout(startNext, 250);
+        return;
+      }
+      button.disabled = false;
+      button.textContent = label;
+      showStatus(
+        "Started " + links.length + " downloads. If your browser asks, allow multiple downloads for this site.",
+        target
+      );
+    }
+
+    startNext();
   }
 
   function rememberJob(preserveSelections) {
@@ -109,6 +153,7 @@
       }
       return;
     }
+    enableBatchDownloads(job);
     if (previous && previous.id === job.dataset.jobId) {
       previous.details.forEach(function (id) {
         var details = document.getElementById(id);
@@ -183,7 +228,13 @@
       document.getElementById("apply-preset").disabled = !event.target.value;
     }
   });
+
   document.body.addEventListener("click", function (event) {
+    var downloadAll = event.target.closest("[data-download-all]");
+    if (downloadAll) {
+      startBatchDownloads(downloadAll);
+      return;
+    }
     if (!event.target.closest("#apply-preset")) {
       return;
     }
@@ -211,6 +262,8 @@
   });
 
   window.addEventListener("popstate", function () { location.reload(); });
+
+  enableBatchDownloads(document.getElementById("job"));
 
   var form = document.getElementById("upload-form");
   if (!form) {

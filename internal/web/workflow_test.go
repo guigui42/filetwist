@@ -1,15 +1,18 @@
 package web_test
 
 import (
+	"context"
 	"errors"
 	"html"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/guigui42/filetwist/internal/config"
+	"github.com/guigui42/filetwist/internal/conversion"
 	"github.com/guigui42/filetwist/internal/jobs"
 	"github.com/guigui42/filetwist/internal/jobs/storage"
 )
@@ -88,8 +91,111 @@ func TestWorkflowCompletedDownloadIsPrimary(t *testing.T) {
 	if strings.Contains(body, "/remove") {
 		t.Error("completed job exposes pre-conversion removal")
 	}
+	if strings.Contains(body, "Download all files") {
+		t.Error("single-output job exposes batch file downloads")
+	}
 	if strings.Index(body, "Download all as ZIP") > strings.Index(body, "Conversion details") {
 		t.Error("primary download appears after technical details")
+	}
+}
+
+func TestWorkflowCompletedBatchDownloadsAreSeparate(t *testing.T) {
+	tests := []struct {
+		name string
+		base string
+	}{
+		{name: "root", base: ""},
+		{name: "webroot", base: "/convert"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defaultConverter := &stubConverter{}
+			converter := &stubConverter{convert: func(
+				ctx context.Context,
+				request conversion.Request,
+			) (conversion.Result, error) {
+				if strings.Contains(filepath.Base(request.InputPath), "failed") {
+					return conversion.Result{}, errors.New("test conversion failure")
+				}
+				return defaultConverter.Convert(ctx, request)
+			}}
+			server := newServer(t, func(settings *config.Config) {
+				settings.WebRoot = tt.base
+			}, converter)
+			manifest := server.upload(t, []string{"first.jpg", "failed.jpg", "second.jpg"})
+			if _, err := server.manager.Start(manifest.ID, nil); err != nil {
+				t.Fatal(err)
+			}
+			final := server.waitForState(t, manifest.ID, storage.JobCompleted)
+			body := server.do(t, httptest.NewRequest(
+				http.MethodGet,
+				server.path("/jobs/"+manifest.ID),
+				nil,
+			)).Body.String()
+
+			for _, want := range []string{
+				"Some downloads are ready",
+				"2 of 3 files converted",
+				"Download all as ZIP",
+				"Download all files",
+				"data-download-all",
+			} {
+				if !strings.Contains(body, want) {
+					t.Errorf("completed page missing %q", want)
+				}
+			}
+			if got := strings.Count(body, "data-download-file"); got != 2 {
+				t.Errorf("batch download targets = %d; want 2", got)
+			}
+			if got := strings.Count(body, `download="`); got != 2 {
+				t.Errorf("download attributes = %d; want 2", got)
+			}
+			if strings.Index(body, "Download all as ZIP") > strings.Index(body, "Download all files") {
+				t.Error("separate downloads appear before the primary ZIP action")
+			}
+			for _, file := range final.Files {
+				url := server.path("/jobs/" + final.ID + "/files/" + file.ID)
+				hasDownload := strings.Contains(body, `href="`+url+`"`)
+				if file.State == storage.FileCompleted && !hasDownload {
+					t.Errorf("completed file %q has no download URL", file.OriginalName)
+				}
+				if file.State != storage.FileCompleted && hasDownload {
+					t.Errorf("non-completed file %q has a download URL", file.OriginalName)
+				}
+			}
+		})
+	}
+}
+
+func TestWorkflowActiveJobHidesBatchDownloads(t *testing.T) {
+	server := newServer(t, nil, nil)
+	manifest := server.upload(t, []string{"first.jpg", "second.jpg", "third.jpg"})
+	if _, err := server.manager.Store().Update(manifest.ID, time.Now(), func(current *storage.Manifest) error {
+		current.State = storage.JobRunning
+		for index := range 2 {
+			current.Files[index].State = storage.FileCompleted
+			current.Files[index].Output = &storage.Output{
+				Name:     current.Files[index].Name,
+				Size:     5,
+				MIMEType: "image/jpeg",
+			}
+		}
+		current.Files[2].State = storage.FileRunning
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	body := server.do(t, httptest.NewRequest(
+		http.MethodGet,
+		"/jobs/"+manifest.ID+"/status",
+		nil,
+	)).Body.String()
+	if strings.Contains(body, "Download all") {
+		t.Error("active job exposes batch downloads while polling")
+	}
+	if got := strings.Count(body, "data-download-file"); got != 2 {
+		t.Errorf("completed file links = %d; want 2", got)
 	}
 }
 

@@ -7,9 +7,12 @@
     <p class="meta">{{.Job.FileCount}} file{{plural .Job.FileCount}} &middot; {{.Job.TotalBytesLabel}} uploaded &middot; Expires {{.Job.ExpiresLabel}}</p>
   </header>
   {{if .Job.Poll}}<progress aria-label="Files finished" max="{{.Job.FileCount}}" value="{{.Job.FinishedCount}}"></progress>{{end}}
-  {{if .Job.HasOutputs}}
+  {{if and .Job.HasOutputs (not .Job.Poll)}}
   <div class="actions download-actions">
     <a class="button primary-download" href="{{url .Base (printf "/jobs/%s/download" .Job.ID)}}">Download all as ZIP</a>
+    {{if gt .Job.CompletedCount 1}}
+    <button type="button" class="secondary" data-download-all hidden>Download all files</button>
+    {{end}}
   </div>
   {{end}}
   <div id="job-notice" class="request-notice" tabindex="-1"></div>
@@ -57,7 +60,7 @@
         {{range .Warnings}}<p class="warning">Warning: {{.}}</p>{{end}}
         {{if .ErrorMessage}}<p class="error" role="alert">{{.ErrorMessage}}</p>{{end}}
         {{if .DownloadURL}}
-        <p class="download-file"><a class="button secondary" href="{{.DownloadURL}}" aria-label="Download {{.OutputName}}">Download file ({{.OutputSizeLabel}})</a></p>
+        <p class="download-file"><a class="button secondary" href="{{.DownloadURL}}" download="{{.OutputName}}" data-download-file aria-label="Download {{.OutputName}}">Download file ({{.OutputSizeLabel}})</a></p>
         {{end}}
         <details class="conversion-details" id="details-{{.ID}}" data-file-details>
           <summary id="details-summary-{{.ID}}">Conversion details<span class="visually-hidden"> for {{.Name}}</span></summary>
