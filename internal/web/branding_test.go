@@ -21,7 +21,9 @@ func TestApplicationPagesUseFiletwistBranding(t *testing.T) {
 				t.Fatalf("status = %d; want 200", response.Code)
 			}
 			body := response.Body.String()
-			if !strings.Contains(body, "<title>Filetwist") || !strings.Contains(body, ">Filetwist</a>") {
+			hasTitle := strings.Contains(body, "<title>Filetwist")
+			hasBrandName := strings.Contains(body, `class="brand-name">Filetwist</span>`)
+			if !hasTitle || !hasBrandName {
 				t.Error("page is missing the Filetwist title or header")
 			}
 			if strings.Contains(strings.ToLower(body), "convertx") {

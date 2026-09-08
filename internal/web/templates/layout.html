@@ -1,4 +1,11 @@
 {{define "layout"}}<!DOCTYPE html>
+<!--
+THESIS: Filetwist is a home media service bench, not a generic upload card.
+OWN-WORLD: Graphite work surfaces, pale inspection sheets, blue controls, amber warnings, and green validation seals.
+STORY: Bring media in, choose what changes, watch it convert, verify the result, and take the output home.
+FIRST VIEWPORT: A compact instrument header frames the current work order, with the next action and conversion state visible first.
+FORM: Home Media Service Bench, selected from the seventh grounded direction with seed 8d063e72.
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -14,17 +21,25 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site">
   <nav aria-label="Main navigation">
-  <h1><a class="site-title" href="{{url .Base "/"}}">Filetwist</a></h1>
-  <a href="{{url .Base "/help"}}">Help &amp; file handling</a>
+    <h1>
+      <a class="site-title" href="{{url .Base "/"}}">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-copy">
+          <span class="brand-name">Filetwist</span>
+          <span class="brand-tagline">Home media conversion</span>
+        </span>
+      </a>
+    </h1>
+    <a class="utility-link" href="{{url .Base "/help"}}">Help &amp; file handling</a>
   </nav>
-  <p>Compatibility-first conversion for phone photos, audio, and video.</p>
+  <p class="site-description">Compatibility-first conversion for phone photos, audio, and video.</p>
 </header>
 <main id="main">
 <div id="request-notice" class="request-notice" tabindex="-1"></div>
 {{if eq .Page "index"}}{{template "index" .}}{{else if eq .Page "job"}}{{template "jobpage" .}}{{else if eq .Page "help"}}{{template "help" .}}{{else}}{{template "diagnosticspage" .}}{{end}}
 </main>
 <footer class="site">
-  <p>Uploads and results are removed automatically after {{.RetentionLabel}}.</p>
+  <p><span class="retention-light" aria-hidden="true"></span>Uploads and results are removed automatically after {{.RetentionLabel}}.</p>
 </footer>
 </body>
 </html>{{end}}

@@ -66,31 +66,43 @@ type jobView struct {
 	ConvertibleCount int
 	Files            []fileView
 	BatchOptions     []optionView
+	Stages           []jobStageView
+}
+
+// jobStageView is one step in the job's visible conversion path.
+type jobStageView struct {
+	Label   string
+	Class   string
+	Current bool
 }
 
 // fileView is one uploaded file inside a job fragment.
 type fileView struct {
-	ID               string
-	Name             string
-	SizeLabel        string
-	State            string
-	StateLabel       string
-	BadgeClass       string
-	MediaSummary     string
-	CanSelect        bool
-	CanRemove        bool
-	OperationHelp    string
-	ProbeFormat      string
-	Options          []optionView
-	RecommendedLabel string
-	SelectedLabel    string
-	ValidationLabel  string
-	ExecutionLabel   string
-	Warnings         []string
-	ErrorMessage     string
-	DownloadURL      string
-	OutputName       string
-	OutputSizeLabel  string
+	ID                string
+	Name              string
+	SizeLabel         string
+	State             string
+	StateLabel        string
+	BadgeClass        string
+	MediaSummary      string
+	CanSelect         bool
+	CanRemove         bool
+	OperationHelp     string
+	ProbeFormat       string
+	Options           []optionView
+	RecommendedLabel  string
+	SelectedLabel     string
+	OperationFormat   string
+	ShowOutputPreview bool
+	ValidationLabel   string
+	ValidationSummary string
+	ValidationClass   string
+	ExecutionLabel    string
+	Warnings          []string
+	ErrorMessage      string
+	DownloadURL       string
+	OutputName        string
+	OutputSizeLabel   string
 }
 
 // optionView is one selectable named operation.
@@ -145,6 +157,7 @@ func (app *App) newPageData(title, page string) pageData {
 }
 
 func (app *App) buildJobView(manifest storage.Manifest, now time.Time) *jobView {
+	validationFailed := false
 	view := &jobView{
 		ID:              manifest.ID,
 		ShortID:         shortID(manifest.ID),
@@ -177,6 +190,9 @@ func (app *App) buildJobView(manifest storage.Manifest, now time.Time) *jobView 
 		if file.State.Terminal() {
 			view.FinishedCount++
 		}
+		if file.Validation.Status == "failed" {
+			validationFailed = true
+		}
 	}
 	view.CanStart = manifest.State == storage.JobPending && view.ConvertibleCount > 0
 	if view.CanStart {
@@ -189,6 +205,7 @@ func (app *App) buildJobView(manifest storage.Manifest, now time.Time) *jobView 
 			}
 		}
 	}
+	view.Stages = jobStages(manifest.State, view.HasOutputs, validationFailed)
 	switch {
 	case view.CanStart:
 		view.Heading = "Review your files"
@@ -237,9 +254,19 @@ func (app *App) buildFileView(jobID string, file storage.File) fileView {
 		option.Selected = operation == selectedOrRecommended(file)
 		view.Options = append(view.Options, option)
 	}
-	view.OperationHelp = operationOption(selectedOrRecommended(file)).Description
+	selected := operationOption(selectedOrRecommended(file))
+	view.OperationHelp = selected.Description
+	view.OperationFormat = selected.Format
+	view.ShowOutputPreview = fileStateShowsOutputPreview(file.State)
 	if file.Validation.Status != "" && file.Validation.Status != "not_run" {
 		view.ValidationLabel = file.Validation.Status
+		if file.Validation.Status == "passed" {
+			view.ValidationSummary = "Output passed profile validation"
+			view.ValidationClass = "validation--ok"
+		} else {
+			view.ValidationSummary = "Output validation: " + strings.ReplaceAll(file.Validation.Status, "_", " ")
+			view.ValidationClass = "validation--error"
+		}
 		for _, issue := range file.Validation.Issues {
 			view.Warnings = append(view.Warnings, fmt.Sprintf(
 				"validation %s: expected %s, observed %s",
@@ -273,6 +300,61 @@ func (app *App) buildFileView(jobID string, file storage.File) fileView {
 		view.OutputSizeLabel = humanBytes(file.Output.Size)
 	}
 	return view
+}
+
+func jobStages(state storage.JobState, hasOutputs, validationFailed bool) []jobStageView {
+	stages := []jobStageView{
+		{Label: "Inspect"},
+		{Label: "Configure"},
+		{Label: "Convert"},
+		{Label: "Validate"},
+		{Label: "Download"},
+	}
+	current := 1
+	failed := -1
+	switch {
+	case state == storage.JobPending:
+		current = 1
+	case state.Active():
+		current = 2
+	case state == storage.JobCompleted && hasOutputs:
+		current = 4
+	case state == storage.JobFailed && validationFailed:
+		current = 3
+		failed = 3
+	case state == storage.JobFailed,
+		state == storage.JobCanceled,
+		state == storage.JobInterrupted,
+		state == storage.JobCompleted:
+		current = 2
+		failed = 2
+	default:
+		current = 0
+	}
+	for index := range stages {
+		switch {
+		case index < current:
+			stages[index].Class = "stage--complete"
+		case index == failed:
+			stages[index].Class = "stage--error"
+			stages[index].Current = true
+		case index == current:
+			stages[index].Class = "stage--current"
+			stages[index].Current = true
+		default:
+			stages[index].Class = "stage--pending"
+		}
+	}
+	return stages
+}
+
+func fileStateShowsOutputPreview(state storage.FileState) bool {
+	switch state {
+	case storage.FileInspected, storage.FileQueued, storage.FileRunning:
+		return true
+	default:
+		return false
+	}
 }
 
 func selectedOrRecommended(file storage.File) corpus.Operation {

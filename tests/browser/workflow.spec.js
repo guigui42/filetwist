@@ -54,9 +54,23 @@ async function downloadBytes(page, link) {
 
 test("upload, choose a profile, convert, download, and delete", async ({ page, jobs }) => {
   const id = await upload(page, jobs);
+  const outputFormat = page.locator(".work-order").first().locator(".route-output .route-value");
+  await expect(outputFormat).toHaveText("JPEG");
   await page.getByLabel("Operation", { exact: true }).selectOption("lossless_image");
+  await expect(outputFormat).toHaveText("PNG");
+  await expect(page.locator(".job-path li")).toHaveText([
+    "Inspect",
+    "Configure",
+    "Convert",
+    "Validate",
+    "Download",
+  ]);
+  await expect(page.locator(".job-path [aria-current='step']")).toHaveText("Configure");
+  await expect(page.getByRole("region", { name: "Original file" })).toHaveCount(0);
   await page.getByRole("button", { name: "Convert 1 file", exact: true }).click();
   await expect(page.locator("#job")).toHaveAttribute("data-job-state", "completed");
+  await expect(page.locator(".job-path [aria-current='step']")).toHaveText("Download");
+  await expect(page.locator(".validation-result")).toHaveText("Output passed profile validation");
 
   const output = await downloadBytes(page, page.getByRole("link", { name: /^Download rgba-2x2-lossless\.png/ }));
   expect(output.name).toBe("rgba-2x2-lossless.png");
@@ -66,7 +80,14 @@ test("upload, choose a profile, convert, download, and delete", async ({ page, j
   expect(archive.name).toMatch(/\.zip$/);
   expect(archive.bytes.subarray(0, 4)).toEqual(Buffer.from([80, 75, 3, 4]));
   expect(archive.bytes.includes(Buffer.from(output.name))).toBe(true);
-  await expect(page.getByRole("button", { name: "Download all files", exact: true })).toHaveCount(0);
+
+  const separate = await downloadBytes(
+    page,
+    page.getByRole("button", { name: "Download all files", exact: true })
+  );
+  expect(separate.name).toBe(output.name);
+  expect(separate.bytes).toEqual(output.bytes);
+  await expect(page.locator("#job-notice")).toHaveText("Started 1 download.");
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete job", exact: true }).click();
@@ -168,6 +189,7 @@ test("cancel active work and delete the job", async ({ page, jobs }) => {
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.locator("#job")).toHaveAttribute("data-job-state", "canceled");
   await expect(page.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Created after conversion", { exact: true })).toHaveCount(0);
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete job", exact: true }).click();
   await expect(page.getByText("The job and all of its files were deleted.", { exact: true })).toBeVisible();
@@ -176,6 +198,17 @@ test("cancel active work and delete the job", async ({ page, jobs }) => {
 
 test("shared-workspace guidance and local help are available before uploading", async ({ page }) => {
   await page.goto("/");
+  const dropZone = page.locator("#drop-zone");
+  await dropZone.focus();
+  await expect(dropZone).toBeFocused();
+  expect(await dropZone.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      style: style.outlineStyle,
+      width: style.outlineWidth,
+      color: style.outlineColor,
+    };
+  })).toMatchObject({ style: "solid", width: "3px" });
   await expect(page.locator(".privacy-note")).toContainText("Everyone with access");
   await expect(page.locator(".privacy-note")).toContainText("delete");
   await page.getByRole("link", { name: "How your files are handled", exact: true }).click();
@@ -192,14 +225,17 @@ test("batch presets respect eligibility and individual choices, including after 
   await expect(page).toHaveURL(/\/jobs\/[A-Za-z0-9_-]{22}$/);
 
   const choices = page.getByLabel("Operation", { exact: true });
+  const outputFormats = page.locator("[data-output-format]");
   await choices.nth(0).selectOption("lossless_image");
   await expect(page.locator(".operation-help").nth(0)).toContainText("not an original-file copy");
+  await expect(outputFormats).toHaveText(["PNG", "JPEG", "MP4"]);
   await page.locator("#batch-tools > summary").click();
   await page.getByLabel("Batch preset", { exact: true }).selectOption("smaller_photo");
   await page.getByRole("button", { name: "Apply to compatible files", exact: true }).click();
   await expect(choices.nth(0)).toHaveValue("lossless_image");
   await expect(choices.nth(1)).toHaveValue("smaller_photo");
   await expect(choices.nth(2)).toHaveValue("compatible_video");
+  await expect(outputFormats).toHaveText(["PNG", "WebP", "MP4"]);
   await expect(page.locator("#batch-status")).toContainText("Applied to 1 file. Kept 1 individual choice. 1 file did not support this preset.");
 
   page.once("dialog", dialog => dialog.accept());
@@ -215,6 +251,7 @@ test("batch presets respect eligibility and individual choices, including after 
   await page.getByRole("button", { name: "Apply to compatible files", exact: true }).click();
   await expect(choices.nth(0)).toHaveValue("compatible_photo");
   await expect(choices.nth(1)).toHaveValue("compatible_photo");
+  await expect(outputFormats).toHaveText(["JPEG", "JPEG"]);
   await page.getByLabel("Keep individual choices", { exact: true }).check();
   await page.getByLabel("Batch preset", { exact: true }).selectOption("smaller_photo");
   await page.getByRole("button", { name: "Apply to compatible files", exact: true }).click();
@@ -282,9 +319,9 @@ test("mobile results prioritize downloads and keep technical details optional", 
     expect(heights.every(height => height >= 44)).toBe(true);
   }
   await page.locator("[data-file-details] > summary").click();
-  await expect(page.getByText("Validation: passed", { exact: true })).toBeVisible();
+  await expect(page.locator(".technical-readout").getByText("passed", { exact: true })).toBeVisible();
   await page.goto("/");
-  await expect(page.locator(".recent-jobs h3")).toContainText(name);
+  await expect(page.locator(".recent-job-main strong")).toContainText(name);
 });
 
 for (const action of ["remove last file", "delete job"]) {

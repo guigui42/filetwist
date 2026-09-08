@@ -13,6 +13,7 @@ import (
 
 	"github.com/guigui42/filetwist/internal/config"
 	"github.com/guigui42/filetwist/internal/conversion"
+	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/jobs"
 	"github.com/guigui42/filetwist/internal/jobs/storage"
 )
@@ -55,7 +56,9 @@ func TestWorkflowReviewAndRecentJobs(t *testing.T) {
 	for _, want := range []string{
 		"Review your files", "Convert 2 files", "JPEG", "flattens transparency",
 		"Apply to compatible files", "Keep individual choices", "data-operation",
-		`aria-describedby="help-`, "/remove", "Conversion details",
+		`aria-describedby="help-`, `data-format="JPEG"`, "data-output-format",
+		"/remove", "Conversion details",
+		`aria-label="Conversion progress"`, "route-profile", "route-output",
 		`data-job-url="/jobs/` + manifest.ID,
 	} {
 		if !strings.Contains(body, want) {
@@ -82,7 +85,9 @@ func TestWorkflowCompletedDownloadIsPrimary(t *testing.T) {
 	for _, want := range []string{
 		"Your downloads are ready", "1 of 1 file converted",
 		`class="button primary-download"`, "Download all as ZIP",
+		"Download all files", "data-download-all",
 		`<details`, "Conversion details", "Upload more files",
+		"Output passed profile validation", `aria-current="step"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("completed page missing %q", want)
@@ -91,11 +96,135 @@ func TestWorkflowCompletedDownloadIsPrimary(t *testing.T) {
 	if strings.Contains(body, "/remove") {
 		t.Error("completed job exposes pre-conversion removal")
 	}
-	if strings.Contains(body, "Download all files") {
-		t.Error("single-output job exposes batch file downloads")
-	}
 	if strings.Index(body, "Download all as ZIP") > strings.Index(body, "Conversion details") {
 		t.Error("primary download appears after technical details")
+	}
+}
+
+func TestWorkflowWarningsPrecedeValidation(t *testing.T) {
+	defaultConverter := &stubConverter{}
+	converter := &stubConverter{convert: func(
+		ctx context.Context,
+		request conversion.Request,
+	) (conversion.Result, error) {
+		result, err := defaultConverter.Convert(ctx, request)
+		if err != nil {
+			return conversion.Result{}, err
+		}
+		result.Warnings = []conversion.Warning{{
+			Code:    "test_warning",
+			Message: "A secondary stream was dropped.",
+		}}
+		return result, nil
+	}}
+	server := newServer(t, nil, converter)
+	manifest := server.upload(t, []string{"photo.jpg"})
+	if _, err := server.manager.Start(manifest.ID, nil); err != nil {
+		t.Fatal(err)
+	}
+	server.waitForState(t, manifest.ID, storage.JobCompleted)
+	body := server.do(t, httptest.NewRequest(http.MethodGet, "/jobs/"+manifest.ID, nil)).Body.String()
+	warningIndex := strings.Index(body, "Processing note:")
+	validationIndex := strings.Index(body, "Output passed profile validation")
+	if warningIndex < 0 || validationIndex < 0 {
+		t.Fatalf("completed page missing warning or validation result")
+	}
+	if warningIndex > validationIndex {
+		t.Error("validation appears before the processing warning")
+	}
+}
+
+func TestWorkflowTerminalJobPresentation(t *testing.T) {
+	tests := []struct {
+		name             string
+		jobState         storage.JobState
+		fileState        storage.FileState
+		validationStatus string
+		errorMessage     string
+		wantFailedStage  string
+	}{
+		{
+			name:            "conversion failure",
+			jobState:        storage.JobFailed,
+			fileState:       storage.FileFailed,
+			errorMessage:    "The converter could not decode this file.",
+			wantFailedStage: "Convert",
+		},
+		{
+			name:             "validation failure",
+			jobState:         storage.JobFailed,
+			fileState:        storage.FileFailed,
+			validationStatus: "failed",
+			errorMessage:     "The output did not satisfy the selected profile.",
+			wantFailedStage:  "Validate",
+		},
+		{
+			name:            "canceled",
+			jobState:        storage.JobCanceled,
+			fileState:       storage.FileCanceled,
+			wantFailedStage: "Convert",
+		},
+		{
+			name:            "interrupted",
+			jobState:        storage.JobInterrupted,
+			fileState:       storage.FileInterrupted,
+			wantFailedStage: "Convert",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newServer(t, nil, nil)
+			manifest := server.upload(t, []string{"photo.jpg"})
+			if _, err := server.manager.Store().Update(
+				manifest.ID,
+				time.Now(),
+				func(current *storage.Manifest) error {
+					current.State = tt.jobState
+					file := &current.Files[0]
+					file.State = tt.fileState
+					file.Selected = corpus.OperationCompatiblePhoto
+					file.Validation.Status = tt.validationStatus
+					if tt.errorMessage != "" {
+						file.Error = &storage.Failure{
+							Kind:    "test",
+							Code:    "test_failure",
+							Message: tt.errorMessage,
+						}
+					}
+					return nil
+				},
+			); err != nil {
+				t.Fatal(err)
+			}
+
+			body := server.do(t, httptest.NewRequest(
+				http.MethodGet,
+				"/jobs/"+manifest.ID,
+				nil,
+			)).Body.String()
+			if strings.Contains(body, "Created after conversion") {
+				t.Error("terminal job promises a future output")
+			}
+			if !strings.Contains(body, "No output available") {
+				t.Error("terminal job does not explain that no output is available")
+			}
+			failedIndex := strings.Index(body, `class="stage--error"`)
+			if failedIndex < 0 {
+				t.Fatal("terminal job has no failed stage")
+			}
+			stageIndex := strings.Index(body[failedIndex:], tt.wantFailedStage)
+			if stageIndex < 0 || stageIndex > 300 {
+				t.Errorf("failed stage does not identify %q", tt.wantFailedStage)
+			}
+			if tt.errorMessage != "" {
+				if !strings.Contains(body, tt.errorMessage) {
+					t.Errorf("terminal job is missing error %q", tt.errorMessage)
+				}
+				if strings.Contains(body, "Conversion failed:") {
+					t.Error("terminal error has an inaccurate conversion-only prefix")
+				}
+			}
+		})
 	}
 }
 

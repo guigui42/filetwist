@@ -1,34 +1,49 @@
 {{define "diagnosticspage"}}
-<section class="card">
-  <h2>Diagnostics</h2>
-  <p class="hint">Tool availability, queue state, and disk headroom. No filesystem paths, environment values, or command output are reported.</p>
-  <h3>Tools</h3>
-  <table class="diagnostics">
-    <thead><tr><th scope="col">Tool</th><th scope="col">Available</th></tr></thead>
-    <tbody>
-      {{range .Diagnostics.Tools}}<tr><td>{{.Name}}</td><td>{{if .Available}}yes{{else}}no{{end}}</td></tr>{{end}}
-    </tbody>
-  </table>
-  <h3>Queue</h3>
-  <dl class="summary">
-    <dt>Queued</dt><dd>{{.Diagnostics.Queue.Queued}}</dd>
-    <dt>Running</dt><dd>{{.Diagnostics.Queue.Running}}</dd>
-    <dt>Capacity</dt><dd>{{.Diagnostics.Queue.Capacity}}</dd>
-    <dt>Queue depth</dt><dd>{{.Diagnostics.Queue.QueueDepth}}</dd>
-    <dt>Accepting</dt><dd>{{if .Diagnostics.Queue.Accepting}}yes{{else}}no{{end}}</dd>
-    <dt>Active leases</dt><dd>{{.Diagnostics.Queue.Leases}}</dd>
-  </dl>
-  <h3>Storage</h3>
-  <dl class="summary">
-    <dt>Jobs stored</dt><dd>{{.Diagnostics.Storage.Jobs}}</dd>
-    <dt>Free space</dt><dd>{{.Diagnostics.Storage.FreeSpaceLabel}}</dd>
-    <dt>Free-space floor</dt><dd>{{.Diagnostics.Storage.MinFreeSpaceLabel}}</dd>
-    <dt>Below floor</dt><dd>{{if .Diagnostics.Storage.BelowFloor}}yes{{else}}no{{end}}</dd>
-  </dl>
-  <h3>Acceleration</h3>
-  <dl class="summary">
-    <dt>Mode</dt><dd>{{.Diagnostics.Acceleration.Mode}}</dd>
-    <dt>Render device present</dt><dd>{{if .Diagnostics.Acceleration.DevicePresent}}yes{{else}}no{{end}}</dd>
-  </dl>
+<section class="instrument-panel diagnostics-page">
+  <header class="section-heading">
+    <div>
+      <h2>Diagnostics</h2>
+      <p>Runtime tool availability, queue state, and disk headroom.</p>
+    </div>
+  </header>
+  <p class="privacy-note">No filesystem paths, environment values, or command output are reported.</p>
+  <div class="diagnostic-grid">
+    <section class="diagnostic-block">
+      <h3>Tools</h3>
+      <table class="diagnostics">
+        <thead><tr><th scope="col">Tool</th><th scope="col">Available</th></tr></thead>
+        <tbody>
+          {{range .Diagnostics.Tools}}<tr><td>{{.Name}}</td><td>{{if .Available}}yes{{else}}no{{end}}</td></tr>{{end}}
+        </tbody>
+      </table>
+    </section>
+    <section class="diagnostic-block">
+      <h3>Queue</h3>
+      <dl class="summary">
+        <div><dt>Queued</dt><dd>{{.Diagnostics.Queue.Queued}}</dd></div>
+        <div><dt>Running</dt><dd>{{.Diagnostics.Queue.Running}}</dd></div>
+        <div><dt>Capacity</dt><dd>{{.Diagnostics.Queue.Capacity}}</dd></div>
+        <div><dt>Queue depth</dt><dd>{{.Diagnostics.Queue.QueueDepth}}</dd></div>
+        <div><dt>Accepting</dt><dd>{{if .Diagnostics.Queue.Accepting}}yes{{else}}no{{end}}</dd></div>
+        <div><dt>Active leases</dt><dd>{{.Diagnostics.Queue.Leases}}</dd></div>
+      </dl>
+    </section>
+    <section class="diagnostic-block">
+      <h3>Storage</h3>
+      <dl class="summary">
+        <div><dt>Jobs stored</dt><dd>{{.Diagnostics.Storage.Jobs}}</dd></div>
+        <div><dt>Free space</dt><dd>{{.Diagnostics.Storage.FreeSpaceLabel}}</dd></div>
+        <div><dt>Free-space floor</dt><dd>{{.Diagnostics.Storage.MinFreeSpaceLabel}}</dd></div>
+        <div><dt>Below floor</dt><dd>{{if .Diagnostics.Storage.BelowFloor}}yes{{else}}no{{end}}</dd></div>
+      </dl>
+    </section>
+    <section class="diagnostic-block">
+      <h3>Acceleration</h3>
+      <dl class="summary">
+        <div><dt>Mode</dt><dd>{{.Diagnostics.Acceleration.Mode}}</dd></div>
+        <div><dt>Render device present</dt><dd>{{if .Diagnostics.Acceleration.DevicePresent}}yes{{else}}no{{end}}</dd></div>
+      </dl>
+    </section>
+  </div>
 </section>
 {{end}}
