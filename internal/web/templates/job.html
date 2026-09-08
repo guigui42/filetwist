@@ -62,12 +62,12 @@
           <span class="badge {{.BadgeClass}}">{{.StateLabel}}</span>
         </header>
         <div class="file-route">
-          <section class="route-stage route-source" aria-label="Original file">
+          <div class="route-stage route-source">
             <p class="route-label">Original</p>
             <p class="route-value">{{.SizeLabel}}</p>
             {{if .MediaSummary}}<p class="route-detail">{{.MediaSummary}}</p>{{end}}
-          </section>
-          <section class="route-stage route-profile" aria-label="Conversion profile">
+          </div>
+          <div class="route-stage route-profile">
             <p class="route-label">Profile</p>
             {{if .CanSelect}}
             <div class="operation">
@@ -81,13 +81,13 @@
             <p class="route-value">{{.SelectedLabel}}</p>
             {{end}}
             {{if .OperationHelp}}<p id="help-{{.ID}}" class="operation-help">{{.OperationHelp}}</p>{{end}}
-          </section>
-          <section class="route-stage route-output" aria-label="Conversion output">
+          </div>
+          <div class="route-stage route-output">
             <p class="route-label">Output</p>
             {{if .OutputName}}
             <p class="route-value output-name">{{.OutputName}}</p>
             <p class="route-detail">{{.OutputSizeLabel}}{{if .OperationFormat}} &middot; {{.OperationFormat}}{{end}}</p>
-            {{else if .OperationFormat}}
+            {{else if .ShowOutputPreview}}
             <p class="route-value" data-output-format>{{.OperationFormat}}</p>
             <p class="route-detail">Created after conversion</p>
             {{else}}
@@ -96,11 +96,11 @@
             {{if .DownloadURL}}
             <p class="download-file"><a class="button secondary file-download" href="{{.DownloadURL}}" download="{{.OutputName}}" data-download-file aria-label="Download {{.OutputName}}">Download file</a></p>
             {{end}}
-          </section>
+          </div>
         </div>
         {{range .Warnings}}<p class="message warning" role="status"><strong>Processing note:</strong> {{.}}</p>{{end}}
         {{if .ValidationSummary}}<p class="validation-result {{.ValidationClass}}"><span class="validation-mark" aria-hidden="true"></span>{{.ValidationSummary}}</p>{{end}}
-        {{if .ErrorMessage}}<p class="message error" role="alert"><strong>Conversion failed:</strong> {{.ErrorMessage}}</p>{{end}}
+        {{if .ErrorMessage}}<p class="message error" role="alert">{{.ErrorMessage}}</p>{{end}}
         <details class="conversion-details" id="details-{{.ID}}" data-file-details>
           <summary id="details-summary-{{.ID}}">Conversion details<span class="visually-hidden"> for {{.Name}}</span></summary>
           <dl class="technical-readout">

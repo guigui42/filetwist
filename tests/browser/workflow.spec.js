@@ -66,6 +66,7 @@ test("upload, choose a profile, convert, download, and delete", async ({ page, j
     "Download",
   ]);
   await expect(page.locator(".job-path [aria-current='step']")).toHaveText("Configure");
+  await expect(page.getByRole("region", { name: "Original file" })).toHaveCount(0);
   await page.getByRole("button", { name: "Convert 1 file", exact: true }).click();
   await expect(page.locator("#job")).toHaveAttribute("data-job-state", "completed");
   await expect(page.locator(".job-path [aria-current='step']")).toHaveText("Download");
@@ -86,6 +87,7 @@ test("upload, choose a profile, convert, download, and delete", async ({ page, j
   );
   expect(separate.name).toBe(output.name);
   expect(separate.bytes).toEqual(output.bytes);
+  await expect(page.locator("#job-notice")).toHaveText("Started 1 download.");
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete job", exact: true }).click();
@@ -187,6 +189,7 @@ test("cancel active work and delete the job", async ({ page, jobs }) => {
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.locator("#job")).toHaveAttribute("data-job-state", "canceled");
   await expect(page.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Created after conversion", { exact: true })).toHaveCount(0);
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete job", exact: true }).click();
   await expect(page.getByText("The job and all of its files were deleted.", { exact: true })).toBeVisible();
@@ -195,6 +198,17 @@ test("cancel active work and delete the job", async ({ page, jobs }) => {
 
 test("shared-workspace guidance and local help are available before uploading", async ({ page }) => {
   await page.goto("/");
+  const dropZone = page.locator("#drop-zone");
+  await dropZone.focus();
+  await expect(dropZone).toBeFocused();
+  expect(await dropZone.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      style: style.outlineStyle,
+      width: style.outlineWidth,
+      color: style.outlineColor,
+    };
+  })).toMatchObject({ style: "solid", width: "3px" });
   await expect(page.locator(".privacy-note")).toContainText("Everyone with access");
   await expect(page.locator(".privacy-note")).toContainText("delete");
   await page.getByRole("link", { name: "How your files are handled", exact: true }).click();

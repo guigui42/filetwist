@@ -346,12 +346,18 @@ summary::marker {
   background: var(--accent-soft);
 }
 
-.drop-zone:focus-visible,
+.drop-zone:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
 .drop-zone--active {
   border-color: var(--accent);
   background: var(--accent-soft);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
-  outline: none;
 }
 
 .drop-zone-mark {

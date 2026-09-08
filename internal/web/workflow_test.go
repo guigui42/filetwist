@@ -13,6 +13,7 @@ import (
 
 	"github.com/guigui42/filetwist/internal/config"
 	"github.com/guigui42/filetwist/internal/conversion"
+	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/jobs"
 	"github.com/guigui42/filetwist/internal/jobs/storage"
 )
@@ -130,6 +131,100 @@ func TestWorkflowWarningsPrecedeValidation(t *testing.T) {
 	}
 	if warningIndex > validationIndex {
 		t.Error("validation appears before the processing warning")
+	}
+}
+
+func TestWorkflowTerminalJobPresentation(t *testing.T) {
+	tests := []struct {
+		name             string
+		jobState         storage.JobState
+		fileState        storage.FileState
+		validationStatus string
+		errorMessage     string
+		wantFailedStage  string
+	}{
+		{
+			name:            "conversion failure",
+			jobState:        storage.JobFailed,
+			fileState:       storage.FileFailed,
+			errorMessage:    "The converter could not decode this file.",
+			wantFailedStage: "Convert",
+		},
+		{
+			name:             "validation failure",
+			jobState:         storage.JobFailed,
+			fileState:        storage.FileFailed,
+			validationStatus: "failed",
+			errorMessage:     "The output did not satisfy the selected profile.",
+			wantFailedStage:  "Validate",
+		},
+		{
+			name:            "canceled",
+			jobState:        storage.JobCanceled,
+			fileState:       storage.FileCanceled,
+			wantFailedStage: "Convert",
+		},
+		{
+			name:            "interrupted",
+			jobState:        storage.JobInterrupted,
+			fileState:       storage.FileInterrupted,
+			wantFailedStage: "Convert",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newServer(t, nil, nil)
+			manifest := server.upload(t, []string{"photo.jpg"})
+			if _, err := server.manager.Store().Update(
+				manifest.ID,
+				time.Now(),
+				func(current *storage.Manifest) error {
+					current.State = tt.jobState
+					file := &current.Files[0]
+					file.State = tt.fileState
+					file.Selected = corpus.OperationCompatiblePhoto
+					file.Validation.Status = tt.validationStatus
+					if tt.errorMessage != "" {
+						file.Error = &storage.Failure{
+							Kind:    "test",
+							Code:    "test_failure",
+							Message: tt.errorMessage,
+						}
+					}
+					return nil
+				},
+			); err != nil {
+				t.Fatal(err)
+			}
+
+			body := server.do(t, httptest.NewRequest(
+				http.MethodGet,
+				"/jobs/"+manifest.ID,
+				nil,
+			)).Body.String()
+			if strings.Contains(body, "Created after conversion") {
+				t.Error("terminal job promises a future output")
+			}
+			if !strings.Contains(body, "No output available") {
+				t.Error("terminal job does not explain that no output is available")
+			}
+			failedIndex := strings.Index(body, `class="stage--error"`)
+			if failedIndex < 0 {
+				t.Fatal("terminal job has no failed stage")
+			}
+			stageIndex := strings.Index(body[failedIndex:], tt.wantFailedStage)
+			if stageIndex < 0 || stageIndex > 300 {
+				t.Errorf("failed stage does not identify %q", tt.wantFailedStage)
+			}
+			if tt.errorMessage != "" {
+				if !strings.Contains(body, tt.errorMessage) {
+					t.Errorf("terminal job is missing error %q", tt.errorMessage)
+				}
+				if strings.Contains(body, "Conversion failed:") {
+					t.Error("terminal error has an inaccurate conversion-only prefix")
+				}
+			}
+		})
 	}
 }
 

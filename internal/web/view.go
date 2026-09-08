@@ -93,6 +93,7 @@ type fileView struct {
 	RecommendedLabel  string
 	SelectedLabel     string
 	OperationFormat   string
+	ShowOutputPreview bool
 	ValidationLabel   string
 	ValidationSummary string
 	ValidationClass   string
@@ -156,6 +157,7 @@ func (app *App) newPageData(title, page string) pageData {
 }
 
 func (app *App) buildJobView(manifest storage.Manifest, now time.Time) *jobView {
+	validationFailed := false
 	view := &jobView{
 		ID:              manifest.ID,
 		ShortID:         shortID(manifest.ID),
@@ -188,6 +190,9 @@ func (app *App) buildJobView(manifest storage.Manifest, now time.Time) *jobView 
 		if file.State.Terminal() {
 			view.FinishedCount++
 		}
+		if file.Validation.Status == "failed" {
+			validationFailed = true
+		}
 	}
 	view.CanStart = manifest.State == storage.JobPending && view.ConvertibleCount > 0
 	if view.CanStart {
@@ -200,7 +205,7 @@ func (app *App) buildJobView(manifest storage.Manifest, now time.Time) *jobView 
 			}
 		}
 	}
-	view.Stages = jobStages(manifest.State, view.HasOutputs)
+	view.Stages = jobStages(manifest.State, view.HasOutputs, validationFailed)
 	switch {
 	case view.CanStart:
 		view.Heading = "Review your files"
@@ -252,6 +257,7 @@ func (app *App) buildFileView(jobID string, file storage.File) fileView {
 	selected := operationOption(selectedOrRecommended(file))
 	view.OperationHelp = selected.Description
 	view.OperationFormat = selected.Format
+	view.ShowOutputPreview = fileStateShowsOutputPreview(file.State)
 	if file.Validation.Status != "" && file.Validation.Status != "not_run" {
 		view.ValidationLabel = file.Validation.Status
 		if file.Validation.Status == "passed" {
@@ -296,7 +302,7 @@ func (app *App) buildFileView(jobID string, file storage.File) fileView {
 	return view
 }
 
-func jobStages(state storage.JobState, hasOutputs bool) []jobStageView {
+func jobStages(state storage.JobState, hasOutputs, validationFailed bool) []jobStageView {
 	stages := []jobStageView{
 		{Label: "Inspect"},
 		{Label: "Configure"},
@@ -313,6 +319,9 @@ func jobStages(state storage.JobState, hasOutputs bool) []jobStageView {
 		current = 2
 	case state == storage.JobCompleted && hasOutputs:
 		current = 4
+	case state == storage.JobFailed && validationFailed:
+		current = 3
+		failed = 3
 	case state == storage.JobFailed,
 		state == storage.JobCanceled,
 		state == storage.JobInterrupted,
@@ -337,6 +346,15 @@ func jobStages(state storage.JobState, hasOutputs bool) []jobStageView {
 		}
 	}
 	return stages
+}
+
+func fileStateShowsOutputPreview(state storage.FileState) bool {
+	switch state {
+	case storage.FileInspected, storage.FileQueued, storage.FileRunning:
+		return true
+	default:
+		return false
+	}
 }
 
 func selectedOrRecommended(file storage.File) corpus.Operation {

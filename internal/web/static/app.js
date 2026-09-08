@@ -106,10 +106,11 @@
       }
       button.disabled = false;
       button.textContent = label;
-      showStatus(
-        "Started " + links.length + " downloads. If your browser asks, allow multiple downloads for this site.",
-        target
-      );
+      var message = "Started " + links.length + " download" + plural(links.length) + ".";
+      if (links.length > 1) {
+        message += " If your browser asks, allow multiple downloads for this site.";
+      }
+      showStatus(message, target);
     }
 
     startNext();

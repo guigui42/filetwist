@@ -60,6 +60,16 @@ typography:
     fontSize: "0.9rem"
     fontWeight: 400
     lineHeight: 1.5
+  compact:
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontSize: "0.86rem"
+    fontWeight: 400
+    lineHeight: 1.5
+  detail:
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontSize: "0.84rem"
+    fontWeight: 400
+    lineHeight: 1.5
   label:
     fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     fontSize: "0.72rem"
@@ -194,6 +204,7 @@ The bench is deliberately desaturated blue-grey so that the three semantic accen
 - **Title** (700 via bold markup, 1rem, -0.02em tracking): work-order file names (`.file-header h3`), diagnostic block headings.
 - **Body** (400, 1rem/1.5): running copy, lede paragraphs (max-width `72ch` via `--measure`).
 - **Small body** (400, 0.9rem/1.5): privacy notes, selected-file status, profile descriptions, and dense diagnostics.
+- **Compact / detail** (400, 0.86rem / 0.84rem): status messages, operation guidance, and route metadata.
 - **Brand / emphasis / subheading** (1.08rem / 1.05rem / 1.1rem): the wordmark, drop-zone action, and help-section headings.
 - **Label** (750, 0.72rem, 0.055em tracking, uppercase): field captions (`job-facts dt`, `route-label`, `technical-readout dt`) and the brand tagline.
 - **Data / caption / badge** (0.8rem / 0.78rem / 0.68rem): technical readouts, recommendations, and compact state stamps.
@@ -204,7 +215,7 @@ The bench is deliberately desaturated blue-grey so that the three semantic accen
 
 ## Layout
 
-The page is a single centered column: `main` caps at `76rem`, the header/nav band at `72rem`, both `margin-inline: auto` with `clamp(1rem, 3vw, 2.25rem)` outer padding. There is no sidebar or persistent nav beyond the header; every page is one scroll of stacked instrument panels.
+The page is a single centered column: `main` caps at `76rem`, the header/nav band at `72rem`, both `margin-inline: auto` with `clamp(1rem, 3vw, 2.25rem)` outer padding. There is no persistent application sidebar beyond the header. The help page is the exception: its topic list becomes a sticky local navigation rail at the large breakpoint.
 
 Two-column and multi-column layouts only appear where the content has a real relational structure to show:
 - `.job-facts` (files / intake size / retention): 2 columns by default, 3 columns at `34rem`.

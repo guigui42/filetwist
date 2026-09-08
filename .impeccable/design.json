@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-08T18:57:17Z",
+  "generatedAt": "2026-09-08T19:20:00Z",
   "title": "Design System: Filetwist",
   "extensions": {
     "colorMeta": {
@@ -67,6 +67,8 @@
       "subheading": { "displayName": "Subheading", "purpose": "The 1.1rem help-section heading." },
       "emphasis": { "displayName": "Emphasis", "purpose": "The 1.05rem drop-zone action." },
       "small": { "displayName": "Small body", "purpose": "Dense supporting copy at 0.9rem." },
+      "compact": { "displayName": "Compact", "purpose": "Status messages and operation guidance at 0.86rem." },
+      "detail": { "displayName": "Detail", "purpose": "Route metadata at 0.84rem." },
       "label": { "displayName": "Label", "purpose": "Uppercase field captions: job facts, route labels, technical readout keys." },
       "data": { "displayName": "Data", "purpose": "Job codes and technical readout values at 0.8rem in tabular-nums monospace." },
       "caption": { "displayName": "Caption", "purpose": "Recommendations and compact metadata at 0.78rem." },
@@ -161,7 +163,8 @@
     "rules": [
       { "name": "The One Signal Rule", "body": "Amber (--warn) means \"read this before you trust the output\"; it never appears on an error. Red (--error) means the operation failed; it never appears on a warning. Green (--ok) is earned only by a passed validation check, a completed stage, or the retention indicator — never a generic \"success\" toast.", "section": "colors" },
       { "name": "The Tabular-Nums Rule", "body": "Any number that represents a measured fact (byte size, file count, queue depth) uses font-variant-numeric: tabular-nums so a work order's figures don't visually jitter as they update over HTMX polling.", "section": "typography" },
-      { "name": "The Press-Down Rule", "body": "Every clickable button lifts 1px on hover and drops 1px on :active. A control that doesn't physically respond to a click doesn't belong in this system.", "section": "elevation" }
+      { "name": "The Press-Down Rule", "body": "Every clickable button lifts 1px on hover and drops 1px on :active. A control that doesn't physically respond to a click doesn't belong in this system.", "section": "elevation" },
+      { "name": "The Local Help Rail", "body": "The application has no persistent sidebar. The help topic list alone becomes a sticky local navigation rail at the large breakpoint.", "section": "layout" }
     ],
     "dos": [
       "Do treat blue as the only accent for controls, links, and \"this is active right now\" states (The One Signal Rule).",
