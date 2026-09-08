@@ -2,7 +2,8 @@
 
 Upload files, review their detected type and recommended operation, then select
 **Convert**. Each file reports its result, warnings, and execution path.
-Download successful results individually or as a streamed ZIP.
+Download successful results individually, as a streamed ZIP, or start every
+successful output as a separate browser download when at least two are ready.
 
 The upload form identifies this as a shared workspace before you send any files.
 It checks file-count and total-size limits before sending, while the server
@@ -19,7 +20,11 @@ files**. The browser URL points to the job so it can be revisited. Each preset
 shows its output format and a short explanation before conversion. Technical
 probe and execution information remains available under **Conversion details**;
 warnings and errors stay visible. Successful jobs put **Download all as ZIP**
-before the per-file results.
+before the per-file results. When at least two outputs are available,
+**Download all files** starts each output as a separate browser download. The
+browser may ask you to allow multiple downloads for the site; this permission
+cannot be granted by Filetwist. Individual links and ZIP downloads remain
+available if the browser blocks the batch.
 
 For batches, open **Apply a preset to several files** and explicitly apply a
 preset to eligible files. **Keep individual choices** is enabled by default and

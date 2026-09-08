@@ -35,10 +35,7 @@ async function upload(page, jobs, files = photo) {
   return id;
 }
 
-async function downloadBytes(page, link) {
-  const pending = page.waitForEvent("download");
-  await link.click();
-  const download = await pending;
+async function readDownload(download) {
   expect(await download.failure()).toBeNull();
   const stream = await download.createReadStream();
   const chunks = [];
@@ -46,6 +43,12 @@ async function downloadBytes(page, link) {
     chunks.push(chunk);
   }
   return { name: download.suggestedFilename(), bytes: Buffer.concat(chunks) };
+}
+
+async function downloadBytes(page, link) {
+  const pending = page.waitForEvent("download");
+  await link.click();
+  return readDownload(await pending);
 }
 
 test("upload, choose a profile, convert, download, and delete", async ({ page, jobs }) => {
@@ -62,11 +65,57 @@ test("upload, choose a profile, convert, download, and delete", async ({ page, j
   expect(archive.name).toMatch(/\.zip$/);
   expect(archive.bytes.subarray(0, 4)).toEqual(Buffer.from([80, 75, 3, 4]));
   expect(archive.bytes.includes(Buffer.from(output.name))).toBe(true);
+  await expect(page.getByRole("button", { name: "Download all files", exact: true })).toHaveCount(0);
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete job", exact: true }).click();
   await expect(page.getByText("The job and all of its files were deleted.", { exact: true })).toBeVisible();
   jobs.delete(id);
+});
+
+test("download all files starts each browser download", async ({ page, jobs }) => {
+  const photoBytes = await readFile(photo);
+  const firstPhoto = {
+    name: "rgba-2x2.png",
+    mimeType: "image/png",
+    buffer: photoBytes,
+  };
+  const secondPhoto = {
+    name: "second.png",
+    mimeType: "image/png",
+    buffer: photoBytes,
+  };
+  await upload(page, jobs, [firstPhoto, secondPhoto]);
+  const operations = page.getByLabel("Operation", { exact: true });
+  await operations.nth(0).selectOption("lossless_image");
+  await operations.nth(1).selectOption("lossless_image");
+  await page.getByRole("button", { name: "Convert 2 files", exact: true }).click();
+  await expect(page.locator("#job")).toHaveAttribute("data-job-state", "completed");
+
+  const links = page.locator("[data-download-file]");
+  const targets = await links.evaluateAll((nodes) => nodes.map((node) => node.href));
+  expect(targets).toHaveLength(2);
+  await links.evaluateAll((nodes) => {
+    window.batchDownloads = [];
+    nodes.forEach((node) => node.addEventListener("click", (event) => {
+      event.preventDefault();
+      window.batchDownloads.push(node.href);
+    }, { once: true }));
+  });
+  await page.getByRole("button", { name: "Download all files", exact: true }).click();
+  await expect.poll(async () => page.evaluate(() => window.batchDownloads.length)).toBe(2);
+  expect(await page.evaluate(() => window.batchDownloads)).toEqual(targets);
+  await expect(page.locator("#job-notice")).toContainText("allow multiple downloads");
+
+  const outputs = await Promise.all(targets.map(async (target) => {
+    const response = await page.request.get(target);
+    expect(response.ok()).toBe(true);
+    return await response.body();
+  }));
+  for (const bytes of outputs) {
+    expect(bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  }
+  await expect(page.getByRole("link", { name: "Download all as ZIP", exact: true })).toBeVisible();
 });
 
 test("failed start keeps the selection and supports retry", async ({ page, jobs }) => {
