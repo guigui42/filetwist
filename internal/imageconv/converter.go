@@ -110,6 +110,10 @@ func (converter *Converter) convertWithFS(
 		return conversion, err
 	}
 
+	spec, ok := profiles.Lookup(request.Operation)
+	if !ok || spec.Engine != profiles.EngineImage {
+		return conversion, imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))
+	}
 	outputName, err := profiles.OutputName(request.InputPath, request.Operation)
 	if err != nil {
 		return conversion, imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))

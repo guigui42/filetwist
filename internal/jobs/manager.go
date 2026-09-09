@@ -782,17 +782,8 @@ func (manager *Manager) convertFile(ctx context.Context, id string, file storage
 		OperationSet: true,
 	})
 	var outputInfo os.FileInfo
-	var outputMIMEType string
 	if convertErr == nil {
 		outputInfo, convertErr = successfulOutputInfo(result.OutputPath)
-	}
-	if convertErr == nil {
-		profile, ok := profiles.Lookup(file.Selected)
-		if !ok {
-			convertErr = errors.New("jobs: completed conversion used an unknown profile")
-		} else {
-			outputMIMEType = profile.Output.MIMEType
-		}
 	}
 
 	finished := manager.now().UTC()
@@ -821,7 +812,7 @@ func (manager *Manager) convertFile(ctx context.Context, id string, file storage
 		target.Output = &storage.Output{
 			Name:     name,
 			Size:     outputInfo.Size(),
-			MIMEType: outputMIMEType,
+			MIMEType: storage.ContentType(name),
 		}
 		return nil
 	}); err != nil {

@@ -711,10 +711,45 @@ func TestRegistryImageProfilesBuildCompletePlans(t *testing.T) {
 			if len(plan.Commands) == 0 || plan.TemporaryOutput == "" {
 				t.Fatalf("plan has no executable output: %+v", plan)
 			}
-			if plan.Output.Path == "" ||
-				plan.Output.Extension != spec.Output.Extension ||
-				plan.Output.MIMEType != spec.Output.MIMEType {
-				t.Errorf("output = %+v; registry = %+v", plan.Output, spec.Output)
+			if plan.Output.Path == "" {
+				t.Error("output path is empty")
+			}
+
+			save := plan.Commands[len(plan.Commands)-1]
+			if len(save.Args) == 0 {
+				t.Fatalf("save command has no arguments: %+v", save)
+			}
+			var wantFormat imageconv.Format
+			var wantMIMEType string
+			var wantExtension string
+			switch save.Args[0] {
+			case "jpegsave":
+				wantFormat = imageconv.FormatJPEG
+				wantMIMEType = "image/jpeg"
+				wantExtension = ".jpg"
+			case "webpsave":
+				wantFormat = imageconv.FormatWebP
+				wantMIMEType = "image/webp"
+				wantExtension = ".webp"
+			case "pngsave":
+				wantFormat = imageconv.FormatPNG
+				wantMIMEType = "image/png"
+				wantExtension = ".png"
+			default:
+				t.Fatalf("unsupported save command %q", save.Args[0])
+			}
+			if plan.Expect.Format != wantFormat ||
+				plan.Expect.MIMEType != wantMIMEType ||
+				plan.Output.MIMEType != wantMIMEType ||
+				plan.Output.Extension != wantExtension ||
+				filepath.Ext(plan.TemporaryOutput) != wantExtension {
+				t.Errorf(
+					"save contract = output %+v, temporary %q, expectation %+v; command %q",
+					plan.Output,
+					plan.TemporaryOutput,
+					plan.Expect,
+					save.Args[0],
+				)
 			}
 			if plan.Expect.Format == "" ||
 				plan.Expect.MIMEType == "" ||
@@ -1169,6 +1204,51 @@ func TestProbeAVIFSetsIndependentCapability(t *testing.T) {
 	}
 	if !got.AVIFDecode || got.HEIFDecode {
 		t.Errorf("capabilities = %#v; want only AVIF decode", got)
+	}
+}
+
+func TestConvertRejectsMediaProfileBeforeOutputCheck(t *testing.T) {
+	var commands []runner.Command
+	run := func(_ context.Context, command runner.Command) (runner.Result, error) {
+		commands = append(commands, command)
+		return runner.Result{
+			ExitCode: 0,
+			Stdout: runner.Output{Bytes: []byte(strings.Join([]string{
+				"width: 3",
+				"height: 2",
+				"bands: 3",
+				"format: uchar",
+				"interpretation: srgb",
+				"vips-loader: pngload",
+			}, "\n"))},
+		}, nil
+	}
+	prober, err := probe.New(run, probe.WithLookPath(func(name string) (string, error) {
+		return filepath.Join("/tools", name), nil
+	}))
+	if err != nil {
+		t.Fatalf("probe.New() error = %v", err)
+	}
+	converter, err := imageconv.New(run, prober, imageconv.Config{})
+	if err != nil {
+		t.Fatalf("imageconv.New() error = %v", err)
+	}
+
+	input := filepath.Join(t.TempDir(), "source.png")
+	outputDir := t.TempDir()
+	existing := filepath.Join(outputDir, "source-compatible.mp4")
+	if err := os.WriteFile(existing, []byte("existing media"), 0o600); err != nil {
+		t.Fatalf("write existing output: %v", err)
+	}
+
+	_, err = converter.Convert(context.Background(), imageconv.Request{
+		InputPath: input,
+		OutputDir: outputDir,
+		Operation: profiles.OperationCompatibleVideo,
+	})
+	assertErrorCode(t, err, imageconv.CodeInvalidRequest)
+	if len(commands) != 1 {
+		t.Errorf("commands = %d; want only the input probe", len(commands))
 	}
 }
 

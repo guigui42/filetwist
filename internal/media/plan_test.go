@@ -163,8 +163,15 @@ func TestRegistryMediaProfilesBuildCompletePlans(t *testing.T) {
 			if len(plan.Args) == 0 || plan.Args[len(plan.Args)-1] != output {
 				t.Errorf("plan args do not publish the registry output: %v", plan.Args)
 			}
-			if plan.Expected.Container != spec.Output.Container {
-				t.Errorf("container = %q; want %q", plan.Expected.Container, spec.Output.Container)
+			commandContainer := outputContainer(plan.Args)
+			if commandContainer == "" {
+				t.Errorf("plan has no output container argument: %v", plan.Args)
+			}
+			if commandContainer != spec.Output.Container {
+				t.Errorf("command container = %q; registry = %q", commandContainer, spec.Output.Container)
+			}
+			if plan.Expected.Container != commandContainer {
+				t.Errorf("expected container = %q; command = %q", plan.Expected.Container, commandContainer)
 			}
 			if plan.Expected.AudioPresence == "" {
 				t.Errorf("audio expectation is incomplete: %+v", plan.Expected)
@@ -451,4 +458,13 @@ func containsPair(args []string, first, second string) bool {
 		}
 	}
 	return false
+}
+
+func outputContainer(args []string) string {
+	for index := len(args) - 2; index >= 0; index-- {
+		if args[index] == "-f" {
+			return args[index+1]
+		}
+	}
+	return ""
 }

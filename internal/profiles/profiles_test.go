@@ -53,8 +53,22 @@ func TestRegistryContract(t *testing.T) {
 		if spec.Engine == profiles.EngineImage && spec.OutputKind != profiles.MediaImage {
 			t.Errorf("%s image engine output kind = %q", spec.Operation, spec.OutputKind)
 		}
+		if spec.Engine == profiles.EngineImage {
+			for _, kind := range spec.AcceptedInputs {
+				if kind != profiles.MediaImage {
+					t.Errorf("%s image engine accepts %q", spec.Operation, kind)
+				}
+			}
+		}
 		if spec.Engine == profiles.EngineMedia && spec.OutputKind == profiles.MediaImage {
 			t.Errorf("%s media engine output kind = %q", spec.Operation, spec.OutputKind)
+		}
+		if spec.Engine == profiles.EngineMedia {
+			for _, kind := range spec.AcceptedInputs {
+				if kind == profiles.MediaImage {
+					t.Errorf("%s media engine accepts image input", spec.Operation)
+				}
+			}
 		}
 		for _, kind := range spec.RecommendedFor {
 			recommended[kind]++

@@ -95,6 +95,8 @@ func (service *Service) Convert(ctx context.Context, request Request) (result Re
 	conversionStarted := time.Now()
 	var conversionErr error
 	spec, _ := profiles.Lookup(operation)
+	// validateOperation guarantees a registered profile with a known engine.
+	// Keep the default as a defensive failure if the registry contract drifts.
 	switch spec.Engine {
 	case profiles.EngineImage:
 		conversionErr = service.convertImage(ctx, request.InputPath, outputPath, outputIsDirectory, operation, imageInfo, &result)

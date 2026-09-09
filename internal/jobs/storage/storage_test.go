@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/guigui42/filetwist/internal/jobs/storage"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 func newStore(t *testing.T) *storage.Store {
@@ -304,6 +305,17 @@ func TestContentTypeNeverReturnsActiveTypes(t *testing.T) {
 		if got := storage.ContentType(name); got != want {
 			t.Errorf("ContentType(%q) = %q; want %q", name, got, want)
 		}
+	}
+}
+
+func TestProfileOutputContentTypesMatchRegistry(t *testing.T) {
+	for _, spec := range profiles.All() {
+		t.Run(string(spec.Operation), func(t *testing.T) {
+			name := "output" + spec.Output.Extension
+			if got := storage.ContentType(name); got != spec.Output.MIMEType {
+				t.Errorf("ContentType(%q) = %q; registry = %q", name, got, spec.Output.MIMEType)
+			}
+		})
 	}
 }
 

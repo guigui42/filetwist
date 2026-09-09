@@ -169,12 +169,6 @@ type MediaResult struct {
 	Warnings   []media.Warning
 }
 
-// ParseOperation validates one named operation.
-// Deprecated: use profiles.Parse.
-func ParseOperation(value string) (profiles.Operation, error) {
-	return profiles.Parse(value)
-}
-
 func milliseconds(duration time.Duration) int64 {
 	return duration.Milliseconds()
 }
