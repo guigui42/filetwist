@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/guigui42/filetwist/internal/conversion"
-	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/jobs/storage"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // deleteLeaseGrace bounds how long an explicit delete waits for an in-flight
@@ -333,7 +333,7 @@ func (manager *Manager) update(id string, mutate func(*storage.Manifest) error) 
 // Start validates the requested per-file operations and enqueues the job. The
 // selections map is keyed by file identifier; a missing or empty entry keeps
 // the recommended operation.
-func (manager *Manager) Start(id string, selections map[string]corpus.Operation) (storage.Manifest, error) {
+func (manager *Manager) Start(id string, selections map[string]profiles.Operation) (storage.Manifest, error) {
 	unlock := manager.lockJob(id)
 	defer unlock()
 	// Register and enqueue under the intake lock so shutdown cannot close the
@@ -899,7 +899,7 @@ func (manager *Manager) finalize(id string, canceled bool) {
 	}
 }
 
-func containsOperation(operations []corpus.Operation, candidate corpus.Operation) bool {
+func containsOperation(operations []profiles.Operation, candidate profiles.Operation) bool {
 	for _, operation := range operations {
 		if operation == candidate {
 			return true

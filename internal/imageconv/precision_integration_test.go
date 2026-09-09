@@ -124,6 +124,7 @@ func TestLibvipsPrecisionIntegration(t *testing.T) {
 						InputPath: input,
 						OutputDir: t.TempDir(),
 						Operation: operation.operation,
+						Input:     info,
 					})
 					if err != nil {
 						t.Fatalf("Convert() error = %v", err)
@@ -182,6 +183,7 @@ func TestLibvipsPrecisionIntegration(t *testing.T) {
 						InputPath: input,
 						OutputDir: outputDir,
 						Operation: corpus.OperationLosslessImage,
+						Input:     info,
 					})
 					assertErrorCode(t, err, imageconv.CodeOutputPrecision)
 					if !reduced || result.Observed.BandFormat != "uchar" {

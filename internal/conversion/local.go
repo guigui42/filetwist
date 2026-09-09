@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/imageconv"
 	"github.com/guigui42/filetwist/internal/media"
 	"github.com/guigui42/filetwist/internal/probe"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // LocalConfig configures the subprocess-backed local conversion engines.
@@ -80,12 +80,8 @@ func (engine *localImageEngine) Convert(
 	ctx context.Context,
 	request ImageRequest,
 ) (imageconv.Result, error) {
-	// Reject unsafe headers before the optional capability probe decodes pixels.
-	// Actual HEIF/AVIF support is still verified below and by the converter.
-	if err := imageconv.ValidateInput(request.Input, imageconv.Capabilities{
-		HEIFDecode: true,
-		AVIFDecode: true,
-	}, imageconv.DefaultLimits()); err != nil {
+	// Reject unsafe headers before an optional capability probe decodes pixels.
+	if err := imageconv.ValidateContent(request.Input, imageconv.DefaultLimits()); err != nil {
 		return imageconv.Result{}, err
 	}
 	vipsPath, err := engine.executable(engine.config.VipsExecutable)
@@ -99,7 +95,7 @@ func (engine *localImageEngine) Convert(
 
 	probeCtx, cancelProbe := context.WithTimeout(ctx, engine.config.ProbeTimeout)
 	defer cancelProbe()
-	capabilities := imageconv.Capabilities{}
+	var capabilities imageconv.CapabilitySet
 	switch request.Input.Format {
 	case imageconv.FormatHEIF:
 		capabilities, err = imageconv.ProbeHEIF(
@@ -125,6 +121,9 @@ func (engine *localImageEngine) Convert(
 		}
 	}
 	cancelProbe()
+	if err := imageconv.ValidateCapabilities(request.Input, capabilities); err != nil {
+		return imageconv.Result{}, err
+	}
 
 	converter, err := imageconv.New(engine.config.Run, engine.config.Prober, imageconv.Config{
 		VipsExecutable:    vipsPath,
@@ -142,6 +141,7 @@ func (engine *localImageEngine) Convert(
 		InputPath: request.InputPath,
 		OutputDir: request.OutputDir,
 		Operation: request.Operation,
+		Input:     request.Input,
 	})
 }
 
@@ -256,9 +256,9 @@ func (engine *localMediaEngine) executable(name string) (string, error) {
 	}
 }
 
-func isVideoOperation(operation corpus.Operation) bool {
-	return operation == corpus.OperationCompatibleVideo ||
-		operation == corpus.OperationSmallerVideo
+func isVideoOperation(operation profiles.Operation) bool {
+	return operation == profiles.OperationCompatibleVideo ||
+		operation == profiles.OperationSmallerVideo
 }
 
 func mediaWarningsFromProbe(input media.Probe) []media.Warning {

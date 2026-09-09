@@ -6,6 +6,8 @@ import (
 	"path"
 	"regexp"
 	"strings"
+
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 var tokenPattern = regexp.MustCompile(`^[a-z0-9]+(?:[-_][a-z0-9]+)*$`)
@@ -82,12 +84,13 @@ func (fixture Fixture) validate(field string, errs *ValidationErrors) {
 	fixture.Source.validate(field+".source", errs)
 	fixture.Input.validate(field+".input", errs)
 
-	if !validOperation(fixture.Operation) {
+	spec, supported := profiles.Lookup(fixture.Operation)
+	if !supported {
 		errs.add(field+".operation", "is not a supported named operation")
-	} else if !operationAcceptsInput(fixture.Operation, fixture.Input.MediaKind) {
+	} else if !spec.Accepts(fixture.Input.MediaKind) {
 		errs.add(field+".operation", "is not valid for the input media kind")
 	}
-	fixture.Expected.validate(field+".expected", expectedMediaKind(fixture.Operation), errs)
+	fixture.Expected.validate(field+".expected", spec.OutputKind, errs)
 	fixture.Tolerances.validate(field+".tolerances", errs)
 	validateTraits(field+".traits", fixture.Traits, errs)
 }
@@ -308,50 +311,6 @@ func validateTraits(field string, traits []string, errs *ValidationErrors) {
 
 func validMediaKind(mediaKind MediaKind) bool {
 	return mediaKind == MediaImage || mediaKind == MediaAudio || mediaKind == MediaVideo
-}
-
-func validOperation(operation Operation) bool {
-	switch operation {
-	case OperationCompatiblePhoto,
-		OperationSmallerPhoto,
-		OperationLosslessImage,
-		OperationCompatibleVideo,
-		OperationSmallerVideo,
-		OperationExtractAudio,
-		OperationCompatibleAudio,
-		OperationLosslessAudio:
-		return true
-	default:
-		return false
-	}
-}
-
-func expectedMediaKind(operation Operation) MediaKind {
-	switch operation {
-	case OperationCompatiblePhoto, OperationSmallerPhoto, OperationLosslessImage:
-		return MediaImage
-	case OperationCompatibleVideo, OperationSmallerVideo:
-		return MediaVideo
-	case OperationExtractAudio, OperationCompatibleAudio, OperationLosslessAudio:
-		return MediaAudio
-	default:
-		return ""
-	}
-}
-
-func operationAcceptsInput(operation Operation, mediaKind MediaKind) bool {
-	switch operation {
-	case OperationCompatiblePhoto, OperationSmallerPhoto, OperationLosslessImage:
-		return mediaKind == MediaImage
-	case OperationCompatibleVideo, OperationSmallerVideo:
-		return mediaKind == MediaVideo
-	case OperationExtractAudio:
-		return mediaKind == MediaAudio || mediaKind == MediaVideo
-	case OperationCompatibleAudio, OperationLosslessAudio:
-		return mediaKind == MediaAudio
-	default:
-		return false
-	}
 }
 
 func hasPrimaryStream(streams []Stream, mediaKind MediaKind) bool {

@@ -152,7 +152,7 @@ func TestSilentVideoFixtureOffersOnlyVideoOperations(t *testing.T) {
 		file.Recommended != corpus.OperationCompatibleVideo || file.Selected != corpus.OperationCompatibleVideo {
 		t.Fatalf("silent video persisted unexpected eligibility: %+v", file)
 	}
-	for _, operation := range conversion.AllOperations() {
+	for _, operation := range allOperations() {
 		rendered := strings.Contains(response.Body.String(), `<option value="`+string(operation)+`"`)
 		if rendered != slices.Contains(want, operation) {
 			t.Errorf("rendered %s = %t; want only %v", operation, rendered, want)

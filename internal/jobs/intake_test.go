@@ -126,7 +126,7 @@ func TestAcceptFinishesProbingAfterTheClientDisconnects(t *testing.T) {
 			return conversion.Inspection{
 				Media:       conversion.DetectedMedia{Kind: corpus.MediaImage, Format: "jpeg"},
 				Recommended: corpus.OperationCompatiblePhoto,
-				Compatible:  conversion.CompatibleOperations(corpus.MediaImage),
+				Compatible:  compatibleImageOperations(),
 			}, nil
 		},
 	})
@@ -187,7 +187,7 @@ func TestAcceptBoundsTheWaitForAProcessSlot(t *testing.T) {
 			return conversion.Inspection{
 				Media:       conversion.DetectedMedia{Kind: corpus.MediaImage, Format: "jpeg"},
 				Recommended: corpus.OperationCompatiblePhoto,
-				Compatible:  conversion.CompatibleOperations(corpus.MediaImage),
+				Compatible:  compatibleImageOperations(),
 			}, nil
 		},
 	}, func(options *jobs.Options) {

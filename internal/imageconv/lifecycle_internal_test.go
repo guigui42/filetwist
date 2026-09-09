@@ -30,7 +30,7 @@ func TestProbeHEIFIgnoresCleanupFailureAfterSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ProbeHEIF() error = %v", err)
 	}
-	if !capabilities.HEIFDecode {
+	if !capabilities.Has(CapabilityDecodeHEIF) {
 		t.Fatal("ProbeHEIF() did not report HEIF decode support")
 	}
 }
@@ -99,6 +99,11 @@ func TestConvertIgnoresCleanupFailureAfterSuccess(t *testing.T) {
 		InputPath: input,
 		OutputDir: dir,
 		Operation: corpus.OperationCompatiblePhoto,
+		Input: Info{
+			Format: FormatPNG, MIMEType: "image/png",
+			Width: 2, Height: 2, Bands: 3, BandFormat: "uchar",
+			Interpretation: "srgb", Orientation: 1, Pages: 1,
+		},
 	}, imageFilesystem{
 		mkdirTemp: os.MkdirTemp,
 		removeAll: func(string) error { return errors.New("cleanup failed") },

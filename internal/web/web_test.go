@@ -21,12 +21,31 @@ import (
 	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/jobs"
 	"github.com/guigui42/filetwist/internal/jobs/storage"
+	"github.com/guigui42/filetwist/internal/profiles"
 	"github.com/guigui42/filetwist/internal/web"
 )
 
 // stubConverter probes every file as a still image and writes a small output.
 type stubConverter struct {
 	convert func(ctx context.Context, request conversion.Request) (conversion.Result, error)
+}
+
+func allOperations() []profiles.Operation {
+	specs := profiles.All()
+	operations := make([]profiles.Operation, 0, len(specs))
+	for _, spec := range specs {
+		operations = append(operations, spec.Operation)
+	}
+	return operations
+}
+
+func compatibleOperations(kind profiles.MediaKind) []profiles.Operation {
+	specs := profiles.Compatible(kind)
+	operations := make([]profiles.Operation, 0, len(specs))
+	for _, spec := range specs {
+		operations = append(operations, spec.Operation)
+	}
+	return operations
 }
 
 func (converter *stubConverter) Inspect(
@@ -41,7 +60,7 @@ func (converter *stubConverter) Inspect(
 			Height: 1080,
 		},
 		Recommended: corpus.OperationCompatiblePhoto,
-		Compatible:  conversion.CompatibleOperations(corpus.MediaImage),
+		Compatible:  compatibleOperations(corpus.MediaImage),
 	}, nil
 }
 
@@ -52,7 +71,10 @@ func (converter *stubConverter) Convert(
 	if converter.convert != nil {
 		return converter.convert(ctx, request)
 	}
-	name := conversion.OutputName(request.InputPath, request.Operation)
+	name, err := profiles.OutputName(request.InputPath, request.Operation)
+	if err != nil {
+		return conversion.Result{}, err
+	}
 	outputPath := filepath.Join(request.Output, name)
 	if err := os.WriteFile(outputPath, []byte("converted-image-bytes"), 0o640); err != nil {
 		return conversion.Result{}, err

@@ -69,7 +69,7 @@ func TestUploadRendersAndEnforcesDetailedEligibility(t *testing.T) {
 		{"unsupported video audio", []media.Stream{video, unsupported}, imageconv.Info{}, []corpus.Operation{corpus.OperationCompatibleVideo, corpus.OperationSmallerVideo}, corpus.OperationCompatibleVideo, corpus.OperationExtractAudio, ""},
 		{"floating-point audio", []media.Stream{floating}, imageconv.Info{}, []corpus.Operation{corpus.OperationExtractAudio, corpus.OperationCompatibleAudio}, corpus.OperationCompatibleAudio, corpus.OperationLosslessAudio, ""},
 		{"high-precision audio", []media.Stream{highPrecision}, imageconv.Info{}, []corpus.Operation{corpus.OperationExtractAudio, corpus.OperationCompatibleAudio}, corpus.OperationCompatibleAudio, corpus.OperationLosslessAudio, ""},
-		{"normal audio", []media.Stream{audio}, imageconv.Info{}, conversion.CompatibleOperations(corpus.MediaAudio), corpus.OperationCompatibleAudio, corpus.OperationCompatibleVideo, ""},
+		{"normal audio", []media.Stream{audio}, imageconv.Info{}, compatibleOperations(corpus.MediaAudio), corpus.OperationCompatibleAudio, corpus.OperationCompatibleVideo, ""},
 		{"unsupported HDR defaults to audio", []media.Stream{hdr, audio}, imageconv.Info{}, []corpus.Operation{corpus.OperationExtractAudio}, corpus.OperationExtractAudio, corpus.OperationCompatibleVideo, ""},
 		{"wide image", nil, wide, []corpus.Operation{corpus.OperationCompatiblePhoto, corpus.OperationLosslessImage}, corpus.OperationCompatiblePhoto, corpus.OperationSmallerPhoto, ""},
 		{"unsupported audio", []media.Stream{unsupported}, imageconv.Info{}, nil, "", corpus.OperationCompatibleAudio, string(media.ErrorNoSupportedAudio)},
@@ -97,7 +97,7 @@ func TestUploadRendersAndEnforcesDetailedEligibility(t *testing.T) {
 			if !slices.Equal(file.Compatible, tt.want) || file.Recommended != tt.recommended || file.Selected != tt.recommended {
 				t.Fatalf("persisted eligibility = %v, recommended %q, selected %q", file.Compatible, file.Recommended, file.Selected)
 			}
-			for _, operation := range conversion.AllOperations() {
+			for _, operation := range allOperations() {
 				rendered := strings.Contains(response.Body.String(), `<option value="`+string(operation)+`"`)
 				if rendered != slices.Contains(tt.want, operation) {
 					t.Errorf("rendered %s = %t; eligible = %v", operation, rendered, tt.want)

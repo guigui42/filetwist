@@ -19,6 +19,7 @@ import (
 	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/jobs"
 	"github.com/guigui42/filetwist/internal/jobs/storage"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // fakeConverter is a deterministic Converter used to exercise the manager
@@ -38,7 +39,7 @@ func (converter *fakeConverter) Inspect(
 	return conversion.Inspection{
 		Media:       conversion.DetectedMedia{Kind: corpus.MediaImage, Format: "jpeg"},
 		Recommended: corpus.OperationCompatiblePhoto,
-		Compatible:  conversion.CompatibleOperations(corpus.MediaImage),
+		Compatible:  compatibleImageOperations(),
 	}, nil
 }
 
@@ -288,7 +289,7 @@ func TestConcurrentUploadsReserveFreeSpace(t *testing.T) {
 			return conversion.Inspection{
 				Media:       conversion.DetectedMedia{Kind: corpus.MediaImage, Format: "jpeg"},
 				Recommended: corpus.OperationCompatiblePhoto,
-				Compatible:  conversion.CompatibleOperations(corpus.MediaImage),
+				Compatible:  compatibleImageOperations(),
 			}, nil
 		},
 	}, func(options *jobs.Options) {
@@ -1274,4 +1275,13 @@ func TestRunCleanupLogsWithoutFilesystemPaths(t *testing.T) {
 	if strings.Contains(output, jobsDir) || strings.Contains(output, manager.Store().Root()) {
 		t.Fatalf("cleanup log leaked filesystem paths: %q", output)
 	}
+}
+
+func compatibleImageOperations() []profiles.Operation {
+	specs := profiles.Compatible(profiles.MediaImage)
+	operations := make([]profiles.Operation, 0, len(specs))
+	for _, spec := range specs {
+		operations = append(operations, spec.Operation)
+	}
+	return operations
 }

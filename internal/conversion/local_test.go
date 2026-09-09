@@ -129,20 +129,20 @@ func TestLocalRejectsUnsafeImagesBeforeFunctionalDecode(t *testing.T) {
 	}
 }
 
-func TestLocalImageHeadersHonorProbeTimeout(t *testing.T) {
+func TestLocalConversionProbesInputAndOutputOnce(t *testing.T) {
 	dir := t.TempDir()
 	input := filepath.Join(dir, "input.png")
 	if err := os.WriteFile(input, []byte("fixture"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	const timeout = 5 * time.Second
-	headers := 0
+	var headerPaths []string
 	run := func(ctx context.Context, command runner.Command) (runner.Result, error) {
 		if command.Path == "vipsheader" {
-			headers++
+			headerPaths = append(headerPaths, command.Args[len(command.Args)-1])
 			deadline, ok := ctx.Deadline()
 			if !ok || time.Until(deadline) > timeout {
-				t.Errorf("header %d deadline = %v, present = %t; want configured probe timeout", headers, deadline, ok)
+				t.Errorf("header %d deadline = %v, present = %t; want configured probe timeout", len(headerPaths), deadline, ok)
 			}
 			loader := "jpegload"
 			if command.Args[len(command.Args)-1] == input {
@@ -166,8 +166,69 @@ func TestLocalImageHeadersHonorProbeTimeout(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if headers != 3 {
-		t.Errorf("headers = %d; want detection, input and output probes", headers)
+	if len(headerPaths) != 2 {
+		t.Fatalf("header probes = %d; want one input and one output probe", len(headerPaths))
+	}
+	if headerPaths[0] != input || headerPaths[1] == input {
+		t.Errorf("header probe paths = %q; want input once followed by staged output", headerPaths)
+	}
+}
+
+func TestLocalWebLifecycleReprobesInputAtConversionStart(t *testing.T) {
+	dir := t.TempDir()
+	input := filepath.Join(dir, "input.png")
+	if err := os.WriteFile(input, []byte("fixture"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var headerPaths []string
+	run := func(_ context.Context, command runner.Command) (runner.Result, error) {
+		switch command.Path {
+		case "vipsheader":
+			probed := command.Args[len(command.Args)-1]
+			headerPaths = append(headerPaths, probed)
+			loader := "jpegload"
+			if probed == input {
+				loader = "pngload"
+			}
+			return runner.Result{Stdout: runner.Output{Bytes: []byte(
+				"width: 2\nheight: 2\nbands: 3\nformat: uchar\ninterpretation: srgb\nvips-loader: " + loader,
+			)}}, nil
+		case "vips":
+			if command.Args[0] == "jpegsave" {
+				if err := os.WriteFile(command.Args[2], []byte("converted"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			return runner.Result{}, nil
+		default:
+			return runner.Result{}, fmt.Errorf("unexpected executable %s", command.Path)
+		}
+	}
+	service := localTestService(t, run, dir, time.Second)
+	if _, err := service.Inspect(context.Background(), input); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Convert(context.Background(), conversion.Request{
+		InputPath: input,
+		Output:    filepath.Join(dir, "output"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	inputProbes := 0
+	outputProbes := 0
+	for _, path := range headerPaths {
+		if path == input {
+			inputProbes++
+		} else {
+			outputProbes++
+		}
+	}
+	if inputProbes != 2 || outputProbes != 1 || len(headerPaths) != 3 {
+		t.Errorf(
+			"header probes = %q; want upload inspection input, conversion input, and one staged output",
+			headerPaths,
+		)
 	}
 }
 
@@ -196,6 +257,69 @@ func TestLocalOptionalDecodeHonorsProbeTimeout(t *testing.T) {
 	_, err := service.Convert(context.Background(), conversion.Request{InputPath: input, Output: dir})
 	if err == nil || !decoded {
 		t.Errorf("optional decode error = %v, decoded = %t", err, decoded)
+	}
+}
+
+func TestLocalOptionalDecodeRunsBeforeConversion(t *testing.T) {
+	tests := []struct {
+		name        string
+		compression string
+	}{
+		{name: "HEIF", compression: "hevc"},
+		{name: "AVIF", compression: "av1"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			input := filepath.Join(dir, "input.bin")
+			if err := os.WriteFile(input, []byte("fixture"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			var events []string
+			run := func(_ context.Context, command runner.Command) (runner.Result, error) {
+				switch command.Path {
+				case "vipsheader":
+					probed := command.Args[len(command.Args)-1]
+					if probed == input {
+						events = append(events, "header-input")
+						return runner.Result{Stdout: runner.Output{Bytes: []byte(
+							"width: 2\nheight: 2\nbands: 3\nformat: uchar\ninterpretation: srgb\n" +
+								"vips-loader: heifload\nheif-compression: " + tt.compression,
+						)}}, nil
+					}
+					events = append(events, "header-output")
+					return runner.Result{Stdout: runner.Output{Bytes: []byte(
+						"width: 2\nheight: 2\nbands: 3\nformat: uchar\ninterpretation: srgb\nvips-loader: jpegload",
+					)}}, nil
+				case "vips":
+					events = append(events, command.Args[0])
+					if command.Args[0] == "jpegsave" {
+						if err := os.WriteFile(command.Args[2], []byte("converted"), 0o600); err != nil {
+							t.Fatal(err)
+						}
+					}
+					return runner.Result{}, nil
+				default:
+					return runner.Result{}, fmt.Errorf("unexpected executable %s", command.Path)
+				}
+			}
+			service := localTestService(t, run, dir, time.Second)
+			result, err := service.Convert(context.Background(), conversion.Request{
+				InputPath: input,
+				Output:    filepath.Join(dir, "output"),
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantEvents := []string{"header-input", "copy", "autorot", "jpegsave", "header-output"}
+			if strings.Join(events, ",") != strings.Join(wantEvents, ",") {
+				t.Errorf("events = %v; want %v", events, wantEvents)
+			}
+			if _, err := os.Stat(result.OutputPath); err != nil {
+				t.Fatalf("published output missing: %v", err)
+			}
+		})
 	}
 }
 
@@ -340,38 +464,65 @@ func TestLocalOptionalDecodeDefaultsScratchToOutputDir(t *testing.T) {
 	}
 }
 
-func TestLocalOptionalDecodeFailureRemainsLoaderUnavailable(t *testing.T) {
-	dir := t.TempDir()
-	input := filepath.Join(dir, "input.heic")
-	if err := os.WriteFile(input, []byte("fixture"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	decoded := false
-	run := func(_ context.Context, command runner.Command) (runner.Result, error) {
-		switch command.Path {
-		case "vipsheader":
-			return runner.Result{Stdout: runner.Output{Bytes: []byte(
-				"width: 2\nheight: 2\nbands: 3\nformat: uchar\ninterpretation: srgb\nvips-loader: heifload\nheif-compression: hevc",
-			)}}, nil
-		case "vips":
-			decoded = true
-			return runner.Result{}, errors.New("decode unavailable")
-		default:
-			return runner.Result{}, fmt.Errorf("unexpected executable %s", command.Path)
-		}
+func TestLocalOptionalDecodeFailureStopsConversion(t *testing.T) {
+	tests := []struct {
+		name        string
+		compression string
+		code        string
+	}{
+		{name: "HEIF", compression: "hevc", code: imageconv.CodeHEIFUnavailable},
+		{name: "AVIF", compression: "av1", code: imageconv.CodeAVIFUnavailable},
 	}
 
-	service := localTestService(t, run, dir, time.Second)
-	_, err := service.Convert(context.Background(), conversion.Request{
-		InputPath: input,
-		Output:    filepath.Join(dir, "output"),
-	})
-	var classified *conversion.Error
-	if !errors.As(err, &classified) || classified.Kind != conversion.FailureRejection ||
-		classified.Code != imageconv.CodeHEIFUnavailable {
-		t.Fatalf("error = %v; want heif unavailable rejection", err)
-	}
-	if !decoded {
-		t.Fatal("functional decode probe did not run")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			input := filepath.Join(dir, "input.bin")
+			if err := os.WriteFile(input, []byte("fixture"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			decodeCalls := 0
+			conversionCalls := 0
+			run := func(_ context.Context, command runner.Command) (runner.Result, error) {
+				switch command.Path {
+				case "vipsheader":
+					return runner.Result{Stdout: runner.Output{Bytes: []byte(
+						"width: 2\nheight: 2\nbands: 3\nformat: uchar\ninterpretation: srgb\n" +
+							"vips-loader: heifload\nheif-compression: " + tt.compression,
+					)}}, nil
+				case "vips":
+					if command.Args[0] == "copy" {
+						decodeCalls++
+						return runner.Result{}, errors.New("decode unavailable")
+					}
+					conversionCalls++
+					return runner.Result{}, errors.New("conversion must not run")
+				default:
+					return runner.Result{}, fmt.Errorf("unexpected executable %s", command.Path)
+				}
+			}
+
+			service := localTestService(t, run, dir, time.Second)
+			_, err := service.Convert(context.Background(), conversion.Request{
+				InputPath: input,
+				Output:    filepath.Join(dir, "output"),
+			})
+			var classified *conversion.Error
+			if !errors.As(err, &classified) || classified.Kind != conversion.FailureRejection ||
+				classified.Code != tt.code {
+				t.Fatalf("error = %v; want loader unavailable rejection %s", err, tt.code)
+			}
+			if decodeCalls != 1 || conversionCalls != 0 {
+				t.Fatalf("decode calls = %d, conversion calls = %d; want 1 and 0", decodeCalls, conversionCalls)
+			}
+			outputDir := filepath.Join(dir, "output")
+			entries, readErr := os.ReadDir(outputDir)
+			if readErr != nil {
+				t.Fatal(readErr)
+			}
+			if len(entries) != 0 {
+				t.Errorf("failed capability probe published or retained files: %v", entries)
+			}
+		})
 	}
 }

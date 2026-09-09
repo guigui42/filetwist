@@ -103,6 +103,47 @@ service. Set `FILETWIST_TEST_PORT` to another unused port if needed. Job data is
 ephemeral and the container is stopped after the run. Failure traces and
 screenshots are under `tests/browser/test-results/`; use synthetic fixtures only.
 
+## Adding formats and profiles
+
+Input support and output profiles are separate changes:
+
+- For an input image loader:
+  1. add normalized format and loader detection in `internal/imageconv`;
+  2. add a capability ID when runtime support is optional;
+  3. add a real functional decode probe using a redistributable fixture;
+  4. update the pinned runtime and notices when dependencies change;
+  5. add content-policy, capability, conversion, and output-validation tests.
+- For an input audio codec, confirm the pinned FFmpeg runtime decodes it, add it
+  to the positive audio allowlist, and cover stream selection and conversion.
+- For an input video codec or container, rely on ffprobe and FFmpeg when the
+  generic video path is sufficient. Add special policy only when selection,
+  conversion, or validation requires it.
+- For the pinned media runtime, use the dedicated
+  [media-runtime lane](docs/releasing.md#updating-the-media-runtime), update
+  notices and corresponding-source records, and run the required container and
+  hardware checks.
+
+A new output profile requires all of the following:
+
+1. Add one ordered entry to `internal/profiles` with its stable operation,
+   label, accepted inputs, output kind, recommendation, engine, filename, and
+   output-format facts.
+2. Add one explicit branch to the assigned image or media planner.
+3. Define a complete output expectation and validation coverage. Do not infer
+   alpha, stream, codec, metadata, color, or precision guarantees from registry
+   presentation data.
+4. Add one long-form guidance entry in `internal/web/guidance.go`.
+5. Add small synthetic, public-domain, or explicitly redistributable fixtures.
+6. Add CLI and web regression coverage for parsing, eligibility, ordering,
+   selection, output naming, and presentation.
+7. Update the operation table and behavior documentation.
+8. Review the media runtime and dependency licenses when codecs or libraries
+   change.
+
+The registry centralizes stable profile vocabulary and output facts. libvips
+and FFmpeg planners remain responsible for commands, capability checks,
+warnings, and complete output validation.
+
 ## Fixtures
 
 Prefer a small generated case that isolates one behavior. Public fixtures must

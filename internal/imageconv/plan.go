@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"unicode"
 
-	"github.com/guigui42/filetwist/internal/corpus"
+	"github.com/guigui42/filetwist/internal/profiles"
 	"github.com/guigui42/filetwist/internal/runner"
 )
 
 const maxWebPDimension = 16_383
 
-// ValidateInput checks animation, optional loader capabilities, and decoded dimensions.
-func ValidateInput(info Info, capabilities Capabilities, limits Limits) error {
+// ValidateContent checks image structure, color policy, and decoded dimensions.
+func ValidateContent(info Info, limits Limits) error {
 	if info.Format == "" || info.Width <= 0 || info.Height <= 0 {
 		return imageError(CodeUnsupportedInput, "validate input", errors.New("image properties are incomplete"))
 	}
@@ -30,12 +29,6 @@ func ValidateInput(info Info, capabilities Capabilities, limits Limits) error {
 	if err := validateColorRepresentation(info); err != nil {
 		return err
 	}
-	if info.Format == FormatHEIF && !capabilities.HEIFDecode {
-		return imageError(CodeHEIFUnavailable, "validate input", errors.New("HEIF decode was not functionally probed"))
-	}
-	if info.Format == FormatAVIF && !capabilities.AVIFDecode {
-		return imageError(CodeAVIFUnavailable, "validate input", errors.New("AVIF decode was not functionally probed"))
-	}
 	if limits.MaxWidth <= 0 || limits.MaxHeight <= 0 || limits.MaxPixels <= 0 {
 		return imageError(CodeInvalidRequest, "validate limits", errors.New("all decoded dimension limits must be positive"))
 	}
@@ -46,23 +39,19 @@ func ValidateInput(info Info, capabilities Capabilities, limits Limits) error {
 	return nil
 }
 
-// OutputName returns a deterministic operation-specific output filename.
-func OutputName(inputPath string, operation corpus.Operation) (string, error) {
-	stem := strings.TrimSuffix(filepath.Base(inputPath), filepath.Ext(inputPath))
-	stem = sanitizeStem(stem)
-	if stem == "" {
-		stem = "image"
+// ValidateCapabilities checks optional runtime support required by the input format.
+func ValidateCapabilities(info Info, capabilities CapabilitySet) error {
+	required, ok := RequiredDecodeCapability(info.Format)
+	if !ok || capabilities.Has(required) {
+		return nil
 	}
-
-	switch operation {
-	case corpus.OperationCompatiblePhoto:
-		return stem + "-compatible.jpg", nil
-	case corpus.OperationSmallerPhoto:
-		return stem + "-smaller.webp", nil
-	case corpus.OperationLosslessImage:
-		return stem + "-lossless.png", nil
+	switch required {
+	case CapabilityDecodeHEIF:
+		return imageError(CodeHEIFUnavailable, "validate input", errors.New("HEIF decode was not functionally probed"))
+	case CapabilityDecodeAVIF:
+		return imageError(CodeAVIFUnavailable, "validate input", errors.New("AVIF decode was not functionally probed"))
 	default:
-		return "", imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))
+		return imageError(CodeInvalidRequest, "validate input", errors.New("unsupported image capability"))
 	}
 }
 
@@ -85,11 +74,15 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		return Plan{}, err
 	}
 
-	name, err := OutputName(request.InputPath, request.Operation)
-	if err != nil {
-		return Plan{}, err
+	spec, ok := profiles.Lookup(request.Operation)
+	if !ok || spec.Engine != profiles.EngineImage {
+		return Plan{}, imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))
 	}
-	if request.Operation == corpus.OperationSmallerPhoto &&
+	name, err := profiles.OutputName(request.InputPath, request.Operation)
+	if err != nil {
+		return Plan{}, imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))
+	}
+	if request.Operation == profiles.OperationSmallerPhoto &&
 		(request.Input.Width > maxWebPDimension || request.Input.Height > maxWebPDimension) {
 		return Plan{}, imageError(
 			CodeDimensionsExceeded,
@@ -98,7 +91,11 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		)
 	}
 
-	output := Output{Path: filepath.Join(request.OutputDir, name)}
+	output := Output{
+		Path:      filepath.Join(request.OutputDir, name),
+		Extension: spec.Output.Extension,
+		MIMEType:  spec.Output.MIMEType,
+	}
 	oriented := filepath.Join(request.WorkDir, "oriented.v")
 	commands := []runner.Command{{
 		Path: request.VipsPath,
@@ -111,14 +108,16 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 	outputMetadata := request.Input.Metadata
 	normalizeColor := needsColorNormalization(request.Input)
 	if normalizeColor && request.Input.HasAlpha {
-		if request.Operation != corpus.OperationCompatiblePhoto && request.Input.BandFormat != "uchar" {
+		// JPEG alpha must be flattened before color normalization when a later
+		// flatten could interpret the transformed samples incorrectly.
+		if request.Operation != profiles.OperationCompatiblePhoto && request.Input.BandFormat != "uchar" {
 			return Plan{}, imageError(
 				CodeAlphaUnsupported,
 				"build plan",
 				errors.New("preserving non-8-bit alpha through color conversion is not supported"),
 			)
 		}
-		if request.Operation == corpus.OperationCompatiblePhoto {
+		if request.Operation == profiles.OperationCompatiblePhoto {
 			background, maxAlpha, err := preNormalizationFlatten(request.Input)
 			if err != nil {
 				return Plan{}, err
@@ -138,7 +137,7 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		}
 	}
 	iccDepth := "8"
-	if request.Operation == corpus.OperationLosslessImage && request.Input.BandFormat == "ushort" {
+	if request.Operation == profiles.OperationLosslessImage && request.Input.BandFormat == "ushort" {
 		iccDepth = "16"
 	}
 	switch request.Input.Interpretation {
@@ -193,9 +192,7 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 
 	var temporaryOutput string
 	switch request.Operation {
-	case corpus.OperationCompatiblePhoto:
-		output.Extension = ".jpg"
-		output.MIMEType = "image/jpeg"
+	case profiles.OperationCompatiblePhoto:
 		temporaryOutput = filepath.Join(request.WorkDir, "output.jpg")
 		expect.Format = FormatJPEG
 		expect.MIMEType = output.MIMEType
@@ -223,9 +220,7 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 				"--keep", keep,
 			},
 		})
-	case corpus.OperationSmallerPhoto:
-		output.Extension = ".webp"
-		output.MIMEType = "image/webp"
+	case profiles.OperationSmallerPhoto:
 		temporaryOutput = filepath.Join(request.WorkDir, "output.webp")
 		expect.Format = FormatWebP
 		expect.MIMEType = output.MIMEType
@@ -241,9 +236,7 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		}
 		args = append(args, "--keep", keep)
 		commands = append(commands, runner.Command{Path: request.VipsPath, Args: args})
-	case corpus.OperationLosslessImage:
-		output.Extension = ".png"
-		output.MIMEType = "image/png"
+	case profiles.OperationLosslessImage:
 		temporaryOutput = filepath.Join(request.WorkDir, "output.png")
 		expect.Format = FormatPNG
 		expect.MIMEType = output.MIMEType
@@ -446,21 +439,4 @@ func orientedDimensions(width, height, orientation int) (int, int) {
 	default:
 		return width, height
 	}
-}
-
-func sanitizeStem(stem string) string {
-	var builder strings.Builder
-	dash := false
-	for _, value := range strings.ToLower(stem) {
-		if unicode.IsLetter(value) || unicode.IsDigit(value) {
-			builder.WriteRune(value)
-			dash = false
-			continue
-		}
-		if builder.Len() > 0 && !dash {
-			builder.WriteByte('-')
-			dash = true
-		}
-	}
-	return strings.Trim(builder.String(), "-")
 }

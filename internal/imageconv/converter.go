@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/probe"
+	"github.com/guigui42/filetwist/internal/profiles"
 	"github.com/guigui42/filetwist/internal/runner"
 )
 
@@ -43,7 +43,7 @@ func New(run probe.RunFunc, prober *probe.Prober, config Config) (*Converter, er
 	if config.ProbeTimeout == 0 {
 		config.ProbeTimeout = 30 * time.Second
 	}
-	if err := ValidateInput(Info{
+	if err := ValidateContent(Info{
 		Format:         FormatJPEG,
 		Width:          1,
 		Height:         1,
@@ -51,7 +51,7 @@ func New(run probe.RunFunc, prober *probe.Prober, config Config) (*Converter, er
 		BandFormat:     "uchar",
 		Interpretation: "srgb",
 		Pages:          1,
-	}, Capabilities{}, config.Limits); err != nil {
+	}, config.Limits); err != nil {
 		return nil, fmt.Errorf("imageconv: invalid limits: %w", err)
 	}
 	return &Converter{run: run, prober: prober, config: config}, nil
@@ -85,6 +85,17 @@ func (converter *Converter) convertWithFS(
 	if request.InputPath == "" || request.OutputDir == "" {
 		return conversion, imageError(CodeInvalidRequest, "convert", errors.New("input and output paths are required"))
 	}
+	input := request.Input
+	conversion.Input = input
+	if input.Format == "" || input.Width <= 0 || input.Height <= 0 {
+		return conversion, imageError(CodeInvalidRequest, "convert", errors.New("fresh input probe is incomplete"))
+	}
+	if err := ValidateContent(input, converter.config.Limits); err != nil {
+		return conversion, err
+	}
+	if err := ValidateCapabilities(input, converter.config.Capabilities); err != nil {
+		return conversion, err
+	}
 	if fs.mkdirTemp == nil || fs.removeAll == nil || fs.link == nil || fs.remove == nil {
 		return conversion, imageError(CodeInvalidRequest, "convert", errors.New("filesystem helpers are required"))
 	}
@@ -101,18 +112,13 @@ func (converter *Converter) convertWithFS(
 		return conversion, err
 	}
 
-	input, err := converter.probeFile(ctx, headerPath, request.InputPath)
-	if err != nil {
-		return conversion, err
+	spec, ok := profiles.Lookup(request.Operation)
+	if !ok || spec.Engine != profiles.EngineImage {
+		return conversion, imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))
 	}
-	conversion.Input = input
-	if err := ValidateInput(input, converter.config.Capabilities, converter.config.Limits); err != nil {
-		return conversion, err
-	}
-
-	outputName, err := OutputName(request.InputPath, request.Operation)
+	outputName, err := profiles.OutputName(request.InputPath, request.Operation)
 	if err != nil {
-		return conversion, err
+		return conversion, imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))
 	}
 	finalPath := filepath.Join(request.OutputDir, outputName)
 	if _, err := os.Stat(finalPath); err == nil {
@@ -134,7 +140,7 @@ func (converter *Converter) convertWithFS(
 		}
 	}()
 
-	if request.Operation == corpus.OperationSmallerPhoto && input.HasAlpha {
+	if request.Operation == profiles.OperationSmallerPhoto && input.HasAlpha {
 		transparent, results, err := converter.probeTransparency(ctx, vipsPath, request.InputPath, workDir, input)
 		conversion.Commands = append(conversion.Commands, results...)
 		if err != nil {

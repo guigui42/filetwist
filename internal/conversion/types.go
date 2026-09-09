@@ -2,12 +2,12 @@ package conversion
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/imageconv"
 	"github.com/guigui42/filetwist/internal/media"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 const (
@@ -55,19 +55,19 @@ func (err *Error) Unwrap() error {
 type Request struct {
 	InputPath    string
 	Output       string
-	Operation    corpus.Operation
+	Operation    profiles.Operation
 	OperationSet bool
 }
 
 // DetectedMedia is the privacy-safe subset of probe data exposed to callers.
 type DetectedMedia struct {
-	Kind           corpus.MediaKind `json:"kind"`
-	Format         string           `json:"format"`
-	MIMEType       string           `json:"mime_type,omitempty"`
-	Width          int              `json:"width,omitempty"`
-	Height         int              `json:"height,omitempty"`
-	DurationMillis int64            `json:"duration_millis,omitempty"`
-	Streams        []DetectedStream `json:"streams"`
+	Kind           profiles.MediaKind `json:"kind"`
+	Format         string             `json:"format"`
+	MIMEType       string             `json:"mime_type,omitempty"`
+	Width          int                `json:"width,omitempty"`
+	Height         int                `json:"height,omitempty"`
+	DurationMillis int64              `json:"duration_millis,omitempty"`
+	Streams        []DetectedStream   `json:"streams"`
 }
 
 // DetectedStream describes one content stream without tags or file metadata.
@@ -125,7 +125,7 @@ type Result struct {
 	Status            string                  `json:"status"`
 	DetectedMedia     *DetectedMedia          `json:"detected_media,omitempty"`
 	Observed          *corpus.MediaProperties `json:"observed,omitempty"`
-	SelectedOperation corpus.Operation        `json:"selected_operation,omitempty"`
+	SelectedOperation profiles.Operation      `json:"selected_operation,omitempty"`
 	OperationSource   string                  `json:"operation_source,omitempty"`
 	OutputPath        string                  `json:"output_path,omitempty"`
 	Validation        ValidationResult        `json:"validation"`
@@ -141,11 +141,11 @@ type ImageEngine interface {
 	Convert(context.Context, ImageRequest) (imageconv.Result, error)
 }
 
-// ImageRequest passes a previously probed image to the image engine.
+// ImageRequest passes the fresh image probe from the current Service.Convert call.
 type ImageRequest struct {
 	InputPath string
 	OutputDir string
-	Operation corpus.Operation
+	Operation profiles.Operation
 	Input     imageconv.Info
 }
 
@@ -159,7 +159,7 @@ type MediaEngine interface {
 type MediaRequest struct {
 	InputPath  string
 	OutputPath string
-	Operation  corpus.Operation
+	Operation  profiles.Operation
 	Input      media.Probe
 }
 
@@ -167,24 +167,6 @@ type MediaRequest struct {
 type MediaResult struct {
 	Conversion media.ConversionResult
 	Warnings   []media.Warning
-}
-
-// ParseOperation validates one named operation.
-func ParseOperation(value string) (corpus.Operation, error) {
-	operation := corpus.Operation(value)
-	switch operation {
-	case corpus.OperationCompatiblePhoto,
-		corpus.OperationSmallerPhoto,
-		corpus.OperationLosslessImage,
-		corpus.OperationCompatibleVideo,
-		corpus.OperationSmallerVideo,
-		corpus.OperationExtractAudio,
-		corpus.OperationCompatibleAudio,
-		corpus.OperationLosslessAudio:
-		return operation, nil
-	default:
-		return "", fmt.Errorf("unsupported operation %q", value)
-	}
 }
 
 func milliseconds(duration time.Duration) int64 {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/media"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 func TestBuildPlan(t *testing.T) {
@@ -128,6 +129,64 @@ func TestBuildPlan(t *testing.T) {
 			}
 			if command.Timeout != 2*time.Minute {
 				t.Errorf("command timeout = %s; want 2m", command.Timeout)
+			}
+		})
+	}
+}
+
+func TestRegistryMediaProfilesBuildCompletePlans(t *testing.T) {
+	videoProbe := readProbeFixture(t, "iphone-spatial.json")
+	audioProbe := readProbeFixture(t, "common-audio.json")
+
+	for _, spec := range profiles.All() {
+		if spec.Engine != profiles.EngineMedia {
+			continue
+		}
+		t.Run(string(spec.Operation), func(t *testing.T) {
+			input := audioProbe
+			if spec.OutputKind == profiles.MediaVideo {
+				input = videoProbe
+			}
+			output, err := profiles.OutputName("input.bin", spec.Operation)
+			if err != nil {
+				t.Fatalf("OutputName() error = %v", err)
+			}
+			plan, err := media.BuildPlan(media.PlanRequest{
+				Operation:  spec.Operation,
+				InputPath:  "input.bin",
+				OutputPath: output,
+				Input:      input,
+			})
+			if err != nil {
+				t.Fatalf("BuildPlan() error = %v", err)
+			}
+			if len(plan.Args) == 0 || plan.Args[len(plan.Args)-1] != output {
+				t.Errorf("plan args do not publish the registry output: %v", plan.Args)
+			}
+			commandContainer := outputContainer(plan.Args)
+			if commandContainer == "" {
+				t.Errorf("plan has no output container argument: %v", plan.Args)
+			}
+			if commandContainer != spec.Output.Container {
+				t.Errorf("command container = %q; registry = %q", commandContainer, spec.Output.Container)
+			}
+			if plan.Expected.Container != commandContainer {
+				t.Errorf("expected container = %q; command = %q", plan.Expected.Container, commandContainer)
+			}
+			if plan.Expected.AudioPresence == "" {
+				t.Errorf("audio expectation is incomplete: %+v", plan.Expected)
+			}
+			if spec.OutputKind == profiles.MediaVideo {
+				if plan.Expected.VideoCodec == "" ||
+					plan.Expected.PixelFormat == "" ||
+					plan.Expected.Width <= 0 ||
+					plan.Expected.Height <= 0 {
+					t.Errorf("video expectation is incomplete: %+v", plan.Expected)
+				}
+			} else if plan.Expected.AudioCodec == "" ||
+				plan.Expected.Channels <= 0 ||
+				plan.Expected.SampleRate <= 0 {
+				t.Errorf("audio expectation is incomplete: %+v", plan.Expected)
 			}
 		})
 	}
@@ -399,4 +458,13 @@ func containsPair(args []string, first, second string) bool {
 		}
 	}
 	return false
+}
+
+func outputContainer(args []string) string {
+	for index := len(args) - 2; index >= 0; index-- {
+		if args[index] == "-f" {
+			return args[index+1]
+		}
+	}
+	return ""
 }

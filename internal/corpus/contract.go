@@ -1,5 +1,7 @@
 package corpus
 
+import "github.com/guigui42/filetwist/internal/profiles"
+
 // ManifestVersion is the only fixture manifest schema version supported by
 // this package.
 const ManifestVersion = "1.1"
@@ -92,15 +94,15 @@ type InputCharacteristics struct {
 }
 
 // MediaKind is the broad kind of media in a fixture.
-type MediaKind string
+type MediaKind = profiles.MediaKind
 
 const (
 	// MediaImage identifies still or animated image input.
-	MediaImage MediaKind = "image"
+	MediaImage = profiles.MediaImage
 	// MediaAudio identifies audio input.
-	MediaAudio MediaKind = "audio"
+	MediaAudio = profiles.MediaAudio
 	// MediaVideo identifies video input.
-	MediaVideo MediaKind = "video"
+	MediaVideo = profiles.MediaVideo
 )
 
 // MediaProperties describes probeable media characteristics.
@@ -175,26 +177,26 @@ type Metadata struct {
 	GainMap      Presence `json:"gain_map"`
 }
 
-// Operation is one named prototype conversion operation.
-type Operation string
+// Operation is one named conversion operation.
+type Operation = profiles.Operation
 
 const (
 	// OperationCompatiblePhoto creates a broadly compatible photo.
-	OperationCompatiblePhoto Operation = "compatible_photo"
+	OperationCompatiblePhoto = profiles.OperationCompatiblePhoto
 	// OperationSmallerPhoto creates a smaller lossy photo.
-	OperationSmallerPhoto Operation = "smaller_photo"
+	OperationSmallerPhoto = profiles.OperationSmallerPhoto
 	// OperationLosslessImage creates a lossless image.
-	OperationLosslessImage Operation = "lossless_image"
+	OperationLosslessImage = profiles.OperationLosslessImage
 	// OperationCompatibleVideo creates a broadly compatible video.
-	OperationCompatibleVideo Operation = "compatible_video"
+	OperationCompatibleVideo = profiles.OperationCompatibleVideo
 	// OperationSmallerVideo creates a smaller video.
-	OperationSmallerVideo Operation = "smaller_video"
+	OperationSmallerVideo = profiles.OperationSmallerVideo
 	// OperationExtractAudio extracts audio from media.
-	OperationExtractAudio Operation = "extract_audio"
+	OperationExtractAudio = profiles.OperationExtractAudio
 	// OperationCompatibleAudio creates broadly compatible audio.
-	OperationCompatibleAudio Operation = "compatible_audio"
+	OperationCompatibleAudio = profiles.OperationCompatibleAudio
 	// OperationLosslessAudio creates lossless audio.
-	OperationLosslessAudio Operation = "lossless_audio"
+	OperationLosslessAudio = profiles.OperationLosslessAudio
 )
 
 // ExpectedResult declares whether conversion must succeed or be clearly rejected.
