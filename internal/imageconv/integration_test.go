@@ -36,7 +36,6 @@ func TestLibvipsIntegration(t *testing.T) {
 		HeaderExecutable:  headerPath,
 		Limits:            imageconv.DefaultLimits(),
 		CaptureDatePolicy: imageconv.CaptureDateStrip,
-		Capabilities:      imageconv.Capabilities{},
 	})
 	if err != nil {
 		t.Fatalf("imageconv.New() error = %v", err)
@@ -99,7 +98,8 @@ func TestLibvipsIntegration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, err := imageconv.ProbeFile(context.Background(), processRunner.Run, headerPath, tt.input); err != nil {
+			info, err := imageconv.ProbeFile(context.Background(), processRunner.Run, headerPath, tt.input)
+			if err != nil {
 				t.Skipf("libvips integration skipped: required input loader is unavailable: %v", err)
 			}
 			if _, err := processRunner.Run(context.Background(), runner.Command{
@@ -113,6 +113,7 @@ func TestLibvipsIntegration(t *testing.T) {
 				InputPath: tt.input,
 				OutputDir: t.TempDir(),
 				Operation: tt.operation,
+				Input:     info,
 			})
 			if err != nil {
 				t.Fatalf("Convert() error = %v", err)

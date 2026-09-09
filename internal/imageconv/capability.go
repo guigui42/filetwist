@@ -10,6 +10,45 @@ import (
 	"github.com/guigui42/filetwist/internal/probe"
 )
 
+const (
+	capabilityInvalid Capability = iota
+	// CapabilityDecodeHEIF records successful decoding of the current HEIF input.
+	CapabilityDecodeHEIF
+	// CapabilityDecodeAVIF records successful decoding of the current AVIF input.
+	CapabilityDecodeAVIF
+	capabilityCount
+)
+
+// NewCapabilitySet constructs an immutable capability bitset.
+func NewCapabilitySet(capabilities ...Capability) CapabilitySet {
+	var set CapabilitySet
+	for _, capability := range capabilities {
+		if capability > capabilityInvalid && capability < capabilityCount {
+			set |= 1 << capability
+		}
+	}
+	return set
+}
+
+// Has reports whether capability is present in the set.
+func (set CapabilitySet) Has(capability Capability) bool {
+	return capability > capabilityInvalid &&
+		capability < capabilityCount &&
+		set&(1<<capability) != 0
+}
+
+// RequiredDecodeCapability returns the optional runtime capability required by format.
+func RequiredDecodeCapability(format Format) (Capability, bool) {
+	switch format {
+	case FormatHEIF:
+		return CapabilityDecodeHEIF, true
+	case FormatAVIF:
+		return CapabilityDecodeAVIF, true
+	default:
+		return capabilityInvalid, false
+	}
+}
+
 // HEIFProbeSpec returns a real HEVC-based HEIF decode operation for probe.Prober.
 func HEIFProbeSpec(executable, inputPath, outputPath string) (probe.FunctionalSpec, error) {
 	return decodeProbeSpec("libvips HEIF decode", executable, inputPath, outputPath)
@@ -33,12 +72,12 @@ func decodeProbeSpec(name, executable, inputPath, outputPath string) (probe.Func
 }
 
 // ProbeHEIF performs a real HEIF decode through the shared functional prober.
-func ProbeHEIF(ctx context.Context, prober *probe.Prober, executable, inputPath, tempDir string) (Capabilities, error) {
+func ProbeHEIF(ctx context.Context, prober *probe.Prober, executable, inputPath, tempDir string) (CapabilitySet, error) {
 	return probeDecodeWithFS(ctx, prober, executable, inputPath, tempDir, FormatHEIF, os.MkdirTemp, os.RemoveAll)
 }
 
 // ProbeAVIF performs a real AVIF decode through the shared functional prober.
-func ProbeAVIF(ctx context.Context, prober *probe.Prober, executable, inputPath, tempDir string) (Capabilities, error) {
+func ProbeAVIF(ctx context.Context, prober *probe.Prober, executable, inputPath, tempDir string) (CapabilitySet, error) {
 	return probeDecodeWithFS(ctx, prober, executable, inputPath, tempDir, FormatAVIF, os.MkdirTemp, os.RemoveAll)
 }
 
@@ -51,7 +90,7 @@ func probeDecodeWithFS(
 	format Format,
 	mkdirTemp func(string, string) (string, error),
 	removeAll func(string) error,
-) (capabilities Capabilities, returnErr error) {
+) (capabilities CapabilitySet, returnErr error) {
 	if prober == nil {
 		return capabilities, imageError(CodeInvalidRequest, "probe image decode", errors.New("prober must not be nil"))
 	}
@@ -87,15 +126,14 @@ func probeDecodeWithFS(
 	if err != nil {
 		return capabilities, err
 	}
-	result, err := prober.Functional(ctx, spec)
-	if err != nil {
+	if _, err := prober.Functional(ctx, spec); err != nil {
 		return capabilities, err
 	}
 	switch format {
 	case FormatHEIF:
-		capabilities.HEIFDecode = result.Passed
+		capabilities = NewCapabilitySet(CapabilityDecodeHEIF)
 	case FormatAVIF:
-		capabilities.AVIFDecode = result.Passed
+		capabilities = NewCapabilitySet(CapabilityDecodeAVIF)
 	}
 	return capabilities, nil
 }

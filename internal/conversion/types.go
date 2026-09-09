@@ -141,7 +141,7 @@ type ImageEngine interface {
 	Convert(context.Context, ImageRequest) (imageconv.Result, error)
 }
 
-// ImageRequest passes a previously probed image to the image engine.
+// ImageRequest passes the fresh image probe from the current Service.Convert call.
 type ImageRequest struct {
 	InputPath string
 	OutputDir string

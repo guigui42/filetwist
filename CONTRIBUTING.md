@@ -107,9 +107,12 @@ screenshots are under `tests/browser/test-results/`; use synthetic fixtures only
 
 Input support and output profiles are separate changes:
 
-- For an input image loader, add loader and format normalization in
-  `internal/imageconv`, preserve content-policy checks, and use a real functional
-  decode probe when runtime support is optional.
+- For an input image loader:
+  1. add normalized format and loader detection in `internal/imageconv`;
+  2. add a capability ID when runtime support is optional;
+  3. add a real functional decode probe using a redistributable fixture;
+  4. update the pinned runtime and notices when dependencies change;
+  5. add content-policy, capability, conversion, and output-validation tests.
 - For an input audio codec, confirm the pinned FFmpeg runtime decodes it, add it
   to the positive audio allowlist, and cover stream selection and conversion.
 - For an input video codec or container, rely on ffprobe and FFmpeg when the

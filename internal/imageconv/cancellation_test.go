@@ -47,6 +47,11 @@ func TestConvertDoesNotPublishAfterProbeCancellation(t *testing.T) {
 	}
 	if _, err := converter.Convert(ctx, imageconv.Request{
 		InputPath: "input.png", OutputDir: dir, Operation: corpus.OperationCompatiblePhoto,
+		Input: imageconv.Info{
+			Format: imageconv.FormatPNG, MIMEType: "image/png",
+			Width: 2, Height: 2, Bands: 3, BandFormat: "uchar",
+			Interpretation: "srgb", Orientation: 1, Pages: 1,
+		},
 	}); !errors.Is(err, context.Canceled) {
 		t.Errorf("error = %v; want cancellation", err)
 	}

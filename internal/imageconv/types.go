@@ -161,11 +161,12 @@ func DefaultLimits() Limits {
 	}
 }
 
-// Capabilities records functionally tested optional libvips support.
-type Capabilities struct {
-	HEIFDecode bool
-	AVIFDecode bool
-}
+// Capability identifies optional image runtime support verified by a functional probe.
+type Capability uint8
+
+// CapabilitySet records functionally tested optional image runtime support.
+// Its zero value contains no optional capabilities.
+type CapabilitySet uint64
 
 // CaptureDatePolicy controls whether capture-date EXIF is retained.
 type CaptureDatePolicy int
@@ -222,6 +223,8 @@ type Request struct {
 	InputPath string
 	OutputDir string
 	Operation profiles.Operation
+	// Input is the fresh header probe produced for InputPath by the current conversion.
+	Input Info
 }
 
 // Result contains the declared artifact, probes, and bounded command results.
@@ -239,9 +242,9 @@ type Config struct {
 	HeaderExecutable  string
 	Limits            Limits
 	CaptureDatePolicy CaptureDatePolicy
-	Capabilities      Capabilities
+	Capabilities      CapabilitySet
 	CommandTimeout    time.Duration
-	// ProbeTimeout bounds each input and output header probe, defaulting to 30 seconds.
+	// ProbeTimeout bounds the staged output header probe, defaulting to 30 seconds.
 	ProbeTimeout time.Duration
 }
 

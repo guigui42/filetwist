@@ -12,8 +12,8 @@ import (
 
 const maxWebPDimension = 16_383
 
-// ValidateInput checks animation, optional loader capabilities, and decoded dimensions.
-func ValidateInput(info Info, capabilities Capabilities, limits Limits) error {
+// ValidateContent checks image structure, color policy, and decoded dimensions.
+func ValidateContent(info Info, limits Limits) error {
 	if info.Format == "" || info.Width <= 0 || info.Height <= 0 {
 		return imageError(CodeUnsupportedInput, "validate input", errors.New("image properties are incomplete"))
 	}
@@ -29,12 +29,6 @@ func ValidateInput(info Info, capabilities Capabilities, limits Limits) error {
 	if err := validateColorRepresentation(info); err != nil {
 		return err
 	}
-	if info.Format == FormatHEIF && !capabilities.HEIFDecode {
-		return imageError(CodeHEIFUnavailable, "validate input", errors.New("HEIF decode was not functionally probed"))
-	}
-	if info.Format == FormatAVIF && !capabilities.AVIFDecode {
-		return imageError(CodeAVIFUnavailable, "validate input", errors.New("AVIF decode was not functionally probed"))
-	}
 	if limits.MaxWidth <= 0 || limits.MaxHeight <= 0 || limits.MaxPixels <= 0 {
 		return imageError(CodeInvalidRequest, "validate limits", errors.New("all decoded dimension limits must be positive"))
 	}
@@ -43,6 +37,22 @@ func ValidateInput(info Info, capabilities Capabilities, limits Limits) error {
 		return imageError(CodeDimensionsExceeded, "validate input", errors.New("decoded dimensions exceed configured limits"))
 	}
 	return nil
+}
+
+// ValidateCapabilities checks optional runtime support required by the input format.
+func ValidateCapabilities(info Info, capabilities CapabilitySet) error {
+	required, ok := RequiredDecodeCapability(info.Format)
+	if !ok || capabilities.Has(required) {
+		return nil
+	}
+	switch required {
+	case CapabilityDecodeHEIF:
+		return imageError(CodeHEIFUnavailable, "validate input", errors.New("HEIF decode was not functionally probed"))
+	case CapabilityDecodeAVIF:
+		return imageError(CodeAVIFUnavailable, "validate input", errors.New("AVIF decode was not functionally probed"))
+	default:
+		return imageError(CodeInvalidRequest, "validate input", errors.New("unsupported image capability"))
+	}
 }
 
 // BuildPlan constructs direct libvips commands without executing them.

@@ -43,7 +43,7 @@ func New(run probe.RunFunc, prober *probe.Prober, config Config) (*Converter, er
 	if config.ProbeTimeout == 0 {
 		config.ProbeTimeout = 30 * time.Second
 	}
-	if err := ValidateInput(Info{
+	if err := ValidateContent(Info{
 		Format:         FormatJPEG,
 		Width:          1,
 		Height:         1,
@@ -51,7 +51,7 @@ func New(run probe.RunFunc, prober *probe.Prober, config Config) (*Converter, er
 		BandFormat:     "uchar",
 		Interpretation: "srgb",
 		Pages:          1,
-	}, Capabilities{}, config.Limits); err != nil {
+	}, config.Limits); err != nil {
 		return nil, fmt.Errorf("imageconv: invalid limits: %w", err)
 	}
 	return &Converter{run: run, prober: prober, config: config}, nil
@@ -85,6 +85,17 @@ func (converter *Converter) convertWithFS(
 	if request.InputPath == "" || request.OutputDir == "" {
 		return conversion, imageError(CodeInvalidRequest, "convert", errors.New("input and output paths are required"))
 	}
+	input := request.Input
+	conversion.Input = input
+	if input.Format == "" || input.Width <= 0 || input.Height <= 0 {
+		return conversion, imageError(CodeInvalidRequest, "convert", errors.New("fresh input probe is incomplete"))
+	}
+	if err := ValidateContent(input, converter.config.Limits); err != nil {
+		return conversion, err
+	}
+	if err := ValidateCapabilities(input, converter.config.Capabilities); err != nil {
+		return conversion, err
+	}
 	if fs.mkdirTemp == nil || fs.removeAll == nil || fs.link == nil || fs.remove == nil {
 		return conversion, imageError(CodeInvalidRequest, "convert", errors.New("filesystem helpers are required"))
 	}
@@ -98,15 +109,6 @@ func (converter *Converter) convertWithFS(
 	}
 	headerPath, err := converter.executablePath(converter.config.HeaderExecutable)
 	if err != nil {
-		return conversion, err
-	}
-
-	input, err := converter.probeFile(ctx, headerPath, request.InputPath)
-	if err != nil {
-		return conversion, err
-	}
-	conversion.Input = input
-	if err := ValidateInput(input, converter.config.Capabilities, converter.config.Limits); err != nil {
 		return conversion, err
 	}
 

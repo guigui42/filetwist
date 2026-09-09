@@ -106,10 +106,7 @@ func validateOperation(
 				nil,
 			)
 		}
-		if err := imageconv.ValidateInput(imageInfo, imageconv.Capabilities{
-			HEIFDecode: true,
-			AVIFDecode: true,
-		}, imageconv.DefaultLimits()); err != nil {
+		if err := imageconv.ValidateContent(imageInfo, imageconv.DefaultLimits()); err != nil {
 			return classifyImageError(err)
 		}
 		_, err := imageconv.BuildPlan(imageconv.PlanRequest{

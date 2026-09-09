@@ -259,11 +259,11 @@ func TestParseHeaderDoesNotTreatLabQPackingAsAlpha(t *testing.T) {
 	}
 }
 
-func TestValidateInput(t *testing.T) {
+func TestValidateContentAndCapabilities(t *testing.T) {
 	tests := []struct {
 		name         string
 		info         imageconv.Info
-		capabilities imageconv.Capabilities
+		capabilities imageconv.CapabilitySet
 		limits       imageconv.Limits
 		wantCode     string
 	}{
@@ -296,7 +296,7 @@ func TestValidateInput(t *testing.T) {
 				Height: 3024,
 				Pages:  1,
 			},
-			capabilities: imageconv.Capabilities{HEIFDecode: true},
+			capabilities: imageconv.NewCapabilitySet(imageconv.CapabilityDecodeHEIF),
 			limits:       imageconv.DefaultLimits(),
 		},
 		{
@@ -307,7 +307,7 @@ func TestValidateInput(t *testing.T) {
 				Height: 3024,
 				Pages:  1,
 			},
-			capabilities: imageconv.Capabilities{HEIFDecode: true},
+			capabilities: imageconv.NewCapabilitySet(imageconv.CapabilityDecodeHEIF),
 			limits:       imageconv.DefaultLimits(),
 			wantCode:     imageconv.CodeAVIFUnavailable,
 		},
@@ -319,7 +319,7 @@ func TestValidateInput(t *testing.T) {
 				Height: 3024,
 				Pages:  1,
 			},
-			capabilities: imageconv.Capabilities{AVIFDecode: true},
+			capabilities: imageconv.NewCapabilitySet(imageconv.CapabilityDecodeAVIF),
 			limits:       imageconv.DefaultLimits(),
 		},
 		{
@@ -331,7 +331,7 @@ func TestValidateInput(t *testing.T) {
 				Pages:  1,
 				HDR:    true,
 			},
-			capabilities: imageconv.Capabilities{HEIFDecode: true},
+			capabilities: imageconv.NewCapabilitySet(imageconv.CapabilityDecodeHEIF),
 			limits:       imageconv.DefaultLimits(),
 			wantCode:     imageconv.CodeHDRUnsupported,
 		},
@@ -350,7 +350,7 @@ func TestValidateInput(t *testing.T) {
 					FullRange: 0,
 				},
 			},
-			capabilities: imageconv.Capabilities{HEIFDecode: true},
+			capabilities: imageconv.NewCapabilitySet(imageconv.CapabilityDecodeHEIF),
 			limits:       imageconv.DefaultLimits(),
 			wantCode:     imageconv.CodeColorUnsupported,
 		},
@@ -450,7 +450,7 @@ func TestValidateInput(t *testing.T) {
 				Interpretation: "rgb16",
 				Pages:          1,
 			},
-			capabilities: imageconv.Capabilities{HEIFDecode: true},
+			capabilities: imageconv.NewCapabilitySet(imageconv.CapabilityDecodeHEIF),
 			limits:       imageconv.DefaultLimits(),
 			wantCode:     imageconv.CodeColorUnsupported,
 		},
@@ -512,8 +512,64 @@ func TestValidateInput(t *testing.T) {
 				info.BandFormat = "uchar"
 				info.Interpretation = "srgb"
 			}
-			err := imageconv.ValidateInput(info, tt.capabilities, tt.limits)
+			err := imageconv.ValidateContent(info, tt.limits)
+			if err == nil {
+				err = imageconv.ValidateCapabilities(info, tt.capabilities)
+			}
 			assertErrorCode(t, err, tt.wantCode)
+		})
+	}
+}
+
+func TestCapabilitySet(t *testing.T) {
+	var zero imageconv.CapabilitySet
+	if zero.Has(imageconv.CapabilityDecodeHEIF) || zero.Has(imageconv.CapabilityDecodeAVIF) {
+		t.Fatal("zero-value capability set contains optional decode support")
+	}
+
+	set := imageconv.NewCapabilitySet(imageconv.CapabilityDecodeHEIF)
+	if !set.Has(imageconv.CapabilityDecodeHEIF) || set.Has(imageconv.CapabilityDecodeAVIF) {
+		t.Fatalf("capability set = %064b; want only HEIF decode", set)
+	}
+	if imageconv.NewCapabilitySet(imageconv.Capability(0)) != 0 {
+		t.Fatal("zero capability ID must not grant optional support")
+	}
+	if set.Has(imageconv.Capability(64)) {
+		t.Fatal("capability set reported an out-of-range capability")
+	}
+}
+
+func TestValidateCapabilities(t *testing.T) {
+	tests := []struct {
+		name     string
+		format   imageconv.Format
+		set      imageconv.CapabilitySet
+		wantCode string
+	}{
+		{name: "JPEG needs no optional capability", format: imageconv.FormatJPEG},
+		{name: "zero-value rejects HEIF", format: imageconv.FormatHEIF, wantCode: imageconv.CodeHEIFUnavailable},
+		{name: "zero-value rejects AVIF", format: imageconv.FormatAVIF, wantCode: imageconv.CodeAVIFUnavailable},
+		{
+			name:   "HEIF accepts matching capability",
+			format: imageconv.FormatHEIF,
+			set:    imageconv.NewCapabilitySet(imageconv.CapabilityDecodeHEIF),
+		},
+		{
+			name:     "HEIF rejects independent AVIF capability",
+			format:   imageconv.FormatHEIF,
+			set:      imageconv.NewCapabilitySet(imageconv.CapabilityDecodeAVIF),
+			wantCode: imageconv.CodeHEIFUnavailable,
+		},
+		{
+			name:   "AVIF accepts matching capability",
+			format: imageconv.FormatAVIF,
+			set:    imageconv.NewCapabilitySet(imageconv.CapabilityDecodeAVIF),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertErrorCode(t, imageconv.ValidateCapabilities(imageconv.Info{Format: tt.format}, tt.set), tt.wantCode)
 		})
 	}
 }
@@ -1177,8 +1233,8 @@ func TestProbeHEIF(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ProbeHEIF() error = %v; wantErr %t", err, tt.wantErr)
 			}
-			if got.HEIFDecode != tt.want {
-				t.Errorf("HEIFDecode = %t; want %t", got.HEIFDecode, tt.want)
+			if got.Has(imageconv.CapabilityDecodeHEIF) != tt.want {
+				t.Errorf("HEIF capability = %t; want %t", got.Has(imageconv.CapabilityDecodeHEIF), tt.want)
 			}
 		})
 	}
@@ -1202,7 +1258,7 @@ func TestProbeAVIFSetsIndependentCapability(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ProbeAVIF() error = %v", err)
 	}
-	if !got.AVIFDecode || got.HEIFDecode {
+	if !got.Has(imageconv.CapabilityDecodeAVIF) || got.Has(imageconv.CapabilityDecodeHEIF) {
 		t.Errorf("capabilities = %#v; want only AVIF decode", got)
 	}
 }
@@ -1294,6 +1350,11 @@ func TestConvertRunsPlanAndValidatesOutput(t *testing.T) {
 		InputPath: input,
 		OutputDir: outputDir,
 		Operation: corpus.OperationCompatiblePhoto,
+		Input: imageconv.Info{
+			Format: imageconv.FormatPNG, MIMEType: "image/png",
+			Width: 3, Height: 2, Bands: 3, BandFormat: "uchar",
+			Interpretation: "srgb", Orientation: 1, Pages: 1,
+		},
 	})
 	if err == nil {
 		t.Fatal("Convert() error = nil; mock did not create output and should fail publication")
@@ -1301,14 +1362,64 @@ func TestConvertRunsPlanAndValidatesOutput(t *testing.T) {
 	if result.Output.MIMEType != "image/jpeg" || result.Output.Extension != ".jpg" {
 		t.Errorf("declared output = %#v; want JPEG", result.Output)
 	}
-	if len(commands) < 4 {
-		t.Fatalf("commands = %d; want input probe, autorot, save, and output probe", len(commands))
+	if len(commands) != 3 {
+		t.Fatalf("commands = %d; want exactly autorot, save, and output probe", len(commands))
 	}
 	for _, command := range commands {
 		switch filepath.Base(command.Path) {
 		case "sh", "bash", "zsh":
 			t.Errorf("command path %q invokes a shell", command.Path)
+		case "vipsheader":
+			if command.Args[len(command.Args)-1] == input {
+				t.Error("converter redundantly probed the supplied input")
+			}
 		}
+	}
+}
+
+func TestConvertRejectsMissingInputInfoWithoutRunningCommands(t *testing.T) {
+	runCalls := 0
+	run := func(context.Context, runner.Command) (runner.Result, error) {
+		runCalls++
+		return runner.Result{}, errors.New("command must not run")
+	}
+	prober, err := probe.New(run, probe.WithLookPath(func(name string) (string, error) {
+		return filepath.Join("/tools", name), nil
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	converter, err := imageconv.New(run, prober, imageconv.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		info imageconv.Info
+	}{
+		{name: "empty"},
+		{
+			name: "incomplete dimensions",
+			info: imageconv.Info{
+				Format: imageconv.FormatPNG, Width: 2, Bands: 3,
+				BandFormat: "uchar", Interpretation: "srgb", Pages: 1,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := converter.Convert(context.Background(), imageconv.Request{
+				InputPath: "input.png",
+				OutputDir: t.TempDir(),
+				Operation: corpus.OperationCompatiblePhoto,
+				Input:     tt.info,
+			})
+			assertErrorCode(t, err, imageconv.CodeInvalidRequest)
+		})
+	}
+	if runCalls != 0 {
+		t.Errorf("commands = %d; want zero for invalid supplied Info", runCalls)
 	}
 }
 
@@ -1369,6 +1480,11 @@ func TestConvertProbesTransparencyBeforeWebPSave(t *testing.T) {
 		InputPath: input,
 		OutputDir: outputDir,
 		Operation: corpus.OperationSmallerPhoto,
+		Input: imageconv.Info{
+			Format: imageconv.FormatPNG, MIMEType: "image/png",
+			Width: 3, Height: 2, Bands: 4, BandFormat: "uchar",
+			Interpretation: "srgb", Orientation: 1, HasAlpha: true, Pages: 1,
+		},
 	})
 	if err != nil {
 		t.Fatalf("Convert() error = %v", err)
@@ -1442,6 +1558,11 @@ func TestConvertPublishesValidatedOutput(t *testing.T) {
 		InputPath: input,
 		OutputDir: outputDir,
 		Operation: corpus.OperationCompatiblePhoto,
+		Input: imageconv.Info{
+			Format: imageconv.FormatPNG, MIMEType: "image/png",
+			Width: 3, Height: 2, Bands: 3, BandFormat: "uchar",
+			Interpretation: "srgb", Orientation: 1, Pages: 1,
+		},
 	})
 	if err != nil {
 		t.Fatalf("Convert() error = %v", err)
@@ -1515,6 +1636,11 @@ func TestConvertDoesNotReplaceConcurrentOutput(t *testing.T) {
 		InputPath: input,
 		OutputDir: outputDir,
 		Operation: corpus.OperationCompatiblePhoto,
+		Input: imageconv.Info{
+			Format: imageconv.FormatPNG, MIMEType: "image/png",
+			Width: 3, Height: 2, Bands: 3, BandFormat: "uchar",
+			Interpretation: "srgb", Orientation: 1, Pages: 1,
+		},
 	})
 	assertErrorCode(t, err, imageconv.CodeOutputExists)
 	data, readErr := os.ReadFile(finalPath)
