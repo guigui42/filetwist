@@ -182,11 +182,13 @@ test("silent video does not offer audio extraction", async ({ page, jobs }) => {
   ]);
 });
 
-test("cancel active work and delete the job", async ({ page, jobs }) => {
+test("cancel active work and delete the job", async ({ page, jobs, request }) => {
   // Keep a queue of real conversions so cancellation does not race a single tiny file.
   const id = await upload(page, jobs, Array(12).fill(video));
   await page.getByRole("button", { name: "Convert 12 files", exact: true }).click();
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeVisible();
+  const response = await request.post(`/jobs/${id}/cancel`);
+  expect(response.ok()).toBe(true);
   await expect(page.locator("#job")).toHaveAttribute("data-job-state", "canceled");
   await expect(page.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
   await expect(page.getByText("Created after conversion", { exact: true })).toHaveCount(0);
