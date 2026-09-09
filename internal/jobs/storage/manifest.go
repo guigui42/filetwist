@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/guigui42/filetwist/internal/conversion"
-	"github.com/guigui42/filetwist/internal/corpus"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // ManifestSchemaVersion is the stable on-disk manifest schema version.
@@ -127,11 +127,11 @@ type File struct {
 	// Media is the privacy-safe probe summary, when probing succeeded.
 	Media *conversion.DetectedMedia `json:"media,omitempty"`
 	// Recommended is the single suggested operation.
-	Recommended corpus.Operation `json:"recommended,omitempty"`
+	Recommended profiles.Operation `json:"recommended,omitempty"`
 	// Compatible lists every operation the user may select.
-	Compatible []corpus.Operation `json:"compatible,omitempty"`
+	Compatible []profiles.Operation `json:"compatible,omitempty"`
 	// Selected is the operation chosen for this file.
-	Selected corpus.Operation `json:"selected,omitempty"`
+	Selected profiles.Operation `json:"selected,omitempty"`
 	// OperationSource records whether the selection was recommended or
 	// requested.
 	OperationSource string `json:"operation_source,omitempty"`

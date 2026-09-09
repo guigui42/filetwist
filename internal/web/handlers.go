@@ -13,10 +13,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/guigui42/filetwist/internal/conversion"
-	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/jobs"
 	"github.com/guigui42/filetwist/internal/jobs/storage"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // maxSelectionFormBytes bounds the urlencoded body of a start request.
@@ -56,8 +55,8 @@ func (app *App) handleIndex(writer http.ResponseWriter, request *http.Request) {
 
 func (app *App) handleHelp(writer http.ResponseWriter, _ *http.Request) {
 	data := app.newPageData("Filetwist help", "help")
-	for _, operation := range conversion.AllOperations() {
-		data.Operations = append(data.Operations, operationOption(operation))
+	for _, spec := range profiles.All() {
+		data.Operations = append(data.Operations, operationOption(spec.Operation))
 	}
 	app.renderPage(writer, http.StatusOK, data)
 }
@@ -539,12 +538,12 @@ func (app *App) loadJob(id string) (storage.Manifest, error) {
 
 // parseSelections reads the per-file operation choices from a bounded
 // urlencoded body. Keys use the "operation.<fileID>" form.
-func parseSelections(request *http.Request) (map[string]corpus.Operation, error) {
+func parseSelections(request *http.Request) (map[string]profiles.Operation, error) {
 	request.Body = http.MaxBytesReader(nil, request.Body, maxSelectionFormBytes)
 	if err := request.ParseForm(); err != nil {
 		return nil, err
 	}
-	selections := make(map[string]corpus.Operation)
+	selections := make(map[string]profiles.Operation)
 	for key, values := range request.PostForm {
 		fileID, ok := strings.CutPrefix(key, "operation.")
 		if !ok || len(values) == 0 || values[0] == "" {
@@ -553,7 +552,7 @@ func parseSelections(request *http.Request) (map[string]corpus.Operation, error)
 		if storage.ValidateFileID(fileID) != nil {
 			continue
 		}
-		operation, err := conversion.ParseOperation(values[0])
+		operation, err := profiles.Parse(values[0])
 		if err != nil {
 			return nil, err
 		}

@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/guigui42/filetwist/internal/conversion"
-	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/media"
 	"github.com/guigui42/filetwist/internal/probe"
+	"github.com/guigui42/filetwist/internal/profiles"
 	"github.com/guigui42/filetwist/internal/runner"
 )
 
@@ -43,7 +43,7 @@ type dependencies struct {
 type options struct {
 	input        string
 	output       string
-	operation    corpus.Operation
+	operation    profiles.Operation
 	operationSet bool
 	human        bool
 }
@@ -161,7 +161,7 @@ func parseOptions(args []string, stderr io.Writer) (options, error) {
 	opts.input = flags.Arg(0)
 
 	if operation != "" {
-		parsed, err := conversion.ParseOperation(operation)
+		parsed, err := profiles.Parse(operation)
 		if err != nil {
 			return opts, errors.New("operation is not supported")
 		}

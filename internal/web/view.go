@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/guigui42/filetwist/internal/conversion"
-	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/jobs"
 	"github.com/guigui42/filetwist/internal/jobs/storage"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // pageData is the root template context for every rendered page and fragment.
@@ -196,7 +196,8 @@ func (app *App) buildJobView(manifest storage.Manifest, now time.Time) *jobView 
 	}
 	view.CanStart = manifest.State == storage.JobPending && view.ConvertibleCount > 0
 	if view.CanStart {
-		for _, operation := range conversion.AllOperations() {
+		for _, spec := range profiles.All() {
+			operation := spec.Operation
 			for _, file := range manifest.Files {
 				if file.State == storage.FileInspected && slices.Contains(file.Compatible, operation) {
 					view.BatchOptions = append(view.BatchOptions, operationOption(operation))
@@ -244,10 +245,10 @@ func (app *App) buildFileView(jobID string, file storage.File) fileView {
 		view.ProbeFormat = file.Media.Format
 	}
 	if file.Recommended != "" {
-		view.RecommendedLabel = conversion.OperationLabel(file.Recommended)
+		view.RecommendedLabel = operationOption(file.Recommended).Label
 	}
 	if file.Selected != "" {
-		view.SelectedLabel = conversion.OperationLabel(file.Selected)
+		view.SelectedLabel = operationOption(file.Selected).Label
 	}
 	for _, operation := range file.Compatible {
 		option := operationOption(operation)
@@ -357,7 +358,7 @@ func fileStateShowsOutputPreview(state storage.FileState) bool {
 	}
 }
 
-func selectedOrRecommended(file storage.File) corpus.Operation {
+func selectedOrRecommended(file storage.File) profiles.Operation {
 	if file.Selected != "" {
 		return file.Selected
 	}

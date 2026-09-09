@@ -19,6 +19,7 @@ import (
 	"github.com/guigui42/filetwist/internal/config"
 	"github.com/guigui42/filetwist/internal/conversion"
 	"github.com/guigui42/filetwist/internal/jobs/storage"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // live starts a real TCP server. Deadlines are enforced by the connection, so
@@ -226,7 +227,10 @@ func bigOutputConverter(t *testing.T, size int64) *stubConverter {
 	t.Helper()
 	return &stubConverter{
 		convert: func(_ context.Context, request conversion.Request) (conversion.Result, error) {
-			name := conversion.OutputName(request.InputPath, request.Operation)
+			name, err := profiles.OutputName(request.InputPath, request.Operation)
+			if err != nil {
+				return conversion.Result{}, err
+			}
 			outputPath := filepath.Join(request.Output, name)
 			handle, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o640)
 			if err != nil {
