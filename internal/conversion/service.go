@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/imageconv"
 	"github.com/guigui42/filetwist/internal/media"
 	"github.com/guigui42/filetwist/internal/probe"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 const (
@@ -70,7 +70,7 @@ func (service *Service) Convert(ctx context.Context, request Request) (result Re
 		return result, err
 	}
 	result.DetectedMedia = &detection
-	if detection.Kind == corpus.MediaAudio || detection.Kind == corpus.MediaVideo {
+	if detection.Kind == profiles.MediaAudio || detection.Kind == profiles.MediaVideo {
 		result.Warnings = mediaWarnings(media.SelectStreams(mediaProbe).Warnings)
 	}
 
@@ -78,7 +78,7 @@ func (service *Service) Convert(ctx context.Context, request Request) (result Re
 	if request.OperationSet {
 		result.OperationSource = "requested"
 	} else {
-		operation = recommendedOperation(detection.Kind)
+		operation, _ = profiles.Recommended(detection.Kind)
 		result.OperationSource = "recommended"
 	}
 	result.SelectedOperation = operation
@@ -94,10 +94,11 @@ func (service *Service) Convert(ctx context.Context, request Request) (result Re
 
 	conversionStarted := time.Now()
 	var conversionErr error
-	switch detection.Kind {
-	case corpus.MediaImage:
+	spec, _ := profiles.Lookup(operation)
+	switch spec.Engine {
+	case profiles.EngineImage:
 		conversionErr = service.convertImage(ctx, request.InputPath, outputPath, outputIsDirectory, operation, imageInfo, &result)
-	case corpus.MediaAudio, corpus.MediaVideo:
+	case profiles.EngineMedia:
 		conversionErr = service.convertMedia(ctx, request.InputPath, outputPath, operation, mediaProbe, &result)
 	default:
 		conversionErr = failure(FailureProbe, "unsupported_media", "input is not supported image, audio, or video content", nil)
@@ -120,7 +121,7 @@ func validateRequest(request Request) *Error {
 		return failure(FailureConfiguration, "missing_output", "output path or directory is required", nil)
 	}
 	if request.OperationSet {
-		if _, err := ParseOperation(string(request.Operation)); err != nil {
+		if _, err := profiles.Parse(string(request.Operation)); err != nil {
 			return failure(FailureConfiguration, "invalid_operation", "operation is not supported", err)
 		}
 	}
@@ -182,7 +183,7 @@ func (service *Service) convertImage(
 	inputPath string,
 	outputPath string,
 	outputIsDirectory bool,
-	operation corpus.Operation,
+	operation profiles.Operation,
 	info imageconv.Info,
 	result *Result,
 ) error {
@@ -241,7 +242,7 @@ func (service *Service) convertMedia(
 	ctx context.Context,
 	inputPath string,
 	outputPath string,
-	operation corpus.Operation,
+	operation profiles.Operation,
 	input media.Probe,
 	result *Result,
 ) error {
@@ -284,7 +285,7 @@ func detectedImage(info imageconv.Info) DetectedMedia {
 	properties := info.CorpusProperties()
 	stream := properties.Streams[0]
 	return DetectedMedia{
-		Kind:     corpus.MediaImage,
+		Kind:     profiles.MediaImage,
 		Format:   properties.Container,
 		MIMEType: info.MIMEType,
 		Width:    info.Width,
@@ -314,9 +315,9 @@ func detectedMedia(input media.Probe) (DetectedMedia, error) {
 			hasAudio = true
 		}
 	}
-	kind := corpus.MediaAudio
+	kind := profiles.MediaAudio
 	if hasVideo {
-		kind = corpus.MediaVideo
+		kind = profiles.MediaVideo
 	} else if !hasAudio {
 		return DetectedMedia{}, errors.New("no usable audio or video streams")
 	}
@@ -344,7 +345,7 @@ func detectedMedia(input media.Probe) (DetectedMedia, error) {
 			SampleRate: sampleRate,
 		})
 	}
-	if kind == corpus.MediaVideo {
+	if kind == profiles.MediaVideo {
 		for _, stream := range input.Streams {
 			if stream.CodecType == "video" && stream.Disposition.AttachedPic == 0 {
 				detected.Width, detected.Height = displayedDimensions(stream)
@@ -374,35 +375,16 @@ func displayedDimensions(stream media.Stream) (int, int) {
 	return stream.Width, stream.Height
 }
 
-func recommendedOperation(kind corpus.MediaKind) corpus.Operation {
-	switch kind {
-	case corpus.MediaImage:
-		return corpus.OperationCompatiblePhoto
-	case corpus.MediaVideo:
-		return corpus.OperationCompatibleVideo
-	default:
-		return corpus.OperationCompatibleAudio
+func resolveOutput(inputPath, target string, operation profiles.Operation) (string, bool, *Error) {
+	spec, ok := profiles.Lookup(operation)
+	if !ok {
+		return "", false, failure(FailureConfiguration, "invalid_operation", "operation is not supported", nil)
 	}
-}
-
-func operationAccepts(operation corpus.Operation, kind corpus.MediaKind) bool {
-	switch operation {
-	case corpus.OperationCompatiblePhoto, corpus.OperationSmallerPhoto, corpus.OperationLosslessImage:
-		return kind == corpus.MediaImage
-	case corpus.OperationCompatibleVideo, corpus.OperationSmallerVideo:
-		return kind == corpus.MediaVideo
-	case corpus.OperationExtractAudio:
-		return kind == corpus.MediaVideo || kind == corpus.MediaAudio
-	case corpus.OperationCompatibleAudio, corpus.OperationLosslessAudio:
-		return kind == corpus.MediaAudio
-	default:
-		return false
+	name, err := profiles.OutputName(inputPath, operation)
+	if err != nil {
+		return "", false, failure(FailureConfiguration, "invalid_operation", "operation is not supported", err)
 	}
-}
-
-func resolveOutput(inputPath, target string, operation corpus.Operation) (string, bool, *Error) {
-	name := outputName(inputPath, operation)
-	expectedExtension := filepath.Ext(name)
+	expectedExtension := spec.Output.Extension
 
 	info, err := os.Stat(target)
 	switch {
@@ -437,47 +419,6 @@ func resolveOutput(inputPath, target string, operation corpus.Operation) (string
 		return "", false, failure(FailureConfiguration, "invalid_output", "output directory could not be created", err)
 	}
 	return target, false, nil
-}
-
-func outputName(inputPath string, operation corpus.Operation) string {
-	if name, err := imageconv.OutputName(inputPath, operation); err == nil {
-		return name
-	}
-	stem := sanitizeStem(strings.TrimSuffix(filepath.Base(inputPath), filepath.Ext(inputPath)))
-	if stem == "" {
-		stem = "media"
-	}
-	switch operation {
-	case corpus.OperationCompatibleVideo:
-		return stem + "-compatible.mp4"
-	case corpus.OperationSmallerVideo:
-		return stem + "-smaller.mp4"
-	case corpus.OperationExtractAudio:
-		return stem + "-audio.m4a"
-	case corpus.OperationCompatibleAudio:
-		return stem + "-compatible.mp3"
-	case corpus.OperationLosslessAudio:
-		return stem + "-lossless.flac"
-	default:
-		return stem + "-converted"
-	}
-}
-
-func sanitizeStem(stem string) string {
-	var builder strings.Builder
-	dash := false
-	for _, value := range strings.ToLower(stem) {
-		if unicode.IsLetter(value) || unicode.IsDigit(value) {
-			builder.WriteRune(value)
-			dash = false
-			continue
-		}
-		if builder.Len() > 0 && !dash {
-			builder.WriteByte('-')
-			dash = true
-		}
-	}
-	return strings.Trim(builder.String(), "-")
 }
 
 func publishNoReplace(source, target string) error {

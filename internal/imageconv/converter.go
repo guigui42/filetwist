@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/probe"
+	"github.com/guigui42/filetwist/internal/profiles"
 	"github.com/guigui42/filetwist/internal/runner"
 )
 
@@ -110,9 +110,9 @@ func (converter *Converter) convertWithFS(
 		return conversion, err
 	}
 
-	outputName, err := OutputName(request.InputPath, request.Operation)
+	outputName, err := profiles.OutputName(request.InputPath, request.Operation)
 	if err != nil {
-		return conversion, err
+		return conversion, imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))
 	}
 	finalPath := filepath.Join(request.OutputDir, outputName)
 	if _, err := os.Stat(finalPath); err == nil {
@@ -134,7 +134,7 @@ func (converter *Converter) convertWithFS(
 		}
 	}()
 
-	if request.Operation == corpus.OperationSmallerPhoto && input.HasAlpha {
+	if request.Operation == profiles.OperationSmallerPhoto && input.HasAlpha {
 		transparent, results, err := converter.probeTransparency(ctx, vipsPath, request.InputPath, workDir, input)
 		conversion.Commands = append(conversion.Commands, results...)
 		if err != nil {

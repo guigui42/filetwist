@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/imageconv"
 	"github.com/guigui42/filetwist/internal/media"
 	"github.com/guigui42/filetwist/internal/probe"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // LocalConfig configures the subprocess-backed local conversion engines.
@@ -256,9 +256,9 @@ func (engine *localMediaEngine) executable(name string) (string, error) {
 	}
 }
 
-func isVideoOperation(operation corpus.Operation) bool {
-	return operation == corpus.OperationCompatibleVideo ||
-		operation == corpus.OperationSmallerVideo
+func isVideoOperation(operation profiles.Operation) bool {
+	return operation == profiles.OperationCompatibleVideo ||
+		operation == profiles.OperationSmallerVideo
 }
 
 func mediaWarningsFromProbe(input media.Probe) []media.Warning {

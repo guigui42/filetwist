@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/imageconv"
 	"github.com/guigui42/filetwist/internal/media"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // Inspection is the privacy-safe probe result used to offer operations to a
@@ -16,79 +16,67 @@ type Inspection struct {
 	// Media is the detected content summary.
 	Media DetectedMedia `json:"media"`
 	// Recommended is the single eligible default when inspection succeeds.
-	Recommended corpus.Operation `json:"recommended"`
+	Recommended profiles.Operation `json:"recommended"`
 	// Compatible lists operations accepted by the content planning rules,
 	// including Recommended, in stable presentation order. Runtime converter
 	// availability and functional capability checks remain conversion-time checks.
-	Compatible []corpus.Operation `json:"compatible"`
+	Compatible []profiles.Operation `json:"compatible"`
 }
 
-// AllOperations returns the eight named operations in stable presentation
-// order.
-func AllOperations() []corpus.Operation {
-	return []corpus.Operation{
-		corpus.OperationCompatiblePhoto,
-		corpus.OperationSmallerPhoto,
-		corpus.OperationLosslessImage,
-		corpus.OperationCompatibleVideo,
-		corpus.OperationSmallerVideo,
-		corpus.OperationExtractAudio,
-		corpus.OperationCompatibleAudio,
-		corpus.OperationLosslessAudio,
+// AllOperations returns the named operations in stable presentation order.
+// Deprecated: use profiles.All.
+func AllOperations() []profiles.Operation {
+	specs := profiles.All()
+	operations := make([]profiles.Operation, 0, len(specs))
+	for _, spec := range specs {
+		operations = append(operations, spec.Operation)
 	}
+	return operations
 }
 
 // RecommendOperation returns the single default operation for a media kind.
-func RecommendOperation(kind corpus.MediaKind) corpus.Operation {
-	return recommendedOperation(kind)
+// Deprecated: use profiles.Recommended.
+func RecommendOperation(kind profiles.MediaKind) profiles.Operation {
+	operation, ok := profiles.Recommended(kind)
+	if !ok {
+		return profiles.OperationCompatibleAudio
+	}
+	return operation
 }
 
 // OperationAccepts reports whether operation accepts kind in principle.
-// Use Service.Inspect to account for the actual streams and image properties.
-func OperationAccepts(operation corpus.Operation, kind corpus.MediaKind) bool {
-	return operationAccepts(operation, kind)
+// Deprecated: use profiles.Lookup and Spec.Accepts.
+func OperationAccepts(operation profiles.Operation, kind profiles.MediaKind) bool {
+	spec, ok := profiles.Lookup(operation)
+	return ok && spec.Accepts(kind)
 }
 
-// CompatibleOperations returns every named operation that accepts kind in
-// principle, in stable presentation order. It does not inspect content.
-func CompatibleOperations(kind corpus.MediaKind) []corpus.Operation {
-	compatible := make([]corpus.Operation, 0, len(AllOperations()))
-	for _, operation := range AllOperations() {
-		if operationAccepts(operation, kind) {
-			compatible = append(compatible, operation)
-		}
+// CompatibleOperations returns operations that accept kind in stable order.
+// Deprecated: use profiles.Compatible.
+func CompatibleOperations(kind profiles.MediaKind) []profiles.Operation {
+	specs := profiles.Compatible(kind)
+	operations := make([]profiles.Operation, 0, len(specs))
+	for _, spec := range specs {
+		operations = append(operations, spec.Operation)
 	}
-	return compatible
+	return operations
 }
 
-// OperationLabel returns a short human-readable label for a named operation.
-func OperationLabel(operation corpus.Operation) string {
-	switch operation {
-	case corpus.OperationCompatiblePhoto:
-		return "Compatible photo"
-	case corpus.OperationSmallerPhoto:
-		return "Smaller photo"
-	case corpus.OperationLosslessImage:
-		return "Lossless image"
-	case corpus.OperationCompatibleVideo:
-		return "Compatible video"
-	case corpus.OperationSmallerVideo:
-		return "Smaller video"
-	case corpus.OperationExtractAudio:
-		return "Extract audio"
-	case corpus.OperationCompatibleAudio:
-		return "Compatible audio"
-	case corpus.OperationLosslessAudio:
-		return "Lossless audio"
-	default:
+// OperationLabel returns the stable label for an operation.
+// Deprecated: use profiles.Lookup.
+func OperationLabel(operation profiles.Operation) string {
+	spec, ok := profiles.Lookup(operation)
+	if !ok {
 		return string(operation)
 	}
+	return spec.Label
 }
 
-// OutputName returns the deterministic output file name the service publishes
-// for an input path and named operation.
-func OutputName(inputPath string, operation corpus.Operation) string {
-	return outputName(inputPath, operation)
+// OutputName returns the deterministic output name for a registered operation.
+// Deprecated: use profiles.OutputName.
+func OutputName(inputPath string, operation profiles.Operation) string {
+	name, _ := profiles.OutputName(inputPath, operation)
+	return name
 }
 
 // Inspect probes one local file and reports the detected media together with
@@ -119,10 +107,11 @@ func (service *Service) Inspect(ctx context.Context, inputPath string) (Inspecti
 }
 
 func inspectDetected(detection DetectedMedia, imageInfo imageconv.Info, mediaProbe media.Probe) (Inspection, *Error) {
-	inspection := Inspection{Media: detection, Compatible: []corpus.Operation{}}
-	preferred := recommendedOperation(detection.Kind)
+	inspection := Inspection{Media: detection, Compatible: []profiles.Operation{}}
+	preferred, _ := profiles.Recommended(detection.Kind)
 	var preferredErr *Error
-	for _, operation := range CompatibleOperations(detection.Kind) {
+	for _, spec := range profiles.Compatible(detection.Kind) {
+		operation := spec.Operation
 		if err := validateOperation(operation, detection.Kind, imageInfo, mediaProbe); err != nil {
 			if err.Kind != FailureRejection {
 				return inspection, err
@@ -147,8 +136,14 @@ func inspectDetected(detection DetectedMedia, imageInfo imageconv.Info, mediaPro
 	return inspection, nil
 }
 
-func validateOperation(operation corpus.Operation, kind corpus.MediaKind, imageInfo imageconv.Info, mediaProbe media.Probe) *Error {
-	if !operationAccepts(operation, kind) {
+func validateOperation(
+	operation profiles.Operation,
+	kind profiles.MediaKind,
+	imageInfo imageconv.Info,
+	mediaProbe media.Probe,
+) *Error {
+	spec, ok := profiles.Lookup(operation)
+	if !ok || !spec.Accepts(kind) {
 		return failure(
 			FailureRejection,
 			"incompatible_operation",
@@ -158,7 +153,15 @@ func validateOperation(operation corpus.Operation, kind corpus.MediaKind, imageI
 	}
 	// Pure plans use placeholder paths and CPU execution to check content without
 	// creating files or probing runtime capabilities (including VA-API).
-	if kind == corpus.MediaImage {
+	if kind == profiles.MediaImage {
+		if spec.Engine != profiles.EngineImage {
+			return failure(
+				FailureConfiguration,
+				"profile_engine_mismatch",
+				"operation is not supported by its configured conversion engine",
+				nil,
+			)
+		}
 		if err := imageconv.ValidateInput(imageInfo, imageconv.Capabilities{
 			HEIFDecode: true,
 			AVIFDecode: true,
@@ -173,6 +176,14 @@ func validateOperation(operation corpus.Operation, kind corpus.MediaKind, imageI
 			return classifyImageError(err)
 		}
 		return nil
+	}
+	if spec.Engine != profiles.EngineMedia {
+		return failure(
+			FailureConfiguration,
+			"profile_engine_mismatch",
+			"operation is not supported by its configured conversion engine",
+			nil,
+		)
 	}
 	_, err := media.BuildPlan(media.PlanRequest{
 		InputPath: "input", OutputPath: "output",

@@ -12,6 +12,7 @@ import (
 	"github.com/guigui42/filetwist/internal/imageconv"
 	"github.com/guigui42/filetwist/internal/media"
 	"github.com/guigui42/filetwist/internal/probe"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 type fakeImageEngine struct {
@@ -33,7 +34,7 @@ func (engine *fakeImageEngine) Convert(
 	if engine.convertErr != nil {
 		return imageconv.Result{}, engine.convertErr
 	}
-	name, err := imageconv.OutputName(request.InputPath, request.Operation)
+	name, err := profiles.OutputName(request.InputPath, request.Operation)
 	if err != nil {
 		return imageconv.Result{}, err
 	}

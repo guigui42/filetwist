@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guigui42/filetwist/internal/corpus"
+	"github.com/guigui42/filetwist/internal/profiles"
 	"github.com/guigui42/filetwist/internal/runner"
 )
 
@@ -56,7 +56,7 @@ const (
 
 // PlanRequest contains the information needed to build one FFmpeg argv plan.
 type PlanRequest struct {
-	Operation         corpus.Operation
+	Operation         profiles.Operation
 	InputPath         string
 	OutputPath        string
 	Input             Probe
@@ -91,7 +91,7 @@ type ExpectedProfile struct {
 
 // Plan is a direct FFmpeg argv invocation and its output contract.
 type Plan struct {
-	Operation       corpus.Operation
+	Operation       profiles.Operation
 	InputPath       string
 	OutputPath      string
 	Args            []string
@@ -172,8 +172,16 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		ExecutionPath:         ExecutionPathCPU,
 	}
 
+	spec, registered := profiles.Lookup(request.Operation)
+	if !registered || spec.Engine != profiles.EngineMedia {
+		return Plan{}, &PlanError{
+			Code:    ErrorInvalidRequest,
+			Message: fmt.Sprintf("operation %q is not an audio or video CPU profile", request.Operation),
+		}
+	}
+
 	switch request.Operation {
-	case corpus.OperationCompatibleVideo:
+	case profiles.OperationCompatibleVideo:
 		if err := requireVideo(selection); err != nil {
 			return Plan{}, err
 		}
@@ -191,7 +199,7 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		if err := plan.applyVideoAcceleration(acceleration, request.VAAPI, selection, false); err != nil {
 			return Plan{}, err
 		}
-	case corpus.OperationSmallerVideo:
+	case profiles.OperationSmallerVideo:
 		if err := requireVideo(selection); err != nil {
 			return Plan{}, err
 		}
@@ -209,19 +217,19 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		if err := plan.applyVideoAcceleration(acceleration, request.VAAPI, selection, true); err != nil {
 			return Plan{}, err
 		}
-	case corpus.OperationExtractAudio:
+	case profiles.OperationExtractAudio:
 		if err := requireAudio(selection); err != nil {
 			return Plan{}, err
 		}
 		plan.Expected.Duration, plan.Expected.DurationKnown = audioDuration(request.Input, selection)
 		plan.buildAACAudio(selection)
-	case corpus.OperationCompatibleAudio:
+	case profiles.OperationCompatibleAudio:
 		if err := requireAudio(selection); err != nil {
 			return Plan{}, err
 		}
 		plan.Expected.Duration, plan.Expected.DurationKnown = audioDuration(request.Input, selection)
 		plan.buildMP3Audio(selection)
-	case corpus.OperationLosslessAudio:
+	case profiles.OperationLosslessAudio:
 		if err := requireAudio(selection); err != nil {
 			return Plan{}, err
 		}
@@ -240,6 +248,7 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		}
 	}
 
+	plan.Expected.Container = spec.Output.Container
 	return plan, nil
 }
 
@@ -419,7 +428,6 @@ func (plan *Plan) buildVideo(selection Selection, smaller bool) {
 
 	plan.Args = args
 	plan.Expected = ExpectedProfile{
-		Container:         "mp4",
 		VideoCodec:        "h264",
 		AudioCodec:        audioCodec,
 		PixelFormat:       "yuv420p",
@@ -488,7 +496,6 @@ func (plan *Plan) buildAACAudio(selection Selection) {
 		plan.OutputPath,
 	)
 	plan.Expected = ExpectedProfile{
-		Container:         "mp4",
 		AudioCodec:        "aac",
 		AudioPresence:     AudioRequired,
 		Channels:          2,
@@ -518,7 +525,6 @@ func (plan *Plan) buildMP3Audio(selection Selection) {
 		plan.OutputPath,
 	)
 	plan.Expected = ExpectedProfile{
-		Container:         "mp3",
 		AudioCodec:        "mp3",
 		AudioPresence:     AudioRequired,
 		Channels:          2,
@@ -546,7 +552,6 @@ func (plan *Plan) buildFLACAudio(selection Selection) {
 	)
 	sampleRate, _ := strconv.Atoi(selection.Audio.SampleRate)
 	plan.Expected = ExpectedProfile{
-		Container:         "flac",
 		AudioCodec:        "flac",
 		AudioPresence:     AudioRequired,
 		Channels:          selection.Audio.Channels,

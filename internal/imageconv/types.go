@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/guigui42/filetwist/internal/corpus"
+	"github.com/guigui42/filetwist/internal/profiles"
 	"github.com/guigui42/filetwist/internal/runner"
 )
 
@@ -210,7 +211,7 @@ type PlanRequest struct {
 	InputPath         string
 	OutputDir         string
 	WorkDir           string
-	Operation         corpus.Operation
+	Operation         profiles.Operation
 	Input             Info
 	CaptureDatePolicy CaptureDatePolicy
 	VipsPath          string
@@ -220,7 +221,7 @@ type PlanRequest struct {
 type Request struct {
 	InputPath string
 	OutputDir string
-	Operation corpus.Operation
+	Operation profiles.Operation
 }
 
 // Result contains the declared artifact, probes, and bounded command results.

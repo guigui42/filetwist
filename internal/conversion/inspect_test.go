@@ -12,6 +12,7 @@ import (
 	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/imageconv"
 	"github.com/guigui42/filetwist/internal/media"
+	"github.com/guigui42/filetwist/internal/profiles"
 )
 
 // inspectImageEngine reports one still image and never converts.
@@ -57,61 +58,6 @@ func writeTemporaryFile(t *testing.T) string {
 	return path
 }
 
-func TestAllOperationsListsTheEightNamedOperations(t *testing.T) {
-	operations := conversion.AllOperations()
-	if len(operations) != 8 {
-		t.Fatalf("len = %d; want 8", len(operations))
-	}
-	seen := make(map[corpus.Operation]bool)
-	for _, operation := range operations {
-		if seen[operation] {
-			t.Fatalf("duplicate operation %q", operation)
-		}
-		seen[operation] = true
-		if _, err := conversion.ParseOperation(string(operation)); err != nil {
-			t.Fatalf("ParseOperation(%q): %v", operation, err)
-		}
-		if conversion.OperationLabel(operation) == "" {
-			t.Fatalf("operation %q has no label", operation)
-		}
-	}
-}
-
-func TestCompatibleOperationsPerMediaKind(t *testing.T) {
-	tests := map[corpus.MediaKind][]corpus.Operation{
-		corpus.MediaImage: {
-			corpus.OperationCompatiblePhoto,
-			corpus.OperationSmallerPhoto,
-			corpus.OperationLosslessImage,
-		},
-		corpus.MediaVideo: {
-			corpus.OperationCompatibleVideo,
-			corpus.OperationSmallerVideo,
-			corpus.OperationExtractAudio,
-		},
-		corpus.MediaAudio: {
-			corpus.OperationExtractAudio,
-			corpus.OperationCompatibleAudio,
-			corpus.OperationLosslessAudio,
-		},
-	}
-	for kind, want := range tests {
-		got := conversion.CompatibleOperations(kind)
-		if len(got) != len(want) {
-			t.Fatalf("%s compatible = %v; want %v", kind, got, want)
-		}
-		for index := range want {
-			if got[index] != want[index] {
-				t.Fatalf("%s compatible = %v; want %v", kind, got, want)
-			}
-		}
-		recommended := conversion.RecommendOperation(kind)
-		if !conversion.OperationAccepts(recommended, kind) {
-			t.Fatalf("recommended %q is not compatible with %s", recommended, kind)
-		}
-	}
-}
-
 func TestInspectRecommendsAndListsAlternativesForImages(t *testing.T) {
 	service, err := conversion.New(
 		&inspectImageEngine{info: imageconv.Info{
@@ -144,7 +90,8 @@ func TestInspectRecommendsAndListsAlternativesForImages(t *testing.T) {
 		t.Fatalf("recommended = %q", inspection.Recommended)
 	}
 	for _, operation := range inspection.Compatible {
-		if !conversion.OperationAccepts(operation, corpus.MediaImage) {
+		spec, ok := profiles.Lookup(operation)
+		if !ok || !spec.Accepts(profiles.MediaImage) {
 			t.Fatalf("offered incompatible operation %q", operation)
 		}
 	}
@@ -241,18 +188,18 @@ func TestInspectFiltersOperationsUsingMediaDetails(t *testing.T) {
 		code        media.ErrorCode
 	}
 	tests := []testCase{
-		{"video with audio", []media.Stream{video, audio}, conversion.CompatibleOperations(corpus.MediaVideo), corpus.OperationCompatibleVideo, ""},
+		{"video with audio", []media.Stream{video, audio}, compatibleOperations(profiles.MediaVideo), corpus.OperationCompatibleVideo, ""},
 		{"silent video", []media.Stream{video}, []corpus.Operation{corpus.OperationCompatibleVideo, corpus.OperationSmallerVideo}, corpus.OperationCompatibleVideo, ""},
 		{"video unsupported audio", []media.Stream{video, unsupported}, []corpus.Operation{corpus.OperationCompatibleVideo, corpus.OperationSmallerVideo}, corpus.OperationCompatibleVideo, ""},
-		{"video skips unsupported audio", []media.Stream{video, unsupported, audio}, conversion.CompatibleOperations(corpus.MediaVideo), corpus.OperationCompatibleVideo, ""},
-		{"supported HDR", []media.Stream{supportedHDR, audio}, conversion.CompatibleOperations(corpus.MediaVideo), corpus.OperationCompatibleVideo, ""},
+		{"video skips unsupported audio", []media.Stream{video, unsupported, audio}, compatibleOperations(profiles.MediaVideo), corpus.OperationCompatibleVideo, ""},
+		{"supported HDR", []media.Stream{supportedHDR, audio}, compatibleOperations(profiles.MediaVideo), corpus.OperationCompatibleVideo, ""},
 		{"unsupported HDR with audio", []media.Stream{hdr, audio}, []corpus.Operation{corpus.OperationExtractAudio}, corpus.OperationExtractAudio, ""},
 		{"unsupported silent HDR", []media.Stream{hdr}, nil, "", media.ErrorUnsupportedHDR},
 		{"unusable video with audio", []media.Stream{unusableVideo, audio}, []corpus.Operation{corpus.OperationExtractAudio}, corpus.OperationExtractAudio, ""},
 		{"unusable silent video", []media.Stream{unusableVideo}, nil, "", media.ErrorNoUsableVideo},
-		{"audio", []media.Stream{audio}, conversion.CompatibleOperations(corpus.MediaAudio), corpus.OperationCompatibleAudio, ""},
+		{"audio", []media.Stream{audio}, compatibleOperations(profiles.MediaAudio), corpus.OperationCompatibleAudio, ""},
 		{"first audio is float", []media.Stream{floating, audio}, []corpus.Operation{corpus.OperationExtractAudio, corpus.OperationCompatibleAudio}, corpus.OperationCompatibleAudio, ""},
-		{"later float audio is ignored", []media.Stream{audio, floating}, conversion.CompatibleOperations(corpus.MediaAudio), corpus.OperationCompatibleAudio, ""},
+		{"later float audio is ignored", []media.Stream{audio, floating}, compatibleOperations(profiles.MediaAudio), corpus.OperationCompatibleAudio, ""},
 		{"unsupported audio", []media.Stream{unsupported}, nil, "", media.ErrorNoSupportedAudio},
 	}
 	for _, precision := range []struct {
@@ -327,9 +274,9 @@ func TestInspectFiltersOperationsUsingImageDetails(t *testing.T) {
 		want   []corpus.Operation
 		code   string
 	}{
-		{"normal image", func(*imageconv.Info) {}, conversion.CompatibleOperations(corpus.MediaImage), ""},
+		{"normal image", func(*imageconv.Info) {}, compatibleOperations(profiles.MediaImage), ""},
 		{"too wide for WebP", func(info *imageconv.Info) { info.Width = 16384; info.Height = 2 }, []corpus.Operation{corpus.OperationCompatiblePhoto, corpus.OperationLosslessImage}, ""},
-		{"16-bit RGB", func(info *imageconv.Info) { info.BandFormat = "ushort"; info.Interpretation = "rgb16" }, conversion.CompatibleOperations(corpus.MediaImage), ""},
+		{"16-bit RGB", func(info *imageconv.Info) { info.BandFormat = "ushort"; info.Interpretation = "rgb16" }, compatibleOperations(profiles.MediaImage), ""},
 		{"16-bit alpha requiring color conversion", func(info *imageconv.Info) {
 			info.BandFormat, info.Interpretation = "ushort", "grey16"
 			info.Bands, info.HasAlpha, info.Metadata.ICC = 2, true, true
@@ -338,8 +285,8 @@ func TestInspectFiltersOperationsUsingImageDetails(t *testing.T) {
 		{"HDR", func(info *imageconv.Info) { info.HDR = true }, nil, imageconv.CodeHDRUnsupported},
 		{"oversized", func(info *imageconv.Info) { info.Width = 32769 }, nil, imageconv.CodeDimensionsExceeded},
 		{"unsupported precision", func(info *imageconv.Info) { info.BandFormat = "float" }, nil, imageconv.CodeColorUnsupported},
-		{"HEIF eligibility defers functional availability", func(info *imageconv.Info) { info.Format = imageconv.FormatHEIF }, conversion.CompatibleOperations(corpus.MediaImage), ""},
-		{"AVIF eligibility defers functional availability", func(info *imageconv.Info) { info.Format = imageconv.FormatAVIF }, conversion.CompatibleOperations(corpus.MediaImage), ""},
+		{"HEIF eligibility defers functional availability", func(info *imageconv.Info) { info.Format = imageconv.FormatHEIF }, compatibleOperations(profiles.MediaImage), ""},
+		{"AVIF eligibility defers functional availability", func(info *imageconv.Info) { info.Format = imageconv.FormatAVIF }, compatibleOperations(profiles.MediaImage), ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -408,15 +355,11 @@ func TestInspectRejectsMissingInput(t *testing.T) {
 	}
 }
 
-func TestOutputNameIsDeterministic(t *testing.T) {
-	tests := map[corpus.Operation]string{
-		corpus.OperationCompatibleVideo: "holiday-compatible.mp4",
-		corpus.OperationSmallerVideo:    "holiday-smaller.mp4",
-		corpus.OperationExtractAudio:    "holiday-audio.m4a",
+func compatibleOperations(kind profiles.MediaKind) []profiles.Operation {
+	specs := profiles.Compatible(kind)
+	operations := make([]profiles.Operation, 0, len(specs))
+	for _, spec := range specs {
+		operations = append(operations, spec.Operation)
 	}
-	for operation, want := range tests {
-		if got := conversion.OutputName("/tmp/Holiday.MOV", operation); got != want {
-			t.Errorf("OutputName(%q) = %q; want %q", operation, got, want)
-		}
-	}
+	return operations
 }

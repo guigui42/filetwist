@@ -12,6 +12,7 @@ import (
 	"github.com/guigui42/filetwist/internal/corpus"
 	"github.com/guigui42/filetwist/internal/imageconv"
 	"github.com/guigui42/filetwist/internal/probe"
+	"github.com/guigui42/filetwist/internal/profiles"
 	"github.com/guigui42/filetwist/internal/runner"
 )
 
@@ -551,46 +552,6 @@ func TestInfoCorpusProperties(t *testing.T) {
 	}
 }
 
-func TestOutputName(t *testing.T) {
-	tests := []struct {
-		name      string
-		inputPath string
-		operation corpus.Operation
-		want      string
-	}{
-		{
-			name:      "compatible JPEG",
-			inputPath: "/uploads/My Holiday.HEIC",
-			operation: corpus.OperationCompatiblePhoto,
-			want:      "my-holiday-compatible.jpg",
-		},
-		{
-			name:      "smaller WebP",
-			inputPath: "photo.final.png",
-			operation: corpus.OperationSmallerPhoto,
-			want:      "photo-final-smaller.webp",
-		},
-		{
-			name:      "lossless PNG",
-			inputPath: "...",
-			operation: corpus.OperationLosslessImage,
-			want:      "image-lossless.png",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := imageconv.OutputName(tt.inputPath, tt.operation)
-			if err != nil {
-				t.Fatalf("OutputName() error = %v", err)
-			}
-			if got != tt.want {
-				t.Fatalf("OutputName() = %q; want %q", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestBuildPlan(t *testing.T) {
 	baseInput := imageconv.Info{
 		Format:          imageconv.FormatPNG,
@@ -612,6 +573,7 @@ func TestBuildPlan(t *testing.T) {
 			CaptureDate: true,
 		},
 	}
+
 	tests := []struct {
 		name        string
 		operation   corpus.Operation
@@ -710,6 +672,56 @@ func TestBuildPlan(t *testing.T) {
 				if !reflect.DeepEqual(command.Args, tt.wantArgs[index]) {
 					t.Errorf("command[%d].Args = %#v; want %#v", index, command.Args, tt.wantArgs[index])
 				}
+			}
+		})
+	}
+}
+
+func TestRegistryImageProfilesBuildCompletePlans(t *testing.T) {
+	input := imageconv.Info{
+		Format:         imageconv.FormatPNG,
+		MIMEType:       "image/png",
+		Width:          1200,
+		Height:         800,
+		Bands:          4,
+		BandFormat:     "uchar",
+		Interpretation: "srgb",
+		Orientation:    1,
+		HasAlpha:       true,
+		Pages:          1,
+	}
+
+	for _, spec := range profiles.All() {
+		if spec.Engine != profiles.EngineImage {
+			continue
+		}
+		t.Run(string(spec.Operation), func(t *testing.T) {
+			plan, err := imageconv.BuildPlan(imageconv.PlanRequest{
+				InputPath:         "/input/photo.png",
+				OutputDir:         "/out",
+				WorkDir:           "/work",
+				Operation:         spec.Operation,
+				Input:             input,
+				CaptureDatePolicy: imageconv.CaptureDateStrip,
+				VipsPath:          "/usr/bin/vips",
+			})
+			if err != nil {
+				t.Fatalf("BuildPlan() error = %v", err)
+			}
+			if len(plan.Commands) == 0 || plan.TemporaryOutput == "" {
+				t.Fatalf("plan has no executable output: %+v", plan)
+			}
+			if plan.Output.Path == "" ||
+				plan.Output.Extension != spec.Output.Extension ||
+				plan.Output.MIMEType != spec.Output.MIMEType {
+				t.Errorf("output = %+v; registry = %+v", plan.Output, spec.Output)
+			}
+			if plan.Expect.Format == "" ||
+				plan.Expect.MIMEType == "" ||
+				plan.Expect.Width <= 0 ||
+				plan.Expect.Height <= 0 ||
+				plan.Expect.Orientation != 1 {
+				t.Errorf("expectation is incomplete: %+v", plan.Expect)
 			}
 		})
 	}
