@@ -1301,10 +1301,15 @@ func TestConvertRejectsMediaProfileBeforeOutputCheck(t *testing.T) {
 		InputPath: input,
 		OutputDir: outputDir,
 		Operation: profiles.OperationCompatibleVideo,
+		Input: imageconv.Info{
+			Format: imageconv.FormatPNG, MIMEType: "image/png",
+			Width: 3, Height: 2, Bands: 3, BandFormat: "uchar",
+			Interpretation: "srgb", Orientation: 1, Pages: 1,
+		},
 	})
 	assertErrorCode(t, err, imageconv.CodeInvalidRequest)
-	if len(commands) != 1 {
-		t.Errorf("commands = %d; want only the input probe", len(commands))
+	if len(commands) != 0 {
+		t.Errorf("commands = %d; want profile rejection before subprocesses", len(commands))
 	}
 }
 
