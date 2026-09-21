@@ -39,6 +39,7 @@ these suffixes:
 | Operation | Suffix |
 | --- | --- |
 | `compatible_photo` | `-compatible.jpg` |
+| `email_photo` | `-email.jpg` |
 | `smaller_photo` | `-smaller.webp` |
 | `lossless_image` | `-lossless.png` |
 | `compatible_video` | `-compatible.mp4` |

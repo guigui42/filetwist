@@ -71,7 +71,19 @@ func TestUploadRendersAndEnforcesDetailedEligibility(t *testing.T) {
 		{"high-precision audio", []media.Stream{highPrecision}, imageconv.Info{}, []corpus.Operation{corpus.OperationExtractAudio, corpus.OperationCompatibleAudio}, corpus.OperationCompatibleAudio, corpus.OperationLosslessAudio, ""},
 		{"normal audio", []media.Stream{audio}, imageconv.Info{}, compatibleOperations(corpus.MediaAudio), corpus.OperationCompatibleAudio, corpus.OperationCompatibleVideo, ""},
 		{"unsupported HDR defaults to audio", []media.Stream{hdr, audio}, imageconv.Info{}, []corpus.Operation{corpus.OperationExtractAudio}, corpus.OperationExtractAudio, corpus.OperationCompatibleVideo, ""},
-		{"wide image", nil, wide, []corpus.Operation{corpus.OperationCompatiblePhoto, corpus.OperationLosslessImage}, corpus.OperationCompatiblePhoto, corpus.OperationSmallerPhoto, ""},
+		{
+			"wide image",
+			nil,
+			wide,
+			[]corpus.Operation{
+				corpus.OperationCompatiblePhoto,
+				corpus.OperationEmailPhoto,
+				corpus.OperationLosslessImage,
+			},
+			corpus.OperationCompatiblePhoto,
+			corpus.OperationSmallerPhoto,
+			"",
+		},
 		{"unsupported audio", []media.Stream{unsupported}, imageconv.Info{}, nil, "", corpus.OperationCompatibleAudio, string(media.ErrorNoSupportedAudio)},
 		{"unsupported image", nil, animated, nil, "", corpus.OperationCompatiblePhoto, imageconv.CodeAnimatedUnsupported},
 	}

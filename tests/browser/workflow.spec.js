@@ -56,6 +56,8 @@ test("upload, choose a profile, convert, download, and delete", async ({ page, j
   const id = await upload(page, jobs);
   const outputFormat = page.locator(".work-order").first().locator(".route-output .route-value");
   await expect(outputFormat).toHaveText("JPEG");
+  await page.getByLabel("Operation", { exact: true }).selectOption("email_photo");
+  await expect(outputFormat).toHaveText("JPEG");
   await page.getByLabel("Operation", { exact: true }).selectOption("lossless_image");
   await expect(outputFormat).toHaveText("PNG");
   await expect(page.locator(".job-path li")).toHaveText([

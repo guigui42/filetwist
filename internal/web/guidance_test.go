@@ -13,6 +13,7 @@ func TestEveryProfileHasWebGuidance(t *testing.T) {
 		format string
 	}{
 		profiles.OperationCompatiblePhoto: {"Compatible photo", "JPEG"},
+		profiles.OperationEmailPhoto:      {"Email photo", "JPEG"},
 		profiles.OperationSmallerPhoto:    {"Smaller photo", "WebP"},
 		profiles.OperationLosslessImage:   {"Lossless image", "PNG"},
 		profiles.OperationCompatibleVideo: {"Compatible video", "MP4"},

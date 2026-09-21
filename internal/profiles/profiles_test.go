@@ -14,6 +14,7 @@ func TestRegistryContract(t *testing.T) {
 
 	want := []profiles.Operation{
 		profiles.OperationCompatiblePhoto,
+		profiles.OperationEmailPhoto,
 		profiles.OperationSmallerPhoto,
 		profiles.OperationLosslessImage,
 		profiles.OperationCompatibleVideo,
@@ -137,6 +138,7 @@ func TestCompatibleAndRecommended(t *testing.T) {
 			kind: profiles.MediaImage,
 			compatible: []profiles.Operation{
 				profiles.OperationCompatiblePhoto,
+				profiles.OperationEmailPhoto,
 				profiles.OperationSmallerPhoto,
 				profiles.OperationLosslessImage,
 			},
@@ -226,6 +228,7 @@ func TestOutputName(t *testing.T) {
 		want      string
 	}{
 		{"compatible photo", "/tmp/My Holiday.HEIC", profiles.OperationCompatiblePhoto, "my-holiday-compatible.jpg"},
+		{"email photo", "/tmp/My Holiday.HEIC", profiles.OperationEmailPhoto, "my-holiday-email.jpg"},
 		{"smaller photo", "/tmp/My Holiday.HEIC", profiles.OperationSmallerPhoto, "my-holiday-smaller.webp"},
 		{"lossless image", "/tmp/My Holiday.HEIC", profiles.OperationLosslessImage, "my-holiday-lossless.png"},
 		{"compatible video", "/tmp/Holiday.MOV", profiles.OperationCompatibleVideo, "holiday-compatible.mp4"},

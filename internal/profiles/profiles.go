@@ -13,6 +13,8 @@ type Operation string
 const (
 	// OperationCompatiblePhoto creates a broadly compatible photo.
 	OperationCompatiblePhoto Operation = "compatible_photo"
+	// OperationEmailPhoto creates a broadly compatible, email-sized photo.
+	OperationEmailPhoto Operation = "email_photo"
 	// OperationSmallerPhoto creates a smaller lossy photo.
 	OperationSmallerPhoto Operation = "smaller_photo"
 	// OperationLosslessImage creates a lossless image.
@@ -81,6 +83,20 @@ var registry = []Spec{
 		RecommendedFor: []MediaKind{MediaImage},
 		Output: OutputSpec{
 			Suffix:      "-compatible.jpg",
+			Extension:   ".jpg",
+			FormatLabel: "JPEG",
+			MIMEType:    "image/jpeg",
+			Container:   "jpeg",
+		},
+	},
+	{
+		Operation:      OperationEmailPhoto,
+		Label:          "Email photo",
+		Engine:         EngineImage,
+		AcceptedInputs: []MediaKind{MediaImage},
+		OutputKind:     MediaImage,
+		Output: OutputSpec{
+			Suffix:      "-email.jpg",
 			Extension:   ".jpg",
 			FormatLabel: "JPEG",
 			MIMEType:    "image/jpeg",

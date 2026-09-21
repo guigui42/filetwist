@@ -25,6 +25,7 @@ func TestBuildPlanICCPrecision(t *testing.T) {
 	operations := []corpus.Operation{
 		corpus.OperationLosslessImage,
 		corpus.OperationCompatiblePhoto,
+		corpus.OperationEmailPhoto,
 		corpus.OperationSmallerPhoto,
 	}
 	for _, input := range inputs {

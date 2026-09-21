@@ -77,6 +77,7 @@ func TestLibvipsPrecisionIntegration(t *testing.T) {
 	}{
 		{operation: corpus.OperationLosslessImage, saver: "pngsave", format: imageconv.FormatPNG},
 		{operation: corpus.OperationCompatiblePhoto, saver: "jpegsave", format: imageconv.FormatJPEG},
+		{operation: corpus.OperationEmailPhoto, saver: "jpegsave", format: imageconv.FormatJPEG},
 		{operation: corpus.OperationSmallerPhoto, saver: "webpsave", format: imageconv.FormatWebP},
 	}
 	for _, tt := range tests {
@@ -142,7 +143,9 @@ func TestLibvipsPrecisionIntegration(t *testing.T) {
 					if result.Observed.Metadata.ICC != tt.icc {
 						t.Errorf("output ICC profile = %t; want %t", result.Observed.Metadata.ICC, tt.icc)
 					}
-					wantAlpha := tt.alpha && operation.operation != corpus.OperationCompatiblePhoto
+					wantAlpha := tt.alpha &&
+						operation.operation != corpus.OperationCompatiblePhoto &&
+						operation.operation != corpus.OperationEmailPhoto
 					if result.Observed.HasAlpha != wantAlpha {
 						t.Errorf("output alpha = %t; want %t", result.Observed.HasAlpha, wantAlpha)
 					}

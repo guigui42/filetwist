@@ -275,12 +275,21 @@ func TestInspectFiltersOperationsUsingImageDetails(t *testing.T) {
 		code   string
 	}{
 		{"normal image", func(*imageconv.Info) {}, compatibleOperations(profiles.MediaImage), ""},
-		{"too wide for WebP", func(info *imageconv.Info) { info.Width = 16384; info.Height = 2 }, []corpus.Operation{corpus.OperationCompatiblePhoto, corpus.OperationLosslessImage}, ""},
+		{
+			"too wide for WebP",
+			func(info *imageconv.Info) { info.Width = 16384; info.Height = 2 },
+			[]corpus.Operation{
+				corpus.OperationCompatiblePhoto,
+				corpus.OperationEmailPhoto,
+				corpus.OperationLosslessImage,
+			},
+			"",
+		},
 		{"16-bit RGB", func(info *imageconv.Info) { info.BandFormat = "ushort"; info.Interpretation = "rgb16" }, compatibleOperations(profiles.MediaImage), ""},
 		{"16-bit alpha requiring color conversion", func(info *imageconv.Info) {
 			info.BandFormat, info.Interpretation = "ushort", "grey16"
 			info.Bands, info.HasAlpha, info.Metadata.ICC = 2, true, true
-		}, []corpus.Operation{corpus.OperationCompatiblePhoto}, ""},
+		}, []corpus.Operation{corpus.OperationCompatiblePhoto, corpus.OperationEmailPhoto}, ""},
 		{"animated", func(info *imageconv.Info) { info.Pages = 2 }, nil, imageconv.CodeAnimatedUnsupported},
 		{"HDR", func(info *imageconv.Info) { info.HDR = true }, nil, imageconv.CodeHDRUnsupported},
 		{"oversized", func(info *imageconv.Info) { info.Width = 32769 }, nil, imageconv.CodeDimensionsExceeded},

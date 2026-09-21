@@ -3,14 +3,19 @@ package imageconv
 import (
 	"errors"
 	"fmt"
+	"math"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/guigui42/filetwist/internal/profiles"
 	"github.com/guigui42/filetwist/internal/runner"
 )
 
-const maxWebPDimension = 16_383
+const (
+	maxEmailPhotoDimension = 1_920
+	maxWebPDimension       = 16_383
+)
 
 // ValidateContent checks image structure, color policy, and decoded dimensions.
 func ValidateContent(info Info, limits Limits) error {
@@ -78,6 +83,7 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 	if !ok || spec.Engine != profiles.EngineImage {
 		return Plan{}, imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))
 	}
+	jpegPhoto := isJPEGPhotoOperation(request.Operation)
 	name, err := profiles.OutputName(request.InputPath, request.Operation)
 	if err != nil {
 		return Plan{}, imageError(CodeInvalidRequest, "name output", errors.New("unsupported image operation"))
@@ -110,14 +116,14 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 	if normalizeColor && request.Input.HasAlpha {
 		// JPEG alpha must be flattened before color normalization when a later
 		// flatten could interpret the transformed samples incorrectly.
-		if request.Operation != profiles.OperationCompatiblePhoto && request.Input.BandFormat != "uchar" {
+		if !jpegPhoto && request.Input.BandFormat != "uchar" {
 			return Plan{}, imageError(
 				CodeAlphaUnsupported,
 				"build plan",
 				errors.New("preserving non-8-bit alpha through color conversion is not supported"),
 			)
 		}
-		if request.Operation == profiles.OperationCompatiblePhoto {
+		if jpegPhoto {
 			background, maxAlpha, err := preNormalizationFlatten(request.Input)
 			if err != nil {
 				return Plan{}, err
@@ -177,8 +183,44 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		outputMetadata.ICC = false
 	}
 
+	if jpegPhoto && request.Input.HasAlpha && !flattened {
+		opaque := filepath.Join(request.WorkDir, "pixels.v")
+		background := flattenBackground(request.Input, saveInput != oriented)
+		commands = append(commands, runner.Command{
+			Path: request.VipsPath,
+			Args: []string{
+				"flatten", saveInput, opaque,
+				"--background", background,
+			},
+		})
+		temporaryPaths = append(temporaryPaths, opaque)
+		saveInput = opaque
+	}
+
 	keep, preserveCaptureDate := metadataKeep(outputMetadata, request.CaptureDatePolicy)
 	width, height := orientedDimensions(request.Input.Width, request.Input.Height, request.Input.Orientation)
+	if request.Operation == profiles.OperationEmailPhoto {
+		resizedWidth, resizedHeight, scale := fitWithinLongestEdge(
+			width,
+			height,
+			maxEmailPhotoDimension,
+		)
+		if scale < 1 {
+			resized := filepath.Join(request.WorkDir, "resized.v")
+			commands = append(commands, runner.Command{
+				Path: request.VipsPath,
+				Args: []string{
+					"resize", saveInput, resized,
+					strconv.FormatFloat(scale, 'g', -1, 64),
+					"--kernel", "lanczos3",
+				},
+			})
+			temporaryPaths = append(temporaryPaths, resized)
+			saveInput = resized
+			width = resizedWidth
+			height = resizedHeight
+		}
+	}
 	expect := Expectation{
 		Width:       width,
 		Height:      height,
@@ -192,29 +234,20 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 
 	var temporaryOutput string
 	switch request.Operation {
-	case profiles.OperationCompatiblePhoto:
+	case profiles.OperationCompatiblePhoto, profiles.OperationEmailPhoto:
 		temporaryOutput = filepath.Join(request.WorkDir, "output.jpg")
 		expect.Format = FormatJPEG
 		expect.MIMEType = output.MIMEType
 		expect.HasAlpha = false
-		if request.Input.HasAlpha && !flattened {
-			opaque := filepath.Join(request.WorkDir, "pixels.v")
-			background := flattenBackground(request.Input, saveInput != oriented)
-			commands = append(commands, runner.Command{
-				Path: request.VipsPath,
-				Args: []string{
-					"flatten", saveInput, opaque,
-					"--background", background,
-				},
-			})
-			temporaryPaths = append(temporaryPaths, opaque)
-			saveInput = opaque
+		quality := "90"
+		if request.Operation == profiles.OperationEmailPhoto {
+			quality = "85"
 		}
 		commands = append(commands, runner.Command{
 			Path: request.VipsPath,
 			Args: []string{
 				"jpegsave", saveInput, temporaryOutput,
-				"--Q", "90",
+				"--Q", quality,
 				"--optimize-coding",
 				"--interlace",
 				"--keep", keep,
@@ -261,6 +294,26 @@ func BuildPlan(request PlanRequest) (Plan, error) {
 		Commands:        commands,
 		Expect:          expect,
 	}, nil
+}
+
+func isJPEGPhotoOperation(operation profiles.Operation) bool {
+	return operation == profiles.OperationCompatiblePhoto ||
+		operation == profiles.OperationEmailPhoto
+}
+
+func fitWithinLongestEdge(width, height, maximum int) (int, int, float64) {
+	longest := width
+	if height > longest {
+		longest = height
+	}
+	if longest <= maximum {
+		return width, height, 1
+	}
+
+	scale := float64(maximum) / float64(longest)
+	resizedWidth := max(1, int(math.Round(float64(width)*scale)))
+	resizedHeight := max(1, int(math.Round(float64(height)*scale)))
+	return resizedWidth, resizedHeight, scale
 }
 
 // ValidateOutput verifies the output content rather than trusting its filename.

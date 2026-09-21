@@ -81,6 +81,7 @@ Maintainer setup and publishing gates are in the [release guide](docs/releasing.
 | Operation | Output |
 | --- | --- |
 | `compatible_photo` | JPEG, orientation applied, transparency flattened onto white |
+| `email_photo` | JPEG fitted within a 1920-pixel longest edge, quality 85 |
 | `smaller_photo` | WebP, quality 80 |
 | `lossless_image` | PNG with supported transparency preserved |
 | `compatible_video` | H.264 MP4 with AAC when usable audio is present |
@@ -91,8 +92,9 @@ Maintainer setup and publishing gates are in the [release guide](docs/releasing.
 
 These are conversion profiles, not archival copies. They can re-encode, strip
 metadata, drop tracks, downmix audio, or tone-map supported HDR video to SDR.
-Smaller modes do not guarantee a smaller file. Animated/multipage images and
-HDR still-image tone mapping are unsupported. See
+Smaller modes and `email_photo` do not guarantee a smaller file. The email
+profile never upscales and flattens transparency onto white. Animated/multipage
+images and HDR still-image tone mapping are unsupported. See
 [behavior and limitations](docs/web.md) before converting important files.
 
 ## Documentation

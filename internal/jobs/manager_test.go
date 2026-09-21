@@ -180,8 +180,8 @@ func TestAcceptStreamsFilesIntoIsolatedJobDirectory(t *testing.T) {
 		if file.Recommended != corpus.OperationCompatiblePhoto {
 			t.Fatalf("recommended = %q", file.Recommended)
 		}
-		if len(file.Compatible) != 3 {
-			t.Fatalf("compatible = %v; want the three image operations", file.Compatible)
+		if len(file.Compatible) != 4 {
+			t.Fatalf("compatible = %v; want the four image operations", file.Compatible)
 		}
 	}
 

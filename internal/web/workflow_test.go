@@ -39,7 +39,21 @@ func TestWorkflowGuidance(t *testing.T) {
 				}
 			}
 			help := server.do(t, httptest.NewRequest(http.MethodGet, server.path("/help"), nil)).Body.String()
-			for _, want := range []string{"JPEG", "WebP", "PNG", "H.264", "M4A", "MP3", "FLAC", "not guaranteed", "not an original-file copy", "1 day", "Keep your originals"} {
+			for _, want := range []string{
+				"Email photo",
+				"1920-pixel",
+				"JPEG",
+				"WebP",
+				"PNG",
+				"H.264",
+				"M4A",
+				"MP3",
+				"FLAC",
+				"not guaranteed",
+				"not an original-file copy",
+				"1 day",
+				"Keep your originals",
+			} {
 				if !strings.Contains(help, want) {
 					t.Errorf("help missing %q", want)
 				}
