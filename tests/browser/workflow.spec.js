@@ -219,7 +219,8 @@ test("shared-workspace guidance and local help are available before uploading", 
   await expect(page).toHaveURL(/\/help#privacy$/);
   await expect(page.getByRole("heading", { name: "Shared workspace", exact: true })).toBeVisible();
   await expect(page.getByText("Keep your originals.", { exact: true })).toBeVisible();
-  await expect(page.locator(".profile-guide dt")).toHaveCount(8);
+  await expect(page.locator(".profile-guide dt")).toHaveCount(9);
+  await expect(page.locator("#profile-email_photo")).toContainText("Email photo");
 });
 
 test("batch presets respect eligibility and individual choices, including after removal", async ({ page, jobs }) => {
