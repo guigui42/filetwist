@@ -315,6 +315,7 @@ func TestUploadReturnsJobFragmentWithRecommendation(t *testing.T) {
 	for _, want := range []string{
 		`id="job"`,
 		`compatible_photo`,
+		`email_photo`,
 		`Recommended: Compatible photo`,
 		`hx-post=`,
 		`/start`,

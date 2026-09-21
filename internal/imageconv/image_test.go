@@ -656,6 +656,29 @@ func TestBuildPlan(t *testing.T) {
 			},
 		},
 		{
+			name:      "email photo flattens alpha without upscaling",
+			operation: corpus.OperationEmailPhoto,
+			input:     baseInput,
+			wantOutput: imageconv.Output{
+				Path:      filepath.Join("/out", "my-photo-email.jpg"),
+				Extension: ".jpg",
+				MIMEType:  "image/jpeg",
+			},
+			wantArgs: [][]string{
+				{"autorot", "/input/My Photo.weird", filepath.Join("/work", "oriented.v")},
+				{"flatten", filepath.Join("/work", "oriented.v"), filepath.Join("/work", "pixels.v"), "--background", "255"},
+				{
+					"jpegsave",
+					filepath.Join("/work", "pixels.v"),
+					filepath.Join("/work", "output.jpg"),
+					"--Q", "85",
+					"--optimize-coding",
+					"--interlace",
+					"--keep", "icc",
+				},
+			},
+		},
+		{
 			name:      "smaller photo preserves alpha",
 			operation: corpus.OperationSmallerPhoto,
 			input:     withoutGPS(baseInput),
@@ -728,6 +751,137 @@ func TestBuildPlan(t *testing.T) {
 				if !reflect.DeepEqual(command.Args, tt.wantArgs[index]) {
 					t.Errorf("command[%d].Args = %#v; want %#v", index, command.Args, tt.wantArgs[index])
 				}
+			}
+		})
+	}
+}
+
+func TestBuildPlanEmailPhotoDimensions(t *testing.T) {
+	tests := []struct {
+		name        string
+		width       int
+		height      int
+		orientation int
+		wantWidth   int
+		wantHeight  int
+		wantResize  bool
+		wantScale   string
+	}{
+		{
+			name:        "landscape",
+			width:       4032,
+			height:      3024,
+			orientation: 1,
+			wantWidth:   1920,
+			wantHeight:  1440,
+			wantResize:  true,
+			wantScale:   "0.47619047619047616",
+		},
+		{
+			name:        "portrait after orientation",
+			width:       4032,
+			height:      3024,
+			orientation: 6,
+			wantWidth:   1440,
+			wantHeight:  1920,
+			wantResize:  true,
+			wantScale:   "0.47619047619047616",
+		},
+		{
+			name:        "rounds fitted dimension like libvips",
+			width:       3001,
+			height:      2000,
+			orientation: 1,
+			wantWidth:   1920,
+			wantHeight:  1280,
+			wantResize:  true,
+			wantScale:   "0.639786737754082",
+		},
+		{
+			name:        "already within limit",
+			width:       1200,
+			height:      800,
+			orientation: 1,
+			wantWidth:   1200,
+			wantHeight:  800,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plan, err := imageconv.BuildPlan(imageconv.PlanRequest{
+				InputPath: "/input/photo.png",
+				OutputDir: "/out",
+				WorkDir:   "/work",
+				Operation: corpus.OperationEmailPhoto,
+				Input: imageconv.Info{
+					Format:         imageconv.FormatPNG,
+					Width:          tt.width,
+					Height:         tt.height,
+					Bands:          3,
+					BandFormat:     "uchar",
+					Interpretation: "srgb",
+					Orientation:    tt.orientation,
+					Pages:          1,
+				},
+				VipsPath: "/usr/bin/vips",
+			})
+			if err != nil {
+				t.Fatalf("BuildPlan() error = %v", err)
+			}
+			if plan.Expect.Width != tt.wantWidth || plan.Expect.Height != tt.wantHeight {
+				t.Errorf(
+					"dimensions = %dx%d; want %dx%d",
+					plan.Expect.Width,
+					plan.Expect.Height,
+					tt.wantWidth,
+					tt.wantHeight,
+				)
+			}
+
+			resizeCount := 0
+			for _, command := range plan.Commands {
+				if len(command.Args) == 0 || command.Args[0] != "resize" {
+					continue
+				}
+				resizeCount++
+				wantArgs := []string{
+					"resize",
+					filepath.Join("/work", "oriented.v"),
+					filepath.Join("/work", "resized.v"),
+					tt.wantScale,
+					"--kernel",
+					"lanczos3",
+				}
+				if !reflect.DeepEqual(command.Args, wantArgs) {
+					t.Errorf("resize args = %#v; want %#v", command.Args, wantArgs)
+				}
+			}
+			if tt.wantResize && resizeCount != 1 {
+				t.Errorf("resize commands = %d; want 1", resizeCount)
+			}
+			if !tt.wantResize && resizeCount != 0 {
+				t.Errorf("resize commands = %d; want 0", resizeCount)
+			}
+
+			save := plan.Commands[len(plan.Commands)-1]
+			wantSaveInput := filepath.Join("/work", "oriented.v")
+			if tt.wantResize {
+				wantSaveInput = filepath.Join("/work", "resized.v")
+			}
+			wantSaveArgs := []string{
+				"jpegsave",
+				wantSaveInput,
+				filepath.Join("/work", "output.jpg"),
+				"--Q",
+				"85",
+				"--optimize-coding",
+				"--interlace",
+				"--keep",
+				"none",
+			}
+			if !reflect.DeepEqual(save.Args, wantSaveArgs) {
+				t.Errorf("save args = %#v; want %#v", save.Args, wantSaveArgs)
 			}
 		})
 	}

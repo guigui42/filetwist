@@ -12,6 +12,10 @@ func operationOption(operation profiles.Operation) optionView {
 	switch operation {
 	case profiles.OperationCompatiblePhoto:
 		option.Description = "JPEG with lossy compression. Applies orientation and flattens transparency onto white."
+	case profiles.OperationEmailPhoto:
+		option.Description = "JPEG fitted within a 1920-pixel longest edge at quality 85. " +
+			"Applies orientation, never upscales, and flattens transparency onto white. " +
+			"A smaller file is not guaranteed."
 	case profiles.OperationSmallerPhoto:
 		option.Description = "WebP with stronger compression and supported transparency. A smaller file is not guaranteed."
 	case profiles.OperationLosslessImage:

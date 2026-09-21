@@ -56,6 +56,14 @@ func TestLocalGeneratedFixturesIntegration(t *testing.T) {
 			wantSuffix: "-lossless.png",
 		},
 		{
+			name:       "email JPEG",
+			required:   []string{"vips", "vipsheader"},
+			input:      filepath.Join(root, "fixtures", "generated", "rgba-2x2.png"),
+			operation:  corpus.OperationEmailPhoto,
+			wantKind:   corpus.MediaImage,
+			wantSuffix: "-email.jpg",
+		},
+		{
 			name:       "generated WAV",
 			required:   []string{"ffmpeg", "ffprobe"},
 			input:      filepath.Join(root, "fixtures", "generated", "tone-8khz-mono.wav"),

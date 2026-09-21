@@ -83,6 +83,7 @@ job. Keep separate original copies and download wanted results before expiry.
 | Operation | Profile and important changes |
 | --- | --- |
 | `compatible_photo` | JPEG quality 90, progressive; applies orientation and flattens alpha onto white |
+| `email_photo` | Progressive JPEG quality 85, fitted within a 1920-pixel longest edge without upscaling; applies orientation and flattens alpha onto white |
 | `smaller_photo` | WebP quality 80; preserves supported transparency |
 | `lossless_image` | PNG; preserves supported alpha and decoded 8-bit/16-bit sample precision, but orientation/color normalization and metadata removal still apply |
 | `compatible_video` | Fast-start MP4, H.264 `yuv420p`, normalized rotation and even dimensions; selected audio becomes stereo 48 kHz AAC |
@@ -91,8 +92,10 @@ job. Keep separate original copies and download wanted results before expiry.
 | `compatible_audio` | Re-encodes to stereo 48 kHz MP3 at 192 kb/s |
 | `lossless_audio` | FLAC preserving the selected track's channel count and sample rate; rejects floating-point or greater-than-24-bit PCM |
 
-"Smaller" is a profile choice, not a guaranteed size reduction. PNG and FLAC do
-not restore information already lost in the source, and these modes are not
+"Smaller" and `email_photo` are profile choices, not guaranteed byte-size
+reductions. The email profile guarantees the JPEG format and maximum resolution,
+but an HEIC or already compressed source can still use fewer bytes. PNG and FLAC
+do not restore information already lost in the source, and these modes are not
 original-file preservation.
 
 Video keeps the first usable video stream and first supported audio stream.

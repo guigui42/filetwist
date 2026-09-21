@@ -183,6 +183,8 @@ type Operation = profiles.Operation
 const (
 	// OperationCompatiblePhoto creates a broadly compatible photo.
 	OperationCompatiblePhoto = profiles.OperationCompatiblePhoto
+	// OperationEmailPhoto creates a broadly compatible, email-sized photo.
+	OperationEmailPhoto = profiles.OperationEmailPhoto
 	// OperationSmallerPhoto creates a smaller lossy photo.
 	OperationSmallerPhoto = profiles.OperationSmallerPhoto
 	// OperationLosslessImage creates a lossless image.

@@ -64,16 +64,18 @@ Sources: [web workflow](docs/web.md), [CLI usage](docs/cli.md),
 
 - Scope is images, audio, and video. Documents, PDF, OCR, arbitrary converter
   plugins, and multi-tenant hosting are outside the documented product scope.
-- Preserve the eight named operations and their guarantees:
-  `compatible_photo`, `smaller_photo`, `lossless_image`, `compatible_video`,
-  `smaller_video`, `extract_audio`, `compatible_audio`, and `lossless_audio`.
+- Preserve the nine named operations and their guarantees:
+  `compatible_photo`, `email_photo`, `smaller_photo`, `lossless_image`,
+  `compatible_video`, `smaller_video`, `extract_audio`, `compatible_audio`, and
+  `lossless_audio`.
   The [profile definitions](docs/web.md#conversion-profiles) remain authoritative.
 - Recommendations are content-aware. The web form can recommend an eligible
   alternative for review before conversion. The CLI rejects an unavailable
   default rather than silently switching operations or media kind.
-- "Smaller" does not guarantee fewer bytes. Lossless outputs do not restore
-  information already lost or preserve the original file unchanged. Audio
-  extraction re-encodes the selected track rather than copying it bit for bit.
+- "Smaller" and `email_photo` do not guarantee fewer bytes. Lossless outputs do
+  not restore information already lost or preserve the original file unchanged.
+  Audio extraction re-encodes the selected track rather than copying it bit for
+  bit.
 - Unsupported inputs must fail explicitly. Animated/multipage images and HDR
   still-image tone mapping are unsupported; format support depends on actual
   runtime capabilities.

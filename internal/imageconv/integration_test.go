@@ -42,6 +42,13 @@ func TestLibvipsIntegration(t *testing.T) {
 	}
 
 	root := filepath.Clean(filepath.Join("..", ".."))
+	largeInput := filepath.Join(t.TempDir(), "email-3001x2000.png")
+	if _, err := processRunner.Run(context.Background(), runner.Command{
+		Path: vipsPath,
+		Args: []string{"black", largeInput, "3001", "2000", "--bands", "3"},
+	}); err != nil {
+		t.Fatalf("create large integration fixture: %v", err)
+	}
 	tests := []struct {
 		name             string
 		input            string
@@ -62,6 +69,15 @@ func TestLibvipsIntegration(t *testing.T) {
 			format:    imageconv.FormatJPEG,
 			width:     3,
 			height:    2,
+		},
+		{
+			name:      "email JPEG resized for attachment",
+			input:     largeInput,
+			operation: corpus.OperationEmailPhoto,
+			saver:     "jpegsave",
+			format:    imageconv.FormatJPEG,
+			width:     1920,
+			height:    1280,
 		},
 		{
 			name:             "compatible oriented GPS JPEG",
